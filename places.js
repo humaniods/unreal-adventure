@@ -248,6 +248,8 @@ window.TriundPlaces = {
     const streamTex = flowTex.clone(); streamTex.needsUpdate = true; streamTex.wrapS = streamTex.wrapT = THREE.RepeatWrapping;
     const streamMat = new THREE.MeshLambertMaterial({ map: streamTex, color: lin(0x7f989c), transparent: true, opacity: 0.85, depthWrite: false });
     const mists = [];
+    let menuMat = null;
+    const SNACK = [0xd8322b, 0xf2c230, 0x2f6fd6, 0x2f9a52, 0xf08a24, 0x7a2fa0, 0x1fa0a0];
     /* ---------- POIs ---------- */
     const stops = [];
     const KIND_SUB = { cafe: 'chai · maggi', shop: '', lodge: 'rooms', camp: 'camp', temple: '', monastery: '', shelter: '', toilets: '', info: '' };
@@ -267,7 +269,7 @@ window.TriundPlaces = {
         bx += tx * 0.3; bz += tz * 0.3;
         nameBoard(bx, H(bx, bz) + 3.1, bz, face, poi.name, KIND_SUB[poi.kind], poi.kind === 'lodge' ? '#1f3b2e' : '#f2c230', poi.kind === 'lodge' ? '#f1ead8' : '#2a1a04', 2.8);
         bump('board');
-        if (poi.kind === 'cafe' && nt.d < 30) stops.push(stopAt(poi, bx, bz, tx, tz, nt));
+        if (poi.kind === 'cafe' && nt.d < 30) stops.push(stopAt(poi, bx, bz, tx, tz, nt, 'building'));
         continue;
       }
       // keep standalone props off the walking line
@@ -275,7 +277,7 @@ window.TriundPlaces = {
       if (nt.d < clear) { x = nt.x - tx * clear; z = nt.z - tz * clear; }
       const y = H(x, z);
       switch (poi.kind) {
-        case 'cafe': case 'shop': stall(x, y, z, face, poi); if (poi.kind === 'cafe' && nt.d < 30) stops.push(stopAt(poi, x + tx * 2.4, z + tz * 2.4, tx, tz, nt)); break;
+        case 'cafe': case 'shop': stall(x, y, z, face, poi); if (poi.kind === 'cafe' && nt.d < 30) stops.push(stopAt(poi, x + tx * 2.4, z + tz * 2.4, tx, tz, nt, 'stall')); break;
         case 'lodge': building(rectPoly(x, z, face, 7, 9), 2, 'lodge', poi.name, 7 + boards.length);
           if (poi.name) nameBoard(x + tx * 3.9, y + 3.1, z + tz * 3.9, face, poi.name, 'rooms', '#1f3b2e', '#f1ead8', 2.8); break;
         case 'temple': shrine(x, y, z, face, poi); break;
@@ -293,15 +295,71 @@ window.TriundPlaces = {
         case 'pool': break;   // drawn from its outline below
       }
     }
-    function stopAt(poi, x, z, tx, tz, nt) {
+    function stopAt(poi, x, z, tx, tz, nt, kind) {
       const label = poi.name || 'Tea stall';
       return { key: 'poi:' + poi.id, label, short: label.length > 14 ? label.slice(0, 13) + '…' : label, trail: nt.tr.id, s: nt.s, x, z, h: H(x, z), tx, tz,
-               spot: { x: x + tx * 2.2, z: z + tz * 2.2 }, taken: false, seen: false };
+               spot: { x: x + tx * 2.2, z: z + tz * 2.2 }, taken: false, seen: false, kind };
     }
     function rectPoly(x, z, ry, w, d) {
       const c = Math.cos(ry), s = Math.sin(ry), P = [];
       for (const [lx, lz] of [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]]) P.push([x + lx * c + lz * s, z - lx * s + lz * c]);
       return P;
+    }
+    // one shared chalkboard menu (prices: trip reports say 50-100% above town because supplies come up by mule)
+    function menuBoard(x, y, z, ry) {
+      if (!menuMat) { const mm = textPlane([{ t: 'MENU', size: 56, w: 700 }, { t: 'Chai  30', size: 40 }, { t: 'Lemon tea  40', size: 40 }, { t: 'Maggi  80', size: 40 }, { t: 'Omelette  70', size: 40 }, { t: 'Paratha  90', size: 40 }], 0.8, 1.05, '#20302a', '#efe9da'); menuMat = mm.material; mm.geometry.dispose(); }
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.05), menuMat); m.position.set(x, y, z); m.rotation.y = ry; m.visible = false; scene.add(m); boards.push(m);
+    }
+    // what a Triund chai stall actually holds: snack packets, Maggi, bottles on shelves, chips strips hanging at the
+    // front, a gas stove with a big kettle and steel glasses, an LPG cylinder, plastic chairs, a menu board
+    function goods(x, y, z, ry, w, d, hh, r, inside) {
+      const wood = C(0x6e4b2e), steel = C(0xb9bcbf);
+      if (inside) {
+        for (const sy of [1.0, 1.5]) {
+          lbox(props, x, y, z, ry, 0, sy, -d / 2 + 0.22, w * 0.82, 0.04, 0.32, wood);
+          const n = Math.floor(w * 0.82 / 0.15);
+          for (let i = 0; i < n; i++) {
+            const lx = -w * 0.41 + 0.08 + i * 0.15, t = r();
+            if (t < 0.45) lbox(props, x, y, z, ry, lx, sy + 0.11, -d / 2 + 0.22, 0.12, 0.2, 0.06, C(SNACK[(r() * SNACK.length) | 0]));            // chips packet
+            else if (t < 0.65) for (let k = 0; k < 3; k++) lbox(props, x, y, z, ry, lx, sy + 0.04 + k * 0.045, -d / 2 + 0.22, 0.11, 0.04, 0.08, C(0xf2c230)); // Maggi stack
+            else { const c = [0x9fc3d6, 0x9fc3d6, 0x2a1a12, 0xe07a1a][(r() * 4) | 0]; const cc = Math.cos(ry), ss = Math.sin(ry), lz = -d / 2 + 0.22;
+              props.geo(CYL, mtx(x + lx * cc + lz * ss, y + sy + 0.14, z - lx * ss + lz * cc, 0, 0.07, 0.24, 0.07), C(c)); }                    // bottles
+          }
+        }
+        // crates of soft drinks and a water tank in the corner
+        lbox(props, x, y, z, ry, w / 2 - 0.45, 0.2, -d / 2 + 0.4, 0.45, 0.32, 0.32, C(0xc0392b));
+        lbox(props, x, y, z, ry, w / 2 - 0.45, 0.52, -d / 2 + 0.4, 0.45, 0.32, 0.32, C(0x2f6fd6));
+      }
+      // counter: stove, kettle, glasses, biscuit jars
+      const cz = d / 2 - 0.4, cy = 1.0;
+      lbox(props, x, y, z, ry, -w * 0.18, cy + 0.04, cz, 0.42, 0.07, 0.3, C(0x2a2a2a));
+      { const cc = Math.cos(ry), ss = Math.sin(ry), at = (lx, lz) => [x + lx * cc + lz * ss, z - lx * ss + lz * cc];
+        let [px, pz] = at(-w * 0.18, cz); props.geo(CYL, mtx(px, y + cy + 0.19, pz, 0, 0.26, 0.22, 0.26), steel);                                   // kettle
+        for (let i = 0; i < 4; i++) { [px, pz] = at(w * 0.05 + i * 0.09, cz + 0.1); props.geo(CYL, mtx(px, y + cy + 0.05, pz, 0, 0.06, 0.1, 0.06), steel); }   // steel glasses
+        for (let i = 0; i < 2; i++) { [px, pz] = at(w * 0.25 + i * 0.2, cz - 0.05); props.geo(CYL, mtx(px, y + cy + 0.12, pz, 0, 0.15, 0.24, 0.15), C([0xd9b36a, 0xc8662a][i])); }  // biscuit jars
+        [px, pz] = at(-w / 2 - 0.35, d / 2 - 0.5); props.geo(CYL, mtx(px, y + 0.3, pz, 0, 0.3, 0.6, 0.3), C(0xb8261f));                            // LPG cylinder
+      }
+      // chips strips hanging from the roof edge at the front
+      for (let k = 0; k < 3; k++) {
+        const lx = -w * 0.3 + k * w * 0.3;
+        lbox(props, x, y, z, ry, lx, hh + 0.05, d / 2 + 0.05, 0.02, 0.1, 0.02, C(0x333333));
+        for (let i = 0; i < 6; i++) lbox(props, x, y, z, ry, lx, hh - 0.12 - i * 0.2, d / 2 + 0.06, 0.14, 0.18, 0.012, C(SNACK[(k * 3 + i) % SNACK.length]));
+      }
+      // plastic table and chairs in front
+      if (inside) {
+      const tx = w * 0.15, tz = d / 2 + 1.7, plast = C(r() < 0.5 ? 0xf2f2ee : 0xc0392b);
+      lbox(props, x, y, z, ry, tx, 0.7, tz, 0.7, 0.04, 0.7, C(0xf2f2ee));
+      for (const [ax, az] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) lbox(props, x, y, z, ry, tx + ax, 0.35, tz + az, 0.04, 0.7, 0.04, C(0xe0e0dc));
+      for (const [ax, az, back] of [[-0.6, 0, -1], [0.6, 0, 1]]) {
+        lbox(props, x, y, z, ry, tx + ax, 0.43, tz + az, 0.42, 0.04, 0.42, plast);
+        lbox(props, x, y, z, ry, tx + ax + back * 0.2, 0.68, tz + az, 0.04, 0.46, 0.42, plast);
+        for (const [bx, bz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) lbox(props, x, y, z, ry, tx + ax + bx, 0.21, tz + az + bz, 0.03, 0.42, 0.03, plast);
+      }
+      }
+      // menu board on the side wall, blue tarp awning on some stalls
+      { const cc = Math.cos(ry), ss = Math.sin(ry), lx = w / 2 + 0.08, lz = d / 2 - 0.3; menuBoard(x + lx * cc + lz * ss, y + 1.5, z - lx * ss + lz * cc, ry); }
+      if (r() < 0.45) { const m = new THREE.Matrix4().compose(T.set(0, 0, 0), new THREE.Quaternion().setFromEuler(new THREE.Euler(0.22, ry, 0, 'YXZ')), S.set(w + 0.6, 0.02, 1.8));
+        const cc = Math.cos(ry), ss = Math.sin(ry), lz = d / 2 + 0.9; m.setPosition(x + lz * ss, y + hh - 0.15, z + lz * cc); props.geo(BOX, m, C(0x2a5fae)); }
     }
     // tea stall / shop: tin roof on posts, back wall, counter facing the trail, benches, name board
     function stall(x, y, z, ry, poi) {
@@ -320,6 +378,7 @@ window.TriundPlaces = {
       lbox(props, x, y, z, ry, -w * 0.15, 1.1, d / 2 - 0.4, 0.35, 0.3, 0.35, C(0xb8b8b4));            // kettle / stove
       for (const sx of [-1, 1]) { const bx = sx * (w / 2 + 0.9), bz = d / 2 + 0.6; lbox(props, x, y, z, ry, bx, 0.22, bz, 1.8, 0.1, 0.45, wood); lbox(props, x, y, z, ry, bx, 0.1, bz, 1.6, 0.25, 0.3, C(0x5b4330)); }
       if (r() < 0.6) for (let i = 0; i < 4; i++) lbox(props, x, y, z, ry, (i - 1.5) * 0.7, 1.6, -d / 2 + 0.15, 0.5, 0.7, 0.05, C([0xe0402a, 0xf2c230, 0x2f6fd6, 0x2f9a52][i]));   // snack packets on the back wall
+      goods(x, y, z, ry, w, d, hh, r, true);
       const c = Math.cos(ry), s = Math.sin(ry), fx = x + (d / 2 + 0.05) * s, fz = z + (d / 2 + 0.05) * c;
       nameBoard(fx, y + hh + 0.1, fz, ry, poi.name || (poi.kind === 'cafe' ? 'Tea Stall' : 'General Store'), poi.kind === 'cafe' ? 'chai · maggi · omelette' : '', '#f2c230', '#2a1a04', Math.min(w, 3.2));
       occupyDisc(x, z, Math.max(w, d) / 2 + 2.5);
@@ -478,8 +537,15 @@ window.TriundPlaces = {
       bt -= dt; if (bt > 0) return; bt = 0.4;
       for (const b of boards) { const dx = b.position.x - cam.x, dz = b.position.z - cam.z; b.visible = dx * dx + dz * dz < 160 * 160; }
     }
+    // dress the hand-built stalls in index.html (they are closed boxes: counter-side goods only)
+    function dress(list) {
+      const before = props.p.length;
+      for (const q of list) goods(q.x, q.y, q.z, q.ry, q.w, q.d, q.hh, rng(q.seed || 5), false);
+      const B = new Batch(); B.p = props.p.slice(before); B.n = props.n.slice(before); B.c = props.c.slice(before); B.uv = props.uv.slice(before);
+      B.mesh(new THREE.MeshLambertMaterial({ map: plainTex, vertexColors: true }));
+    }
     return {
-      counts, stops, update, meshes: { wallMesh, roofMesh, propMesh },
+      counts, stops, update, dress, meshes: { wallMesh, roofMesh, propMesh },
       blocked: (x, z) => OCC.has(okey(Math.floor(x / OC), Math.floor(z / OC)))
     };
   }

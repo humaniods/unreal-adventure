@@ -49,6 +49,7 @@ window.TriundFauna = {
     }
     // walk cycle (diagonal pairs), sit pose, tail wag, head look
     function animQuad(a, dt, speed, opt) {
+      if (a.model) { animModel(a, dt, speed, opt); return; }
       a.ph += dt * (2.2 + speed * 2.4) * (speed > 0.05 ? 1 : 0);
       const sw = Math.min(0.7, speed * 0.32 + (speed > 0.05 ? 0.12 : 0));
       const sit = opt.sit || 0;
@@ -152,12 +153,14 @@ window.TriundFauna = {
         const a = quadruped({ len: 1.25, leg: 0.72, wid: 0.46, depth: 0.55, col: c, neckR: 0.13, neckLen: 0.55, neckTilt: 0.75, head: 0.36, snout: 0.34,
           ear: 0.24, earDroop: 0.15, legR: 0.06, hoof: true, tail: 0.5, tailR: 0.05, tailUp: 0.2, tailCol: 0x2a2420 });
         // pack saddle + load: sacks, a red LPG cylinder on some
-        a.body.add(mesh(BOX, 0x7a2a22, 0.62, 0.1, 0.7, 0, a.p.leg + 0.62, 0));
+        a.loads = [];
+        const addLoad = m => { a.body.add(m); a.loads.push(m); };
+        addLoad(mesh(BOX, 0x7a2a22, 0.62, 0.1, 0.7, 0, a.p.leg + 0.62, 0));
         for (const sx of [-1, 1]) {
-          if (i % 2 === 0 && sx > 0) { const cyl = mesh(CYL, 0xb8261f, 0.16, 0.7, 0.16, sx * 0.38, a.p.leg + 0.46, 0); a.body.add(cyl); }
-          else a.body.add(mesh(SPH, [0xd9cfb4, 0xc8b88f, 0x8a9a6a][i % 3], 0.2, 0.26, 0.34, sx * 0.4, a.p.leg + 0.48, 0));
+          if (i % 2 === 0 && sx > 0) { const cyl = mesh(CYL, 0xb8261f, 0.16, 0.7, 0.16, sx * 0.38, a.p.leg + 0.46, 0); addLoad(cyl); }
+          else addLoad(mesh(SPH, [0xd9cfb4, 0xc8b88f, 0x8a9a6a][i % 3], 0.2, 0.26, 0.34, sx * 0.4, a.p.leg + 0.48, 0));
         }
-        a.body.add(mesh(SPH, 0xc9a23a, 0.05, 0.06, 0.05, 0, a.p.leg + 0.3, -0.62));   // bell under the neck
+        addLoad(mesh(SPH, 0xc9a23a, 0.05, 0.06, 0.05, 0, a.p.leg + 0.3, -0.62));   // bell under the neck
         members.push(a);
       }
       const herder = human(0x6f5a46, 0xb8432f);
@@ -284,6 +287,57 @@ window.TriundFauna = {
       }
     }
 
+    /* ---------- animated models (Quaternius CC0 animal pack) replace the primitive rigs ---------- */
+    function modelRig(gltf, targetH, recolor) {
+      const root = THREE.SkeletonUtils.clone(gltf.scene);
+      root.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; n.frustumCulled = false; n.material = n.material.clone(); n.material.metalness = 0; n.material.roughness = 0.95; if (recolor) recolor(n.material); } });
+      root.updateMatrixWorld(true);
+      const bb = new THREE.Box3().setFromObject(root), c = bb.getCenter(new THREE.Vector3());
+      let head = null; root.traverse(n => { if (!head && n.isBone && /head/i.test(n.name)) head = n; });
+      const hp = head ? new THREE.Vector3().setFromMatrixPosition(head.matrixWorld) : new THREE.Vector3(c.x, c.y, bb.min.z);
+      const yaw0 = Math.atan2(hp.x - c.x, hp.z - c.z);
+      const sc = targetH / Math.max(1e-6, bb.max.y - bb.min.y);
+      const holder = new THREE.Group(), spin = new THREE.Group(); spin.rotation.y = Math.PI - yaw0; spin.add(root);
+      root.scale.multiplyScalar(sc); root.position.set(-c.x * sc, -bb.min.y * sc, -c.z * sc);
+      holder.add(spin);
+      const mixer = new THREE.AnimationMixer(root), actions = {};
+      for (const cl of gltf.animations) actions[cl.name] = mixer.clipAction(cl);
+      return { holder, mixer, actions, cur: null };
+    }
+    function animModel(a, dt, speed, opt) {
+      const M = a.model, A = M.actions;
+      let n = speed > M.runAt ? 'Gallop' : speed > 0.08 ? 'Walk' : opt.graze && A.Eating ? 'Eating' : opt.sit > 0.5 ? (A.Idle_2_HeadLow ? 'Idle_2_HeadLow' : A.Idle_Headlow ? 'Idle_Headlow' : 'Idle_2') : 'Idle';
+      const act = A[n] || A.Idle;
+      if (M.cur !== act) { act.reset().play(); if (M.cur) act.crossFadeFrom(M.cur, 0.3, false); M.cur = act; }
+      act.timeScale = n === 'Walk' ? Math.max(0.4, speed / M.walkRef) : n === 'Gallop' ? Math.max(0.6, speed / M.runRef) : 1;
+      if (a.g.visible) M.mixer.update(dt);
+    }
+    const tint = (m, map) => { const k = Object.keys(map).find(k => m.name === k || m.name.startsWith(k + '.')); if (k) m.color.copy(lin(map[k])); };
+    const DOGMODEL = [['husky', { 'Material': 0x1c1a19, 'Material.001': 0x8a6a48, 'Material.006': 0x141210 }], ['shiba', { Main: 0x5a3d26, Main_Light: 0xb08a60 }],
+                      ['husky', { 'Material': 0x2b2724, 'Material.001': 0x6b6560 }], ['shiba', { Main: 0x9a7a52, Main_Light: 0xd9c4a0 }], ['husky', { 'Material': 0x3a2e25, 'Material.001': 0xa08060 }]];
+    function upgrade(G) {
+      dogs.forEach((d, i) => {
+        const [kind, cols] = DOGMODEL[i % DOGMODEL.length]; if (!G[kind]) return;
+        const r = modelRig(G[kind], 0.62, m => tint(m, cols));
+        Object.assign(r, { walkRef: 1.3, runRef: 4.2, runAt: 2.4 });
+        d.a.body.visible = false; d.a.g.add(r.holder); d.a.model = r;
+      });
+      mules.forEach((ms, j) => ms.members.forEach((a, i) => {
+        const kind = j === 0 ? 'donkey' : 'horse'; if (!G[kind]) return;
+        const r = modelRig(G[kind], kind === 'donkey' ? 1.45 : 1.6, m => { if (kind === 'donkey' && /^Main$/.test(m.name)) m.color.copy(lin([0x4a3b30, 0x5b4636, 0x6e5845][i % 3])); });
+        Object.assign(r, { walkRef: 1.0, runRef: 3.5, runAt: 3 });
+        // loads were placed for the old rig (back at ~1.3 m); the donkey's back is ~0.95 m, the pony's ~1.1 m
+        for (const l of a.loads || []) { l.position.y -= kind === 'donkey' ? 0.36 : 0.2; l.scale.multiplyScalar(0.85); r.holder.add(l); }
+        a.body.visible = false; a.g.add(r.holder); a.model = r;
+      }));
+      herd.forEach((c, i) => {
+        const buffalo = c.a.p.col === 0x262422, kind = buffalo ? 'bull' : 'cow'; if (!G[kind]) return;
+        const r = modelRig(G[kind], buffalo ? 1.55 : 1.5, buffalo ? m => tint(m, { Main: 0x1e1d1c, Main_Light: 0x2a2928 }) : m => tint(m, { Main: [0x8a6a4a, 0xd9cfbf, 0x5b4636, 0x6a5a4a][i % 4] }));
+        Object.assign(r, { walkRef: 0.9, runRef: 3, runAt: 3 });
+        c.a.body.visible = false; c.a.g.add(r.holder); c.a.model = r;
+      });
+    }
+
     /* ---------- per frame ---------- */
     // which way the hiker is going along the trail (dogs run ahead in that direction)
     let sdir = 1, sdirF = 1, lastS = null;
@@ -291,7 +345,7 @@ window.TriundFauna = {
     const visible = (g, cam) => { const dx = g.position.x - cam.x, dz = g.position.z - cam.z, v = dx * dx + dz * dz < FAR2; g.visible = v; return v; };
     return {
       counts: { dogs: dogs.length, mules: mules.reduce((n, m) => n + m.members.length, 0), langurs: troops.reduce((n, t) => n + t.members.length, 0), cattle: herd.length, birds: birds.length },
-      dogs, mules, troops, birds, events,
+      dogs, mules, troops, birds, events, upgrade,
       update(dt, cam, time, P, ACT) {
         if (lastS !== null && Math.abs(P.s - lastS) > 0.005 && Math.abs(P.s - lastS) < 5) sdirF += (Math.sign(P.s - lastS) - sdirF) * Math.min(1, dt * 0.6);
         lastS = P.s; sdir = sdirF >= 0 ? 1 : -1;
