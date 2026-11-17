@@ -1,0 +1,7 @@
+[out:json][timeout:60];
+relation(15522720);
+out tags;
+way(r);
+out geom tags;
+nwr["name"~"Galu|Gallu|Galu Devi",i](32.22,76.30,32.30,76.40);
+out center tags;

@@ -1,0 +1,5 @@
+[out:json][timeout:60];
+(
+  nwr["name"~"Triund|Gallu|Magic View|Snowline|Dharamkot|Laka",i](32.22,76.30,32.30,76.40);
+);
+out center tags;

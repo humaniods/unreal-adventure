@@ -1,0 +1,8 @@
+# downloaded tile caches (re-fetched by prototype/geo/build.py)
+prototype/geo/tiles/
+prototype/geo/sat/
+# generated debug image (build.py --overlay)
+prototype/geo/overlay.png
+__pycache__/
+*.pyc
+.DS_Store

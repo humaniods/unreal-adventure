@@ -1,0 +1,1098 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-11-16T09:39:51Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 539994191,
+  "lat": 32.2558247,
+  "lon": 76.3427529,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Magic View Café"
+  }
+},
+{
+  "type": "node",
+  "id": 539994204,
+  "lat": 32.2621757,
+  "lon": 76.3542851,
+  "tags": {
+    "name": "Triund",
+    "place": "locality"
+  }
+},
+{
+  "type": "node",
+  "id": 539994861,
+  "lat": 32.2741416,
+  "lon": 76.3615720,
+  "tags": {
+    "addr:city": "Dharamsala",
+    "addr:street": "Galu Temple - Lahesh Caves Trail",
+    "amenity": "cafe",
+    "cuisine": "regional",
+    "internet_access": "no",
+    "name": "Snowline Cafe",
+    "opening_hours": "08:00-22:00",
+    "smoking": "separated"
+  }
+},
+{
+  "type": "node",
+  "id": 539994862,
+  "lat": 32.2759412,
+  "lon": 76.3619262,
+  "tags": {
+    "amenity": "place_of_worship",
+    "name": "Laka Temple"
+  }
+},
+{
+  "type": "node",
+  "id": 539994864,
+  "lat": 32.2833202,
+  "lon": 76.3655376,
+  "tags": {
+    "bin": "no",
+    "fee": "no",
+    "fireplace": "yes",
+    "name": "Laka Boulder Cave",
+    "natural": "cave_entrance"
+  }
+},
+{
+  "type": "node",
+  "id": 622316377,
+  "lat": 32.2455318,
+  "lon": 76.3259971,
+  "tags": {
+    "name": "Dharamkot",
+    "name:en": "Dharamkot",
+    "name:he": "דרמקוט",
+    "name:hi": "धरमकोट",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2371682461,
+  "lat": 32.2702302,
+  "lon": 76.3528743,
+  "tags": {
+    "ele": "3240",
+    "name": "Triund Hill",
+    "name:hi": "त्रिउंड हिल",
+    "natural": "peak",
+    "source": "www.triundhill.com"
+  }
+},
+{
+  "type": "node",
+  "id": 4341145800,
+  "lat": 32.2468366,
+  "lon": 76.3261101,
+  "tags": {
+    "internet_access": "wlan",
+    "name": "Dharamkot Inn",
+    "phone": "01892221308",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4782157522,
+  "lat": 32.2482389,
+  "lon": 76.3281164,
+  "tags": {
+    "amenity": "community_centre",
+    "check_date": "2025-06-13",
+    "internet_access": "wlan",
+    "name": "Chabad House Dharamkot",
+    "name:en": "Chabad House Dharamkot",
+    "name:he": "בית חב\"ד דרמקוט",
+    "website": "https://unity.co.il/"
+  }
+},
+{
+  "type": "node",
+  "id": 5061931724,
+  "lat": 32.2427096,
+  "lon": 76.3318696,
+  "tags": {
+    "name": "Hotel Triund",
+    "name:en": "Hotel Triund",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 5074567722,
+  "lat": 32.2549874,
+  "lon": 76.3551942,
+  "tags": {
+    "cabins": "no",
+    "caravans": "no",
+    "drinking_water": "no",
+    "fee": "yes",
+    "name": "Triund camp",
+    "name:en": "Triund camp",
+    "power_supply": "no",
+    "shower": "no",
+    "tents": "yes",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 5201275829,
+  "lat": 32.2551667,
+  "lon": 76.3550393,
+  "tags": {
+    "check_date": "2026-11-12",
+    "ele": "2776",
+    "name": "Triund Mountain Lodge",
+    "phone": "+91-8894445007 , +91-9418021679 , 01892221679",
+    "tourism": "hotel",
+    "website": "https://triund.in/"
+  }
+},
+{
+  "type": "node",
+  "id": 5201275831,
+  "lat": 32.2821616,
+  "lon": 76.3645368,
+  "tags": {
+    "name": "Ilaka",
+    "place": "locality",
+    "trail_visibility": "intermediate"
+  }
+},
+{
+  "type": "node",
+  "id": 5632639205,
+  "lat": 32.2454531,
+  "lon": 76.3257754,
+  "tags": {
+    "amenity": "school",
+    "name": "Govt. Primary School Dharamkot"
+  }
+},
+{
+  "type": "node",
+  "id": 5922069408,
+  "lat": 32.2437134,
+  "lon": 76.3311383,
+  "tags": {
+    "name": "Hotel Triund Heights",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 6466224188,
+  "lat": 32.2594258,
+  "lon": 76.3553301,
+  "tags": {
+    "name": "Mool Raj Camp-Triund",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 6467100603,
+  "lat": 32.2556885,
+  "lon": 76.3427393,
+  "tags": {
+    "name": "Magic View",
+    "tourism": "viewpoint"
+  }
+},
+{
+  "type": "node",
+  "id": 7674358524,
+  "lat": 32.2816089,
+  "lon": 76.3636279,
+  "tags": {
+    "mountain_pass": "yes",
+    "name": "Laka Deep"
+  }
+},
+{
+  "type": "node",
+  "id": 11989696335,
+  "lat": 32.2450992,
+  "lon": 76.3316131,
+  "tags": {
+    "addr:city": "Dharamshala",
+    "addr:district": "Kangra",
+    "addr:housenumber": "2226",
+    "addr:postcode": "176219",
+    "addr:street": "Bhagsu nag to Gallu devi road, Upper Bhagsunag",
+    "email": "hello@thevoidlife.com",
+    "internet_access": "wlan",
+    "internet_access:fee": "customers",
+    "name": "The VOID - Dharamkot",
+    "phone": "+91 8087080121",
+    "tourism": "hotel",
+    "website": "https://thevoidlife.com/"
+  }
+},
+{
+  "type": "node",
+  "id": 14065971605,
+  "lat": 32.2465217,
+  "lon": 76.3259716,
+  "tags": {
+    "amenity": "taxi",
+    "name": "Dharamkot Taxi Stand"
+  }
+},
+{
+  "type": "node",
+  "id": 14196391183,
+  "lat": 32.2544567,
+  "lon": 76.3255497,
+  "tags": {
+    "board_type": "welcome_sign",
+    "information": "board",
+    "name": "Triund Wilderness",
+    "tourism": "information"
+  }
+},
+{
+  "type": "way",
+  "id": 43100894,
+  "center": {
+    "lat": 32.2537016,
+    "lon": 76.3317634
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "designated",
+    "highway": "path",
+    "name": "Triund Hill Trail 1",
+    "sac_scale": "mountain_hiking",
+    "surface": "gravel",
+    "trail_visibility": "excellent",
+    "width": "1"
+  }
+},
+{
+  "type": "way",
+  "id": 49041334,
+  "center": {
+    "lat": 32.2598294,
+    "lon": 76.3198188
+  },
+  "tags": {
+    "bicycle": "no",
+    "bridge": "yes",
+    "foot": "yes",
+    "highway": "footway",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "concrete",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 49042228,
+  "center": {
+    "lat": 32.2672241,
+    "lon": 76.3162289
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "path",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "ground",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 53257276,
+  "center": {
+    "lat": 32.2791925,
+    "lon": 76.3655134
+  },
+  "tags": {
+    "highway": "path",
+    "name": "Upper Manhudd - Laka Trail",
+    "sac_scale": "demanding_mountain_hiking",
+    "surface": "dirt",
+    "trail_visibility": "intermediate",
+    "width": "0"
+  }
+},
+{
+  "type": "way",
+  "id": 55333496,
+  "center": {
+    "lat": 32.2511742,
+    "lon": 76.3360096
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "designated",
+    "highway": "path",
+    "name": "Triund Hill Trail 2",
+    "surface": "rock"
+  }
+},
+{
+  "type": "way",
+  "id": 56688109,
+  "center": {
+    "lat": 32.2545588,
+    "lon": 76.3534235
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "designated",
+    "highway": "path",
+    "name": "Triund Hill - Karthani Trail",
+    "sac_scale": "mountain_hiking",
+    "surface": "ground"
+  }
+},
+{
+  "type": "way",
+  "id": 56688112,
+  "center": {
+    "lat": 32.2621020,
+    "lon": 76.3527797
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "designated",
+    "highway": "path",
+    "name": "Triund Hill Trail",
+    "sac_scale": "demanding_mountain_hiking",
+    "surface": "dirt",
+    "trail_visibility": "excellent",
+    "width": "0"
+  }
+},
+{
+  "type": "way",
+  "id": 56688966,
+  "center": {
+    "lat": 32.2615047,
+    "lon": 76.3545251
+  },
+  "tags": {
+    "description": "The actual name of this Place is Trimund, meaning  a head with 3 trails connection. Former Pastureland now converted to the campsite. the nature of this hill has deteriorated due to too much human activity and trash, which is thrown, down the hill and som",
+    "landuse": "meadow",
+    "name": "Triund",
+    "website": "https://www.triundhill.com/triund"
+  }
+},
+{
+  "type": "way",
+  "id": 62047504,
+  "center": {
+    "lat": 32.2875601,
+    "lon": 76.3532959
+  },
+  "tags": {
+    "bicycle": "no",
+    "highway": "path",
+    "name": "Deep Goth To Kareri Lake or Laka",
+    "sac_scale": "demanding_mountain_hiking",
+    "trail_visibility": "bad"
+  }
+},
+{
+  "type": "way",
+  "id": 130508132,
+  "center": {
+    "lat": 32.2519192,
+    "lon": 76.3325553
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "designated",
+    "highway": "footway",
+    "name": "Triund Hill Trail 2",
+    "surface": "dirt"
+  }
+},
+{
+  "type": "way",
+  "id": 199210708,
+  "center": {
+    "lat": 32.2468819,
+    "lon": 76.3216582
+  },
+  "tags": {
+    "highway": "unclassified",
+    "name": "Gallu Devi Temple Road",
+    "oneway": "no",
+    "surface": "gravel"
+  }
+},
+{
+  "type": "way",
+  "id": 229065871,
+  "center": {
+    "lat": 32.2392595,
+    "lon": 76.3546040
+  },
+  "tags": {
+    "bicycle": "no",
+    "highway": "path",
+    "name": "Thatri Triund Hill Trail",
+    "surface": "ground"
+  }
+},
+{
+  "type": "way",
+  "id": 230118250,
+  "center": {
+    "lat": 32.2460497,
+    "lon": 76.3258732
+  },
+  "tags": {
+    "highway": "unclassified",
+    "lane_markings": "no",
+    "name": "Dharamkot Bhagsu Street",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 230119103,
+  "center": {
+    "lat": 32.2546062,
+    "lon": 76.3132425
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "unclassified",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "oneway": "no",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "ground",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 292405682,
+  "center": {
+    "lat": 32.2668611,
+    "lon": 76.3567592
+  },
+  "tags": {
+    "access": "no",
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "path",
+    "horse": "yes",
+    "motor_vehicle": "no",
+    "name": "Triund Hill- SnowLine Cafe Trail",
+    "sac_scale": "demanding_mountain_hiking",
+    "surface": "dirt",
+    "trail_visibility": "excellent",
+    "width": "0"
+  }
+},
+{
+  "type": "way",
+  "id": 361109358,
+  "center": {
+    "lat": 32.2722927,
+    "lon": 76.3571270
+  },
+  "tags": {
+    "bicycle": "no",
+    "highway": "path",
+    "horse": "yes",
+    "name": "Triund Hill Top Trail",
+    "sac_scale": "mountain_hiking",
+    "surface": "dirt",
+    "trail_visibility": "horrible"
+  }
+},
+{
+  "type": "way",
+  "id": 537044551,
+  "center": {
+    "lat": 32.2620360,
+    "lon": 76.3542927
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "designated",
+    "highway": "path",
+    "name": "Galu Devi - Triund Trail",
+    "sac_scale": "demanding_mountain_hiking",
+    "surface": "dirt",
+    "trail_visibility": "excellent",
+    "width": "0"
+  }
+},
+{
+  "type": "way",
+  "id": 596429266,
+  "center": {
+    "lat": 32.2503463,
+    "lon": 76.3078853
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "living_street",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "oneway": "no",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "paving_stones",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 596429267,
+  "center": {
+    "lat": 32.2512927,
+    "lon": 76.3086208
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "footway",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "concrete",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 596429270,
+  "center": {
+    "lat": 32.2609170,
+    "lon": 76.3188234
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "path",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "ground",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 702087679,
+  "center": {
+    "lat": 32.2488579,
+    "lon": 76.3271792
+  },
+  "tags": {
+    "highway": "unclassified",
+    "lane_markings": "no",
+    "name": "Dharamkot - Haini Road",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 818848645,
+  "center": {
+    "lat": 32.2722310,
+    "lon": 76.3605894
+  },
+  "tags": {
+    "bicycle": "no",
+    "highway": "path",
+    "name": "Triund Hill- SnowLine Cafe Trail",
+    "sac_scale": "mountain_hiking",
+    "trail_visibility": "excellent",
+    "width": "1"
+  }
+},
+{
+  "type": "way",
+  "id": 826607832,
+  "center": {
+    "lat": 32.2586010,
+    "lon": 76.3189206
+  },
+  "tags": {
+    "bicycle": "no",
+    "check_date:surface": "2026-11-12",
+    "foot": "yes",
+    "highway": "unclassified",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "unpaved",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 946834577,
+  "center": {
+    "lat": 32.2546183,
+    "lon": 76.3259048
+  },
+  "tags": {
+    "highway": "track",
+    "name": "Gallu Devi Temple Road",
+    "surface": "compacted"
+  }
+},
+{
+  "type": "way",
+  "id": 946834578,
+  "center": {
+    "lat": 32.2532566,
+    "lon": 76.3244642
+  },
+  "tags": {
+    "highway": "track",
+    "name": "Gallu Devi Temple Road",
+    "surface": "compacted"
+  }
+},
+{
+  "type": "way",
+  "id": 946834579,
+  "center": {
+    "lat": 32.2459152,
+    "lon": 76.3256935
+  },
+  "tags": {
+    "highway": "unclassified",
+    "lane_markings": "no",
+    "name": "Dharamkot - Haini Road",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 946834580,
+  "center": {
+    "lat": 32.2453365,
+    "lon": 76.3258978
+  },
+  "tags": {
+    "highway": "unclassified",
+    "lane_markings": "no",
+    "name": "Dharamkot - Haini Road",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 946834582,
+  "center": {
+    "lat": 32.2726933,
+    "lon": 76.3154653
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "path",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "ground",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 1067552324,
+  "center": {
+    "lat": 32.2511534,
+    "lon": 76.3293599
+  },
+  "tags": {
+    "highway": "unclassified",
+    "lane_markings": "no",
+    "name": "Dharamkot - Haini Road",
+    "surface": "concrete"
+  }
+},
+{
+  "type": "way",
+  "id": 1148758535,
+  "center": {
+    "lat": 32.2545344,
+    "lon": 76.3259671
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "designated",
+    "highway": "path",
+    "name": "Triund Trail 1",
+    "sac_scale": "mountain_hiking",
+    "surface": "gravel",
+    "trail_visibility": "excellent",
+    "width": "1"
+  }
+},
+{
+  "type": "way",
+  "id": 1148767079,
+  "center": {
+    "lat": 32.2452079,
+    "lon": 76.3256486
+  },
+  "tags": {
+    "highway": "unclassified",
+    "lane_markings": "no",
+    "name": "Gallu Devi Temple Road",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1148767080,
+  "center": {
+    "lat": 32.2494364,
+    "lon": 76.3080933
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "living_street",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "oneway": "no",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "paving_stones",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 1148767083,
+  "center": {
+    "lat": 32.2507690,
+    "lon": 76.3083679
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "living_street",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "paving_stones",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 1148769874,
+  "center": {
+    "lat": 32.2517980,
+    "lon": 76.3086286
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "footway",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "ground",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 1148797582,
+  "center": {
+    "lat": 32.2495372,
+    "lon": 76.3203648
+  },
+  "tags": {
+    "highway": "track",
+    "name": "Gallu Devi Temple Road",
+    "oneway": "no",
+    "surface": "dirt"
+  }
+},
+{
+  "type": "way",
+  "id": 1196379185,
+  "center": {
+    "lat": 32.2575463,
+    "lon": 76.3442689
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "designated",
+    "highway": "path",
+    "name": "Triund Hill Trail",
+    "sac_scale": "mountain_hiking",
+    "surface": "gravel",
+    "trail_visibility": "excellent",
+    "width": "1"
+  }
+},
+{
+  "type": "way",
+  "id": 1394077325,
+  "center": {
+    "lat": 32.2498228,
+    "lon": 76.3076209
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "yes",
+    "highway": "living_street",
+    "horse": "yes",
+    "layer": "0",
+    "name": "Dharamkot Guna Temple Trail",
+    "oneway": "no",
+    "ski": "no",
+    "snowmobile": "no",
+    "surface": "paving_stones",
+    "width": "2"
+  }
+},
+{
+  "type": "way",
+  "id": 1453261381,
+  "center": {
+    "lat": 32.2544142,
+    "lon": 76.3258852
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "designated",
+    "handrail": "no",
+    "highway": "steps",
+    "name": "Triund Trail 1",
+    "sac_scale": "mountain_hiking",
+    "surface": "gravel",
+    "trail_visibility": "excellent",
+    "width": "1"
+  }
+},
+{
+  "type": "way",
+  "id": 1453261383,
+  "center": {
+    "lat": 32.2546404,
+    "lon": 76.3260069
+  },
+  "tags": {
+    "bicycle": "no",
+    "foot": "designated",
+    "handrail": "no",
+    "highway": "steps",
+    "name": "Triund Trail 1",
+    "sac_scale": "mountain_hiking",
+    "surface": "gravel",
+    "trail_visibility": "excellent",
+    "width": "1"
+  }
+},
+{
+  "type": "way",
+  "id": 1472122465,
+  "center": {
+    "lat": 32.2328062,
+    "lon": 76.3608461
+  },
+  "tags": {
+    "bicycle": "no",
+    "highway": "path",
+    "name": "Thatri Triund Hill Trail"
+  }
+},
+{
+  "type": "way",
+  "id": 1485160161,
+  "center": {
+    "lat": 32.2421229,
+    "lon": 76.3502222
+  },
+  "tags": {
+    "bicycle": "no",
+    "check_date:surface": "2026-11-12",
+    "highway": "path",
+    "name": "Thatri Triund Hill Trail",
+    "surface": "unpaved"
+  }
+},
+{
+  "type": "relation",
+  "id": 8110653,
+  "center": {
+    "lat": 32.2438346,
+    "lon": 76.3514124
+  },
+  "tags": {
+    "name": "Kandi - Triund",
+    "network": "rwn",
+    "route": "hiking",
+    "sac_scale": "mountain_hiking",
+    "trail_visibility": "excellent",
+    "type": "route",
+    "website": "https://ultrajourneys.org/"
+  }
+},
+{
+  "type": "relation",
+  "id": 15522700,
+  "center": {
+    "lat": 32.2471536,
+    "lon": 76.3167570
+  },
+  "tags": {
+    "name": "Dharamkot - Naddi",
+    "network": "lwn",
+    "route": "hiking",
+    "type": "route"
+  }
+},
+{
+  "type": "relation",
+  "id": 15522702,
+  "center": {
+    "lat": 32.2500639,
+    "lon": 76.3276022
+  },
+  "tags": {
+    "name": "Dharamkot - Galu Devi",
+    "network": "lwn",
+    "route": "hiking",
+    "type": "route"
+  }
+},
+{
+  "type": "relation",
+  "id": 15522720,
+  "center": {
+    "lat": 32.2631604,
+    "lon": 76.3438139
+  },
+  "tags": {
+    "name": "Galu Devi - Triund",
+    "network": "rwn",
+    "route": "hiking",
+    "type": "route"
+  }
+},
+{
+  "type": "relation",
+  "id": 15522792,
+  "center": {
+    "lat": 32.2473951,
+    "lon": 76.3338979
+  },
+  "tags": {
+    "name": "Dharamkot - Bagsu Waterfall",
+    "network": "lwn",
+    "route": "hiking",
+    "type": "route"
+  }
+},
+{
+  "type": "relation",
+  "id": 15523026,
+  "center": {
+    "lat": 32.2365912,
+    "lon": 76.3226928
+  },
+  "tags": {
+    "name": "Dharamshala - Dharamkot",
+    "network": "lwn",
+    "route": "hiking",
+    "type": "route"
+  }
+},
+{
+  "type": "relation",
+  "id": 15523063,
+  "center": {
+    "lat": 32.2498267,
+    "lon": 76.3197600
+  },
+  "tags": {
+    "name": "Dharamkot Forest Loop",
+    "network": "lwn",
+    "route": "hiking",
+    "type": "route"
+  }
+},
+{
+  "type": "relation",
+  "id": 15523064,
+  "center": {
+    "lat": 32.2438698,
+    "lon": 76.3289917
+  },
+  "tags": {
+    "name": "Dharamkot - Bagsu",
+    "network": "lwn",
+    "route": "hiking",
+    "type": "route"
+  }
+},
+{
+  "type": "relation",
+  "id": 15523104,
+  "center": {
+    "lat": 32.2492698,
+    "lon": 76.3318072
+  },
+  "tags": {
+    "name": "Dharamkot Upper Loop",
+    "network": "lwn",
+    "route": "hiking",
+    "type": "route"
+  }
+}
+
+  ]
+}

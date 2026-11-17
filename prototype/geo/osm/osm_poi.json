@@ -1,0 +1,7148 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-11-17T14:53:09Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 456970464,
+  "lat": 32.2386259,
+  "lon": 76.3236116,
+  "tags": {
+    "name": "Main Square",
+    "tourism": "attraction"
+  }
+},
+{
+  "type": "node",
+  "id": 513003842,
+  "lat": 32.2455835,
+  "lon": 76.3362033,
+  "tags": {
+    "amenity": "cafe",
+    "check_date": "2025-05-07",
+    "name": "No Name Cafe",
+    "name:en": "No Name Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 513003846,
+  "lat": 32.2449496,
+  "lon": 76.3364588,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Chinar Cafe",
+    "name:en": "Chinar Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 513003860,
+  "lat": 32.2438096,
+  "lon": 76.3398679,
+  "tags": {
+    "name": "Small waterfall",
+    "name:hi": "छोटा झरना",
+    "tourism": "attraction",
+    "waterway": "waterfall"
+  }
+},
+{
+  "type": "node",
+  "id": 513003861,
+  "lat": 32.2473444,
+  "lon": 76.3376824,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 513003863,
+  "lat": 32.2475274,
+  "lon": 76.3382286,
+  "tags": {
+    "amenity": "fast_food"
+  }
+},
+{
+  "type": "node",
+  "id": 513003864,
+  "lat": 32.2475443,
+  "lon": 76.3381614,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 513003866,
+  "lat": 32.2474746,
+  "lon": 76.3383494,
+  "tags": {
+    "name": "Bhagsunag Waterfall",
+    "name:en": "Bhagsu Waterfall",
+    "name:fr": "Cascade de Bhagsu",
+    "name:hi": "भागसु नाग झरना",
+    "tourism": "attraction",
+    "waterway": "waterfall"
+  }
+},
+{
+  "type": "node",
+  "id": 513003881,
+  "lat": 32.2436299,
+  "lon": 76.3345262,
+  "tags": {
+    "amenity": "toilets",
+    "fee": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 513003884,
+  "lat": 32.2438877,
+  "lon": 76.3338964,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Café Bhagsu"
+  }
+},
+{
+  "type": "node",
+  "id": 513003890,
+  "lat": 32.2437321,
+  "lon": 76.3335805,
+  "tags": {
+    "name:signed": "no",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 513003893,
+  "lat": 32.2447252,
+  "lon": 76.3370755,
+  "tags": {
+    "amenity": "place_of_worship",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 513003894,
+  "lat": 32.2442760,
+  "lon": 76.3345604,
+  "tags": {
+    "amenity": "place_of_worship",
+    "check_date": "2026-11-12",
+    "int_name": "Bhagsu Naag Mandir",
+    "name": "Bhagsu Naag Temple",
+    "name:en": "Bhagsu Naag Temple",
+    "name:hi": "भागसू नाग मंदिर",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 539990428,
+  "lat": 32.2543674,
+  "lon": 76.3258565,
+  "tags": {
+    "access": "yes",
+    "amenity": "parking",
+    "fee": "no",
+    "parking": "surface"
+  }
+},
+{
+  "type": "node",
+  "id": 539994189,
+  "lat": 32.2545856,
+  "lon": 76.3259043,
+  "tags": {
+    "amenity": "place_of_worship",
+    "check_date": "2023-11-27",
+    "designation": "Small shine with attached basic shelter",
+    "name": "Galu Devi Mandir",
+    "name:hi": "गल्लू देवि मंदिर",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 539994191,
+  "lat": 32.2558247,
+  "lon": 76.3427529,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Magic View Café"
+  }
+},
+{
+  "type": "node",
+  "id": 539994192,
+  "lat": 32.2622946,
+  "lon": 76.3486921,
+  "tags": {
+    "addr:city": "Dharamsala",
+    "addr:housenumber": "Triund",
+    "addr:postcode": "176216",
+    "addr:street": "Galu Devi Temple to - Trail to Triund Hill",
+    "amenity": "cafe",
+    "cuisine": "snackbar",
+    "internet_access": "no",
+    "name": "Praveen Tea Stall",
+    "outdoor_seating": "yes",
+    "smoking": "outside",
+    "wifi": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 539994193,
+  "lat": 32.2617119,
+  "lon": 76.3545169,
+  "tags": {
+    "addr:city": "Dharamsala",
+    "addr:housenumber": "Triund Campsite",
+    "addr:place": "Trimund",
+    "addr:postcode": "176216",
+    "cabins": "no",
+    "camp_site": "basic",
+    "caravans": "no",
+    "drinking_water": "no",
+    "fee": "yes",
+    "name": "Trimund",
+    "power_supply": "no",
+    "shower": "no",
+    "static_caravans": "no",
+    "tents": "yes",
+    "toilets": "no",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 539994860,
+  "lat": 32.2682123,
+  "lon": 76.3547786,
+  "tags": {
+    "addr:city": "Dharamsala",
+    "addr:district": "Kangra",
+    "addr:postcode": "176216",
+    "addr:street": "Triund Campsite - SnowLine Cafe Trail",
+    "amenity": "place_of_worship",
+    "denomination": "Hanuman shrine",
+    "name": "Jhande Wali Mata"
+  }
+},
+{
+  "type": "node",
+  "id": 539994861,
+  "lat": 32.2741416,
+  "lon": 76.3615720,
+  "tags": {
+    "addr:city": "Dharamsala",
+    "addr:street": "Galu Temple - Lahesh Caves Trail",
+    "amenity": "cafe",
+    "cuisine": "regional",
+    "internet_access": "no",
+    "name": "Snowline Cafe",
+    "opening_hours": "08:00-22:00",
+    "smoking": "separated"
+  }
+},
+{
+  "type": "node",
+  "id": 559940607,
+  "lat": 32.2388520,
+  "lon": 76.3248130,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Lhamo's Croissant"
+  }
+},
+{
+  "type": "node",
+  "id": 559944300,
+  "lat": 32.2392879,
+  "lon": 76.3256147,
+  "tags": {
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "name": "Green Hotel",
+    "tourism": "hotel",
+    "website": "https://www.greenhotel.in/"
+  }
+},
+{
+  "type": "node",
+  "id": 559944312,
+  "lat": 32.2389516,
+  "lon": 76.3261219,
+  "tags": {
+    "name": "Hotel Morning Sun",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 559945084,
+  "lat": 32.2387214,
+  "lon": 76.3245325,
+  "tags": {
+    "amenity": "police",
+    "name": "Security Office of Dalai Lama"
+  }
+},
+{
+  "type": "node",
+  "id": 673873810,
+  "lat": 32.2477214,
+  "lon": 76.3516146,
+  "tags": {
+    "cabins": "no",
+    "caravans": "no",
+    "drinking_water": "no",
+    "fee": "yes",
+    "name": "Karthani",
+    "power_supply": "no",
+    "shower": "no",
+    "tents": "yes",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 673873811,
+  "lat": 32.2477268,
+  "lon": 76.3513713,
+  "tags": {
+    "amenity": "shelter",
+    "check_date": "2026-11-12",
+    "fireplace": "yes",
+    "name": "Karthani"
+  }
+},
+{
+  "type": "node",
+  "id": 673874089,
+  "lat": 32.2463456,
+  "lon": 76.3449389,
+  "tags": {
+    "amenity": "shelter",
+    "fireplace": "yes",
+    "name": "Leta"
+  }
+},
+{
+  "type": "node",
+  "id": 673874102,
+  "lat": 32.2467131,
+  "lon": 76.3443031,
+  "tags": {
+    "cabins": "no",
+    "caravans": "no",
+    "drinking_water": "no",
+    "fee": "yes",
+    "name": "Leta",
+    "power_supply": "no",
+    "shower": "no",
+    "tents": "yes",
+    "toilets": "no",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 673874103,
+  "lat": 32.2470963,
+  "lon": 76.3441156,
+  "tags": {
+    "amenity": "place_of_worship",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 704354535,
+  "lat": 32.2387022,
+  "lon": 76.3235342,
+  "tags": {
+    "amenity": "taxi",
+    "name": "Autorickshaws & Taxis"
+  }
+},
+{
+  "type": "node",
+  "id": 708985293,
+  "lat": 32.2452177,
+  "lon": 76.3258918,
+  "tags": {
+    "amenity": "cafe",
+    "changing_table": "no",
+    "cuisine": "tea;breakfast;coffee_shop",
+    "diet:vegan": "yes",
+    "diet:vegetarian": "yes",
+    "level": "0",
+    "name": "Himalaya Tea Shop",
+    "opening_hours": "Mo-Su 08:00-20:00",
+    "toilets:wheelchair": "no",
+    "wheelchair": "limited"
+  }
+},
+{
+  "type": "node",
+  "id": 968448073,
+  "lat": 32.2385625,
+  "lon": 76.3236485,
+  "tags": {
+    "amenity": "bar",
+    "check_date": "2023-11-28",
+    "name": "Restaurant Mc'LLo"
+  }
+},
+{
+  "type": "node",
+  "id": 968448587,
+  "lat": 32.2386974,
+  "lon": 76.3237676,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Hot Spot Restaurant"
+  }
+},
+{
+  "type": "node",
+  "id": 968456307,
+  "lat": 32.2395983,
+  "lon": 76.3236808,
+  "tags": {
+    "amenity": "atm",
+    "brand": "HDFC Bank",
+    "brand:en": "HDFC Bank",
+    "brand:wikidata": "Q631047",
+    "currency:INR": "yes",
+    "drive_through": "no",
+    "indoor": "yes",
+    "note": "Contributors are requested to not edit the \"brand\", \"brand:en\", \"brand:wikidata\", \"operator\", \"operator:en\" and \"operator:wikidata\" tags. (2025/03/03)",
+    "opening_hours": "24/7",
+    "operator": "HDFC Bank",
+    "operator:en": "HDFC Bank",
+    "operator:wikidata": "Q631047",
+    "short_name": "HDFC"
+  }
+},
+{
+  "type": "node",
+  "id": 1078613296,
+  "lat": 32.2387678,
+  "lon": 76.3246964,
+  "tags": {
+    "name": "McLlo Sweets",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 1187156617,
+  "lat": 32.2398273,
+  "lon": 76.3254842,
+  "tags": {
+    "name": "Chip Guest Houses",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 1187219165,
+  "lat": 32.2386680,
+  "lon": 76.3241620,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "regional",
+    "diet:vegetarian": "yes",
+    "internet_access": "no",
+    "name": "Hotel Tibet",
+    "operator": "Federation Tibetan Cooperatives",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 1190797978,
+  "lat": 32.2384547,
+  "lon": 76.3236898,
+  "tags": {
+    "amenity": "bank",
+    "check_date": "2023-11-28",
+    "name": "Bank of Punjab (currency exchange)"
+  }
+},
+{
+  "type": "node",
+  "id": 1227290525,
+  "lat": 32.2392826,
+  "lon": 76.3242235,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "chinese;asian",
+    "diet:vegetarian": "yes",
+    "email": "lobrab@yahoo.com",
+    "int_name": "Common Ground",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "name": "Common Ground",
+    "website": "https://commongroundsproject.org/"
+  }
+},
+{
+  "type": "node",
+  "id": 1227498529,
+  "lat": 32.2391459,
+  "lon": 76.3248242,
+  "tags": {
+    "amenity": "hospital",
+    "emergency": "no",
+    "name": "Men Tsee Khang"
+  }
+},
+{
+  "type": "node",
+  "id": 1230096508,
+  "lat": 32.2405201,
+  "lon": 76.3307501,
+  "tags": {
+    "amenity": "theatre",
+    "name": "Tibetan Institute of Performing Arts (TIPA)",
+    "tourism": "attraction",
+    "website": "https://tipa.asia/"
+  }
+},
+{
+  "type": "node",
+  "id": 1237962500,
+  "lat": 32.2396917,
+  "lon": 76.3249934,
+  "tags": {
+    "internet_access": "no",
+    "internet_access:fee": "no",
+    "name": "Kailwood Guest House",
+    "phone": "220932",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 1237973264,
+  "lat": 32.2397904,
+  "lon": 76.3247412,
+  "tags": {
+    "name": "Shree Guest House",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 1237973265,
+  "lat": 32.2395712,
+  "lon": 76.3250874,
+  "tags": {
+    "name": "Seven Hills Guest House",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 1437190922,
+  "lat": 32.2556612,
+  "lon": 76.3257826,
+  "tags": {
+    "name": "Galu temple guest houses (several)",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 1437190946,
+  "lat": 32.2551395,
+  "lon": 76.3266596,
+  "tags": {
+    "amenity": "cafe",
+    "cuisine": "regional",
+    "diet:vegetarian": "yes",
+    "internet_access": "no",
+    "name": "Sun & Moon Cafe",
+    "opening_hours": "09:00-21:00",
+    "phone": "+919805831447",
+    "smoking": "separated"
+  }
+},
+{
+  "type": "node",
+  "id": 1439092165,
+  "lat": 32.2685317,
+  "lon": 76.3299040,
+  "tags": {
+    "designation": "Small water fall with cascades and swimming hole",
+    "name:en": "Galu waterfall",
+    "waterway": "waterfall"
+  }
+},
+{
+  "type": "node",
+  "id": 1439106441,
+  "lat": 32.2511949,
+  "lon": 76.3260400,
+  "tags": {
+    "amenity": "place_of_worship"
+  }
+},
+{
+  "type": "node",
+  "id": 1439127912,
+  "lat": 32.2553324,
+  "lon": 76.3266113,
+  "tags": {
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 1439127914,
+  "lat": 32.2544375,
+  "lon": 76.3258321,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Rest a while",
+    "outdoor_seating": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 1439127923,
+  "lat": 32.2554413,
+  "lon": 76.3260373,
+  "tags": {
+    "name": "Ekama Stays",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 1444856419,
+  "lat": 32.2452645,
+  "lon": 76.3325746,
+  "tags": {
+    "addr:housenumber": "314",
+    "addr:postcode": "176219",
+    "addr:street": "Upper Bhagsunag,near Vaishno temple",
+    "amenity": "restaurant",
+    "cuisine": "international",
+    "email": "racksanywhere@hotmail.com",
+    "internet_access": "wlan",
+    "name": "Raku's Restaurant and German Bakery",
+    "name:en": "Raku's place",
+    "opening_hours": "Mo-Su 08:00-23:00",
+    "operator": "Raku's Place",
+    "phone": "+919882627536",
+    "website": "http://www.rakusplace.com"
+  }
+},
+{
+  "type": "node",
+  "id": 1451405549,
+  "lat": 32.2396970,
+  "lon": 76.3250838,
+  "tags": {
+    "name": "Kalsang Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 1451405551,
+  "lat": 32.2397199,
+  "lon": 76.3250704,
+  "tags": {
+    "name": "Loling Monastery Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 1451405561,
+  "lat": 32.2388209,
+  "lon": 76.3242010,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "name": "Zomsa Cafe",
+    "website": "https://zomsacafe.com/"
+  }
+},
+{
+  "type": "node",
+  "id": 1456841692,
+  "lat": 32.2389104,
+  "lon": 76.3250964,
+  "tags": {
+    "amenity": "restaurant",
+    "check_date": "2023-11-20",
+    "cuisine": "italian;pasta;pizza;breakfast;coffee_shop;cake",
+    "diet:vegetarian": "yes",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "name": "Nicks Italian Kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 1456841693,
+  "lat": 32.2384056,
+  "lon": 76.3234810,
+  "tags": {
+    "name": "Nowrojee and Sons General Store",
+    "shop": "variety_store"
+  }
+},
+{
+  "type": "node",
+  "id": 1456887018,
+  "lat": 32.2406154,
+  "lon": 76.3299563,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Flourishing Flora"
+  }
+},
+{
+  "type": "node",
+  "id": 2360257678,
+  "lat": 32.2461611,
+  "lon": 76.3258826,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Radha Krishna Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 2377302993,
+  "lat": 32.2523004,
+  "lon": 76.3290486,
+  "tags": {
+    "name": "The hostel stories",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 2377302994,
+  "lat": 32.2511986,
+  "lon": 76.3290727,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Heena Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359263,
+  "lat": 32.2456847,
+  "lon": 76.3317155,
+  "tags": {
+    "name": "Ajudhya House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359264,
+  "lat": 32.2440901,
+  "lon": 76.3313186,
+  "tags": {
+    "name": "Anand Palace",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359265,
+  "lat": 32.2436313,
+  "lon": 76.3328441,
+  "tags": {
+    "check_date": "2025-05-07",
+    "name": "Bhagsu View",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359266,
+  "lat": 32.2455660,
+  "lon": 76.3315736,
+  "tags": {
+    "leisure": "sports_centre",
+    "name": "Bhagsu Yoga Center",
+    "sport": "yoga"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359267,
+  "lat": 32.2442366,
+  "lon": 76.3308344,
+  "tags": {
+    "name": "Buddhas Valley",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359269,
+  "lat": 32.2436685,
+  "lon": 76.3329250,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "(Not so) German Bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359270,
+  "lat": 32.2555734,
+  "lon": 76.3257205,
+  "tags": {
+    "check_date": "2025-05-09",
+    "name": "Horizon Huts",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359271,
+  "lat": 32.2443686,
+  "lon": 76.3301047,
+  "tags": {
+    "name": "Hotel Greenview",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359272,
+  "lat": 32.2453508,
+  "lon": 76.3291306,
+  "tags": {
+    "name": "Hotel Kailash",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359275,
+  "lat": 32.2459839,
+  "lon": 76.3317839,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Baba Café"
+  }
+},
+{
+  "type": "node",
+  "id": 2377359279,
+  "lat": 32.2464217,
+  "lon": 76.3296480,
+  "tags": {
+    "amenity": "restaurant",
+    "check_date": "2025-05-06",
+    "name": "Trimurti Garden Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 2386629020,
+  "lat": 32.2482546,
+  "lon": 76.3393708,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Shiva Cafe",
+    "opening_hours": "Mo-Su 08:00-22:00",
+    "tourism": "attraction"
+  }
+},
+{
+  "type": "node",
+  "id": 2386629125,
+  "lat": 32.2681141,
+  "lon": 76.3295043,
+  "tags": {
+    "amenity": "fast_food",
+    "name": "Water fall café",
+    "name:en": "Water fall café"
+  }
+},
+{
+  "type": "node",
+  "id": 2883611887,
+  "lat": 32.2397681,
+  "lon": 76.3235213,
+  "tags": {
+    "amenity": "taxi",
+    "check_date": "2025-06-15"
+  }
+},
+{
+  "type": "node",
+  "id": 2902195163,
+  "lat": 32.2597530,
+  "lon": 76.3551706,
+  "tags": {
+    "addr:city": "Dharamsala",
+    "addr:housenumber": "Triund",
+    "addr:place": "Triund Hill Karthani Trail",
+    "addr:postcode": "176216",
+    "amenity": "cafe",
+    "cuisine": "regional",
+    "internet_access": "no",
+    "name": "Sunil Tea Stall",
+    "opening_hours": "Mo-Su 08:00-21:00",
+    "smoking": "outside"
+  }
+},
+{
+  "type": "node",
+  "id": 2902196345,
+  "lat": 32.2611294,
+  "lon": 76.3547752,
+  "tags": {
+    "amenity": "place_of_worship",
+    "name": "Shiva Shrine",
+    "religion": "animist"
+  }
+},
+{
+  "type": "node",
+  "id": 2959614058,
+  "lat": 32.2630502,
+  "lon": 76.3537504,
+  "tags": {
+    "addr:city": "Dharamsala",
+    "addr:housenumber": "Triund Campsite",
+    "addr:postcode": "176216",
+    "addr:street": "Triund Trail",
+    "amenity": "cafe",
+    "cuisine": "regional",
+    "internet_access": "no",
+    "name": "Lallu Tea Stall & Guest House",
+    "smoking": "outside"
+  }
+},
+{
+  "type": "node",
+  "id": 3391161433,
+  "lat": 32.2416527,
+  "lon": 76.3299342,
+  "tags": {
+    "name": "Shiv Shakti Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 3391163275,
+  "lat": 32.2424921,
+  "lon": 76.3284053,
+  "tags": {
+    "name": "Chopra Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 3391164637,
+  "lat": 32.2429590,
+  "lon": 76.3301975,
+  "tags": {
+    "name": "Greenwoods Inn",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 3391167719,
+  "lat": 32.2427984,
+  "lon": 76.3302507,
+  "tags": {
+    "name": "Hotel Gandhi's Paradise",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 3431511196,
+  "lat": 32.2395432,
+  "lon": 76.3313005,
+  "tags": {
+    "check_date": "2026-11-12",
+    "name": "Zilnon Monastery Guesthouse",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 3512712585,
+  "lat": 32.2431001,
+  "lon": 76.3319077,
+  "tags": {
+    "amenity": "atm",
+    "cash_in": "no",
+    "check_date": "2023-12-05",
+    "indoor": "yes",
+    "name": "State Bank ATM"
+  }
+},
+{
+  "type": "node",
+  "id": 3512712993,
+  "lat": 32.2462616,
+  "lon": 76.3326714,
+  "tags": {
+    "check_date": "2025-05-06",
+    "internet_access": "wlan",
+    "name": "Tree House",
+    "phone": "9816381624",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 3512712994,
+  "lat": 32.2463237,
+  "lon": 76.3324353,
+  "tags": {
+    "check_date": "2025-05-06",
+    "internet_access": "wlan",
+    "name": "9 Chimes",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 3512712997,
+  "lat": 32.2464706,
+  "lon": 76.3320608,
+  "tags": {
+    "amenity": "cafe",
+    "check_date": "2025-05-07",
+    "internet_access": "no",
+    "name": "Sansu Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 3514932552,
+  "lat": 32.2461657,
+  "lon": 76.3322569,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Kibbutz"
+  }
+},
+{
+  "type": "node",
+  "id": 3514932576,
+  "lat": 32.2450995,
+  "lon": 76.3325423,
+  "tags": {
+    "amenity": "place_of_worship",
+    "name:signed": "no",
+    "religion": "hindu",
+    "tourism": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3518450105,
+  "lat": 32.2437654,
+  "lon": 76.3332305,
+  "tags": {
+    "access": "yes",
+    "leisure": "playground"
+  }
+},
+{
+  "type": "node",
+  "id": 3518453676,
+  "lat": 32.2436078,
+  "lon": 76.3332370,
+  "tags": {
+    "laundry_service": "yes",
+    "name": "Sky Laundry Service",
+    "self_service": "no",
+    "shop": "laundry"
+  }
+},
+{
+  "type": "node",
+  "id": 3518453677,
+  "lat": 32.2445838,
+  "lon": 76.3330009,
+  "tags": {
+    "check_date": "2023-12-08",
+    "name": "Fresh Chicken Corner",
+    "phone": "9418432117",
+    "shop": "butcher"
+  }
+},
+{
+  "type": "node",
+  "id": 3525036987,
+  "lat": 32.2394362,
+  "lon": 76.3261132,
+  "tags": {
+    "amenity": "cafe",
+    "cuisine": "korean",
+    "diet:vegetarian": "yes",
+    "internet_access": "wlan",
+    "name": "Ri:",
+    "name:en": "Korean Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 3527611885,
+  "lat": 32.2396242,
+  "lon": 76.3286552,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Shambu fast food"
+  }
+},
+{
+  "type": "node",
+  "id": 3527614827,
+  "lat": 32.2394452,
+  "lon": 76.3297026,
+  "tags": {
+    "check_date": "2025-05-12",
+    "name": "Jungle Hut",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 3527615100,
+  "lat": 32.2391543,
+  "lon": 76.3310897,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Last chance",
+    "opening_hours": "Mo-Su 09:00-18:00"
+  }
+},
+{
+  "type": "node",
+  "id": 3656256973,
+  "lat": 32.2701096,
+  "lon": 76.3527457,
+  "tags": {
+    "amenity": "place_of_worship",
+    "ele": "3241",
+    "name": "Kunal Pathri Devi Temple",
+    "note": "10632 feet"
+  }
+},
+{
+  "type": "node",
+  "id": 4187245492,
+  "lat": 32.2435641,
+  "lon": 76.3305748,
+  "tags": {
+    "name": "Manu Homestay ",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4187273089,
+  "lat": 32.2437779,
+  "lon": 76.3315591,
+  "tags": {
+    "addr:street": "Bhagsu nag Dharamkot road",
+    "email": "manuadventures@gmail.com",
+    "name": "Manu Adventures",
+    "opening_hours": "Mo-Sa 08:00-20:00",
+    "phone": "09736871426",
+    "shop": "travel_agency",
+    "website": "https://www.manuadventures.in/"
+  }
+},
+{
+  "type": "node",
+  "id": 4215515289,
+  "lat": 32.2470109,
+  "lon": 76.3269514,
+  "tags": {
+    "addr:postcode": "176219",
+    "addr:street": "Dharamkot",
+    "check_date": "2025-06-14",
+    "email": "outdoor8@hotmail.com",
+    "internet_access": "wlan",
+    "name": "Paul House",
+    "phone": "09736874840",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4229447516,
+  "lat": 32.2472789,
+  "lon": 76.3261655,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Moonlight Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 4229452501,
+  "lat": 32.2485144,
+  "lon": 76.3285054,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Malka Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 4229489710,
+  "lat": 32.2482833,
+  "lon": 76.3293086,
+  "tags": {
+    "amenity": "restaurant",
+    "changing_table": "no",
+    "diet:vegan": "yes",
+    "diet:vegetarian": "yes",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "level": "0",
+    "name": "Buddha Delight Cafe",
+    "toilets": "yes",
+    "toilets:access": "customers",
+    "toilets:wheelchair": "no",
+    "wheelchair": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 4232065791,
+  "lat": 32.2470426,
+  "lon": 76.3318913,
+  "tags": {
+    "email": "mayakatsir6@gmail.com",
+    "internet_access": "wlan",
+    "name": "White Rabbit - The Friends' House",
+    "opening_hours": "24/7",
+    "operator": "Maya Katsir",
+    "phone": "00918350950530",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4232065890,
+  "lat": 32.2458788,
+  "lon": 76.3310226,
+  "tags": {
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4234175330,
+  "lat": 32.2475644,
+  "lon": 76.3305484,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Once in nature"
+  }
+},
+{
+  "type": "node",
+  "id": 4235656190,
+  "lat": 32.2478228,
+  "lon": 76.3258343,
+  "tags": {
+    "amenity": "cafe",
+    "check_date": "2025-06-14",
+    "cuisine": "breakfast;coffee_shop;indian",
+    "name": "Cool talk cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 4341074794,
+  "lat": 32.2485985,
+  "lon": 76.3281246,
+  "tags": {
+    "amenity": "cafe",
+    "check_date": "2025-05-14",
+    "cuisine": "italian",
+    "name": "Space Out"
+  }
+},
+{
+  "type": "node",
+  "id": 4341145800,
+  "lat": 32.2468366,
+  "lon": 76.3261101,
+  "tags": {
+    "internet_access": "wlan",
+    "name": "Dharamkot Inn",
+    "phone": "01892221308",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4341167596,
+  "lat": 32.2468373,
+  "lon": 76.3259319,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "international;breakfast;pizza;tea;indian;cake;coffee_shop",
+    "internet_access": "wlan",
+    "name": "Trek & Dine",
+    "name:he": "המסעדה של שמיים"
+  }
+},
+{
+  "type": "node",
+  "id": 4345397591,
+  "lat": 32.2450793,
+  "lon": 76.3327290,
+  "tags": {
+    "check_date": "2023-12-08",
+    "name": "Tibetan massage",
+    "shop": "cosmetics"
+  }
+},
+{
+  "type": "node",
+  "id": 4345397990,
+  "lat": 32.2470649,
+  "lon": 76.3264194,
+  "tags": {
+    "amenity": "restaurant",
+    "internet_access": "wlan",
+    "name": "The friendly planet",
+    "name:he": "הישראלית",
+    "opening_hours": "24/7"
+  }
+},
+{
+  "type": "node",
+  "id": 4345397991,
+  "lat": 32.2456569,
+  "lon": 76.3262421,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "italian;italian_pizza;pasta;pizza;grill;diner;breakfast",
+    "internet_access": "wlan",
+    "name": "Morgans place",
+    "opening_hours": "Mo-Su 09:00-24:00",
+    "operator": "Morgan"
+  }
+},
+{
+  "type": "node",
+  "id": 4345398090,
+  "lat": 32.2462196,
+  "lon": 76.3259396,
+  "tags": {
+    "name": "Mama annu massage",
+    "shop": "cosmetics"
+  }
+},
+{
+  "type": "node",
+  "id": 4345398091,
+  "lat": 32.2440412,
+  "lon": 76.3347017,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Punjabi tadka pure veg",
+    "opening_hours": "Mo-Su 09:00-20:00"
+  }
+},
+{
+  "type": "node",
+  "id": 4345398189,
+  "lat": 32.2436448,
+  "lon": 76.3331727,
+  "tags": {
+    "check_date": "2023-12-08",
+    "name": "Divine massage center",
+    "shop": "cosmetics"
+  }
+},
+{
+  "type": "node",
+  "id": 4345398190,
+  "lat": 32.2448811,
+  "lon": 76.3328211,
+  "tags": {
+    "alt_name": "Old German Bakery",
+    "amenity": "fast_food",
+    "diet:vegetarian": "yes",
+    "name": "Dudu's falafel",
+    "name:he": "דודו פלאפל"
+  }
+},
+{
+  "type": "node",
+  "id": 4348335891,
+  "lat": 32.2450603,
+  "lon": 76.3326688,
+  "tags": {
+    "check_date": "2023-12-08",
+    "name": "Shemesh",
+    "name:he": "שמש",
+    "shop": "travel_agency"
+  }
+},
+{
+  "type": "node",
+  "id": 4360019793,
+  "lat": 32.2463985,
+  "lon": 76.3360639,
+  "tags": {
+    "name": "View Point",
+    "tourism": "viewpoint"
+  }
+},
+{
+  "type": "node",
+  "id": 4360019905,
+  "lat": 32.2399386,
+  "lon": 76.3249887,
+  "tags": {
+    "name": "Shanti Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4386458889,
+  "lat": 32.2460188,
+  "lon": 76.3323618,
+  "tags": {
+    "check_date": "2025-05-06",
+    "internet_access": "wlan",
+    "name": "bhagsu villa",
+    "name:en": "bhagsu villa",
+    "name:he": "באגסו וילה",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 4386458989,
+  "lat": 32.2472091,
+  "lon": 76.3316946,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "internet_access": "wlan",
+    "name": "Dudu Welcome restaurant-cafe",
+    "name:en": "Dudu Welcome restaurant-cafe",
+    "name:he": "וולקאם קפה-מסעדה"
+  }
+},
+{
+  "type": "node",
+  "id": 4416453792,
+  "lat": 32.2471952,
+  "lon": 76.3303503,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Karma Café"
+  }
+},
+{
+  "type": "node",
+  "id": 4416453891,
+  "lat": 32.2408877,
+  "lon": 76.3541413,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Mana Café",
+    "name:en": "Mana Café"
+  }
+},
+{
+  "type": "node",
+  "id": 4417576594,
+  "lat": 32.2397667,
+  "lon": 76.3252066,
+  "tags": {
+    "addr:postcode": "176219",
+    "addr:street": "TIPA Road",
+    "internet_access": "wlan",
+    "name": "Loling Guest House",
+    "name:en": "Loling Guest House",
+    "opening_hours": "24/7",
+    "phone": "9218946396",
+    "tourism": "guest_house",
+    "website": "http://loselingmonasrery.org"
+  }
+},
+{
+  "type": "node",
+  "id": 4432744989,
+  "lat": 32.2435623,
+  "lon": 76.3254117,
+  "tags": {
+    "addr:street": "Tushita Road",
+    "amenity": "place_of_worship",
+    "denomination": "tibetan",
+    "name": "Tushita Meditation Centre",
+    "name:en": "Tushita Meditation Centre",
+    "name:he": "מרכז טושיטה למדיטציה",
+    "opening_hours": "Mo-Sa 09:30-11:30, 12:30-16:00",
+    "phone": "+91 89881 60988",
+    "religion": "buddhist",
+    "website": "https://www.tushita.info/"
+  }
+},
+{
+  "type": "node",
+  "id": 4432745289,
+  "lat": 32.2388895,
+  "lon": 76.3241896,
+  "tags": {
+    "laundry_service": "no",
+    "level": "1",
+    "name": "Zomsa Laundromat Café",
+    "name:en": "Zomsa Laundromat Café",
+    "self_service": "yes",
+    "shop": "laundry"
+  }
+},
+{
+  "type": "node",
+  "id": 4436083489,
+  "lat": 32.2385902,
+  "lon": 76.3236633,
+  "tags": {
+    "name": "HRTC Tickets Government Public Bus (Himachal Road Transport Corporation)",
+    "name:en": "HRTC Tickets Government Public Bus (Himachal Road Transport Corporation)",
+    "shop": "ticket",
+    "website": "https://www.hrtchp.com/"
+  }
+},
+{
+  "type": "node",
+  "id": 4449972889,
+  "lat": 32.2454766,
+  "lon": 76.3332381,
+  "tags": {
+    "check_date": "2025-05-07",
+    "internet_access": "wlan",
+    "name": "Shammi",
+    "name:en": "Shammi",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4508726490,
+  "lat": 32.2474743,
+  "lon": 76.3324828,
+  "tags": {
+    "name": "Ever Green Guesthouse",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 4539331089,
+  "lat": 32.2389820,
+  "lon": 76.3251365,
+  "tags": {
+    "cuisine": "breakfast;pizza;cake;coffee_shop",
+    "diet:vegetarian": "yes",
+    "internet_access": "wlan",
+    "name": "Kunga",
+    "name:en": "Kunga",
+    "name:hi": "कुंगा",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4540801795,
+  "lat": 32.2506722,
+  "lon": 76.3294654,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "The Birdhouse Cakery"
+  }
+},
+{
+  "type": "node",
+  "id": 4571525983,
+  "lat": 32.2388237,
+  "lon": 76.3243999,
+  "tags": {
+    "amenity": "fast_food",
+    "diet:vegetarian": "yes",
+    "name": "Kallimpong Momo"
+  }
+},
+{
+  "type": "node",
+  "id": 4597629593,
+  "lat": 32.2471469,
+  "lon": 76.3376989,
+  "tags": {
+    "amenity": "cafe",
+    "check_date": "2026-11-12",
+    "check_date:opening_hours": "2026-11-12",
+    "name": "Our Cafe",
+    "name:en": "Our Cafe",
+    "opening_hours": "Mo-Su 10:00-18:00",
+    "operator": "Vishant"
+  }
+},
+{
+  "type": "node",
+  "id": 4658269191,
+  "lat": 32.2399941,
+  "lon": 76.3260672,
+  "tags": {
+    "internet_access": "wlan",
+    "name": "Tashi Kangsar Travel Lodge",
+    "name:en": "Tashi Kangsar Travel Lodge",
+    "operator": "Tashi Kangsar",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4728704594,
+  "lat": 32.2390536,
+  "lon": 76.3252651,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "JJI Exile Brothers Mothers cafe",
+    "name:en": "Jji cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 4728719189,
+  "lat": 32.2413036,
+  "lon": 76.3326838,
+  "tags": {
+    "name": "Mountain trail guest house",
+    "name:en": "Mountain trail guest house",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4750431223,
+  "lat": 32.2399343,
+  "lon": 76.3274747,
+  "tags": {
+    "name": "hotel mountain trail",
+    "name:en": "hotel mountain trail",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 4766304230,
+  "lat": 32.2445973,
+  "lon": 76.3332568,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Chabad house Bhagsu",
+    "name:en": "Chabad house Bhagsu",
+    "name:he": "בית חב\"ד בגסו"
+  }
+},
+{
+  "type": "node",
+  "id": 4766906825,
+  "lat": 32.2392292,
+  "lon": 76.3316727,
+  "tags": {
+    "amenity": "fast_food",
+    "diet:vegetarian": "yes",
+    "name": "Momo Dhaba",
+    "name:en": "Momo Dhaba",
+    "opening_hours": "Mo-Su 09:00-18:00"
+  }
+},
+{
+  "type": "node",
+  "id": 4774230222,
+  "lat": 32.2462328,
+  "lon": 76.3281340,
+  "tags": {
+    "internet_access": "wlan",
+    "name": "Sun Rise Guest House",
+    "name:en": "Sun Rise Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4775830821,
+  "lat": 32.2385738,
+  "lon": 76.3238425,
+  "tags": {
+    "amenity": "restaurant",
+    "check_date": "2023-11-19",
+    "cuisine": "local;curry;noodles",
+    "diet:vegetarian": "yes",
+    "name": "Tibet Kitchen",
+    "name:en": "Tibet Kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 4782157522,
+  "lat": 32.2482389,
+  "lon": 76.3281164,
+  "tags": {
+    "amenity": "community_centre",
+    "check_date": "2025-06-13",
+    "internet_access": "wlan",
+    "name": "Chabad House Dharamkot",
+    "name:en": "Chabad House Dharamkot",
+    "name:he": "בית חב\"ד דרמקוט",
+    "website": "https://unity.co.il/"
+  }
+},
+{
+  "type": "node",
+  "id": 4782162121,
+  "lat": 32.2480598,
+  "lon": 76.3281514,
+  "tags": {
+    "name": "Lotus house",
+    "name:en": "Lotus house",
+    "phone": "+91 78320 08664",
+    "tourism": "guest_house",
+    "website": "https://thelotushouse.com/"
+  }
+},
+{
+  "type": "node",
+  "id": 4784032021,
+  "lat": 32.2482853,
+  "lon": 76.3300067,
+  "tags": {
+    "amenity": "school",
+    "check_date": "2025-05-06",
+    "name": "Mountain Ashram",
+    "name:en": "Mountain Ashram"
+  }
+},
+{
+  "type": "node",
+  "id": 4784032022,
+  "lat": 32.2481108,
+  "lon": 76.3302325,
+  "tags": {
+    "check_date": "2025-05-06",
+    "name": "The Pink House",
+    "name:en": "The Pink House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4784572922,
+  "lat": 32.2468218,
+  "lon": 76.3263460,
+  "tags": {
+    "amenity": "community_centre",
+    "internet_access": "wlan",
+    "name": "Beit Bina",
+    "name:en": "Beit Bina",
+    "name:he": "בית בינה -  התנועה ליהדות חברתית",
+    "website": "https://www.facebook.com/binaindia/"
+  }
+},
+{
+  "type": "node",
+  "id": 4787000523,
+  "lat": 32.2600188,
+  "lon": 76.3197152,
+  "tags": {
+    "amenity": "cafe",
+    "check_date:diet:vegetarian": "2023-11-24",
+    "diet:vegetarian": "yes",
+    "name": "Adventure café",
+    "name:en": "Adventure café"
+  }
+},
+{
+  "type": "node",
+  "id": 4789486514,
+  "lat": 32.2435211,
+  "lon": 76.3254616,
+  "tags": {
+    "amenity": "library",
+    "name": "Tushita Office and Library",
+    "office": "yes",
+    "phone": "+91 89881 60988",
+    "smoking": "no",
+    "website": "https://www.tushita.info/"
+  }
+},
+{
+  "type": "node",
+  "id": 4789486515,
+  "lat": 32.2434371,
+  "lon": 76.3254696,
+  "tags": {
+    "amenity": "place_of_worship",
+    "check_date": "2023-11-19",
+    "name": "Tushita Temple",
+    "religion": "buddhist"
+  }
+},
+{
+  "type": "node",
+  "id": 4789498678,
+  "lat": 32.2447402,
+  "lon": 76.3264571,
+  "tags": {
+    "alt_name": "Dharamshala Vipassana Mediatation Centre",
+    "amenity": "place_of_worship",
+    "email": "info@sikhara.dhamma.org",
+    "name": "Dhamma Sikhara Vipassana Meditation Centre",
+    "phone": "[91] 92184-14051",
+    "religion": "buddhist",
+    "website": "https://sikhara.dhamma.org/"
+  }
+},
+{
+  "type": "node",
+  "id": 4790764823,
+  "lat": 32.2548298,
+  "lon": 76.3260949,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Café Galu",
+    "name:en": "Café Galu",
+    "opening_hours": "Mo-Su 08:00-20:00"
+  }
+},
+{
+  "type": "node",
+  "id": 4790773823,
+  "lat": 32.2480342,
+  "lon": 76.3301340,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Sangam Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 4794880922,
+  "lat": 32.2484332,
+  "lon": 76.3260433,
+  "tags": {
+    "name": "Himachal Trekkers Inn",
+    "name:en": "Himachal Trekkers Inn",
+    "phone": "9736304754",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4796578021,
+  "lat": 32.2467830,
+  "lon": 76.3293668,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegan": "yes",
+    "name": "Divine Nature",
+    "name:en": "Divine Nature"
+  }
+},
+{
+  "type": "node",
+  "id": 4805657722,
+  "lat": 32.2428481,
+  "lon": 76.3338308,
+  "tags": {
+    "amenity": "community_centre",
+    "name": "Lev Yehudi",
+    "name:en": "Lev Yehudi",
+    "name:he": "הלב היהודי באגסו"
+  }
+},
+{
+  "type": "node",
+  "id": 4806876622,
+  "lat": 32.2495126,
+  "lon": 76.3292426,
+  "tags": {
+    "name": "mantra tattoo temple",
+    "shop": "tattoo"
+  }
+},
+{
+  "type": "node",
+  "id": 4869399623,
+  "lat": 32.2507644,
+  "lon": 76.3296264,
+  "tags": {
+    "name": "Enva Homestay",
+    "name:en": "Enva Homestay",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4869471926,
+  "lat": 32.2492210,
+  "lon": 76.3294195,
+  "tags": {
+    "internet_access": "wlan",
+    "name": "HR Guesthouse",
+    "name:en": "HR Guesthouse",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4876114522,
+  "lat": 32.2458621,
+  "lon": 76.3278585,
+  "tags": {
+    "check_date": "2025-05-08",
+    "internet_access": "wlan",
+    "name": "Kamal guesthouse & restaurant",
+    "name:en": "Kamal guesthouse & restaurant",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 4892317922,
+  "lat": 32.2515830,
+  "lon": 76.3291044,
+  "tags": {
+    "addr:postcode": "176219",
+    "addr:street": "Bhagsu to Gallu Devi Temple Road, (Near Heena Cafe), village Dharamkot",
+    "email": "hello@thebunkerhostel.com",
+    "internet_access": "wlan",
+    "name": "The Bunker",
+    "name:en": "The Bunker",
+    "opening_hours": "Mo-Su 08:00-22:00",
+    "operator": "Ishan",
+    "phone": "+919886604218",
+    "tourism": "hostel",
+    "website": "https://www.thebunkerhostel.com/"
+  }
+},
+{
+  "type": "node",
+  "id": 4903800928,
+  "lat": 32.2386970,
+  "lon": 76.3238304,
+  "tags": {
+    "amenity": "bar",
+    "name": "Mc'LLO"
+  }
+},
+{
+  "type": "node",
+  "id": 4903800930,
+  "lat": 32.2396603,
+  "lon": 76.3260908,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "local;breakfast;coffee_shop;cake;curry;pasta;sandwich",
+    "diet:vegan": "yes",
+    "diet:vegetarian": "yes",
+    "internet_access": "wlan",
+    "name": "Green",
+    "name:en": "Green"
+  }
+},
+{
+  "type": "node",
+  "id": 4903800931,
+  "lat": 32.2387262,
+  "lon": 76.3240996,
+  "tags": {
+    "amenity": "bar",
+    "check_date": "2023-11-20",
+    "name": "Hotel Tibet Bar",
+    "name:en": "Hotel Tibet Bar"
+  }
+},
+{
+  "type": "node",
+  "id": 4903800932,
+  "lat": 32.2387440,
+  "lon": 76.3238688,
+  "tags": {
+    "name:signed": "no",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 4903800934,
+  "lat": 32.2388342,
+  "lon": 76.3235761,
+  "tags": {
+    "name": "Natures  Candy",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 4903800936,
+  "lat": 32.2387188,
+  "lon": 76.3239039,
+  "tags": {
+    "name": "Snow Lion Tattoo",
+    "name:en": "Snow Lion Tattoo",
+    "tourism": "attraction"
+  }
+},
+{
+  "type": "node",
+  "id": 4903801022,
+  "lat": 32.2400771,
+  "lon": 76.3263283,
+  "tags": {
+    "shop": "greengrocer"
+  }
+},
+{
+  "type": "node",
+  "id": 4903801023,
+  "lat": 32.2388262,
+  "lon": 76.3238493,
+  "tags": {
+    "amenity": "bar",
+    "name": "Toni's"
+  }
+},
+{
+  "type": "node",
+  "id": 4903801223,
+  "lat": 32.2387939,
+  "lon": 76.3239389,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "local;indian",
+    "diet:vegan": "yes",
+    "diet:vegetarian": "yes",
+    "name": "Hungry Birds"
+  }
+},
+{
+  "type": "node",
+  "id": 4903801224,
+  "lat": 32.2387087,
+  "lon": 76.3243290,
+  "tags": {
+    "name:signed": "no",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 4903801225,
+  "lat": 32.2387079,
+  "lon": 76.3244167,
+  "tags": {
+    "name": "India House",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 4903801226,
+  "lat": 32.2388971,
+  "lon": 76.3242428,
+  "tags": {
+    "name": "Ram Prashad Fresh Fruit Shop",
+    "shop": "greengrocer"
+  }
+},
+{
+  "type": "node",
+  "id": 4903801229,
+  "lat": 32.2387183,
+  "lon": 76.3236052,
+  "tags": {
+    "name": "Just in time shop",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 4903801232,
+  "lat": 32.2453560,
+  "lon": 76.3324764,
+  "tags": {
+    "name": "Yeti Tattoo",
+    "name:en": "Yeti Tattoo",
+    "shop": "tattoo"
+  }
+},
+{
+  "type": "node",
+  "id": 4903806021,
+  "lat": 32.2456996,
+  "lon": 76.3322869,
+  "tags": {
+    "name": "Krishna General Store",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 4903806022,
+  "lat": 32.2396134,
+  "lon": 76.3262321,
+  "tags": {
+    "shop": "electronics"
+  }
+},
+{
+  "type": "node",
+  "id": 4903806023,
+  "lat": 32.2403216,
+  "lon": 76.3266276,
+  "tags": {
+    "amenity": "waste_disposal"
+  }
+},
+{
+  "type": "node",
+  "id": 4903806024,
+  "lat": 32.2388561,
+  "lon": 76.3237508,
+  "tags": {
+    "name": "Asian Plaza",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 4903806027,
+  "lat": 32.2400515,
+  "lon": 76.3262486,
+  "tags": {
+    "amenity": "atm",
+    "operator": "Punjabi Bank"
+  }
+},
+{
+  "type": "node",
+  "id": 4903806121,
+  "lat": 32.2403001,
+  "lon": 76.3264589,
+  "tags": {
+    "shop": "clothes"
+  }
+},
+{
+  "type": "node",
+  "id": 4903806322,
+  "lat": 32.2384042,
+  "lon": 76.3239622,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Sambhala Coffee Talk"
+  }
+},
+{
+  "type": "node",
+  "id": 4922432823,
+  "lat": 32.2448593,
+  "lon": 76.3303195,
+  "tags": {
+    "amenity": "recycling",
+    "name": "Waste Warriors",
+    "name:en": "Waste Warriors",
+    "website": "https://www.wastewarriors.org/"
+  }
+},
+{
+  "type": "node",
+  "id": 4922436423,
+  "lat": 32.2444703,
+  "lon": 76.3328291,
+  "tags": {
+    "check_date": "2025-05-07",
+    "name": "Hotel Highland Bhagsu",
+    "name:en": "Hotel Highland Bhagsu",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 4922436424,
+  "lat": 32.2447169,
+  "lon": 76.3302655,
+  "tags": {
+    "name": "Ravine Hotel & Restaurant",
+    "name:en": "Ravine Hotel & Restaurant",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 4989396025,
+  "lat": 32.2454860,
+  "lon": 76.3330602,
+  "tags": {
+    "check_date": "2025-05-07",
+    "name": "Cloud 9",
+    "name:en": "Cloud 9",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5059830731,
+  "lat": 32.2414631,
+  "lon": 76.3324847,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Ashu's Kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 5059830732,
+  "lat": 32.2419492,
+  "lon": 76.3323644,
+  "tags": {
+    "name": "Hotel bhagsu heights",
+    "name:en": "Hotel bhagsu heights",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 5059830733,
+  "lat": 32.2429142,
+  "lon": 76.3321788,
+  "tags": {
+    "check_date": "2025-05-12",
+    "name": "Akash Deep",
+    "name:en": "Akash Deep",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 5059830735,
+  "lat": 32.2431406,
+  "lon": 76.3321729,
+  "tags": {
+    "name": "Hotel Morainic Hills",
+    "name:en": "Hotel Morainic Hills",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 5059830736,
+  "lat": 32.2457674,
+  "lon": 76.3320700,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Nature twins cafe",
+    "name:en": "Nature twins cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 5059830737,
+  "lat": 32.2458311,
+  "lon": 76.3320861,
+  "tags": {
+    "name": "Shanti silver shop & jewellery classes",
+    "name:en": "Shanti silver shop & jewellery classes",
+    "shop": "jewelry"
+  }
+},
+{
+  "type": "node",
+  "id": 5059843827,
+  "lat": 32.2420583,
+  "lon": 76.3323371,
+  "tags": {
+    "name": "Hotel RV Inn",
+    "name:en": "Hotel RV Inn",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 5059843828,
+  "lat": 32.2426255,
+  "lon": 76.3321672,
+  "tags": {
+    "check_date": "2025-05-06",
+    "name": "Hotel skylark",
+    "name:en": "Hotel skylark",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 5059843829,
+  "lat": 32.2442662,
+  "lon": 76.3349607,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Sandy's kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 5059843830,
+  "lat": 32.2463713,
+  "lon": 76.3320848,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Loop Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 5059843831,
+  "lat": 32.2485837,
+  "lon": 76.3290839,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Evergreen Cafe",
+    "name:en": "Evergreen Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 5059843832,
+  "lat": 32.2431950,
+  "lon": 76.3321431,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Abhinandan",
+    "name:en": "Abhinandan"
+  }
+},
+{
+  "type": "node",
+  "id": 5059844030,
+  "lat": 32.2418158,
+  "lon": 76.3323787,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Hanging Hut Café"
+  }
+},
+{
+  "type": "node",
+  "id": 5059844031,
+  "lat": 32.2464076,
+  "lon": 76.3321029,
+  "tags": {
+    "leisure": "fitness_centre",
+    "sport": "yoga"
+  }
+},
+{
+  "type": "node",
+  "id": 5059844032,
+  "lat": 32.2460964,
+  "lon": 76.3318442,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Unity Bistro"
+  }
+},
+{
+  "type": "node",
+  "id": 5059844033,
+  "lat": 32.2459355,
+  "lon": 76.3317369,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5059844034,
+  "lat": 32.2490829,
+  "lon": 76.3284826,
+  "tags": {
+    "name": "Chill house",
+    "name:en": "Chill house",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5059844036,
+  "lat": 32.2457538,
+  "lon": 76.3322669,
+  "tags": {
+    "name:signed": "no",
+    "shop": "alcohol"
+  }
+},
+{
+  "type": "node",
+  "id": 5059848921,
+  "lat": 32.2414619,
+  "lon": 76.3323658,
+  "tags": {
+    "name": "Hotel bhagsu",
+    "name:en": "Hotel bhagsu",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 5059848922,
+  "lat": 32.2462960,
+  "lon": 76.3321385,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Beet Root Café"
+  }
+},
+{
+  "type": "node",
+  "id": 5061931722,
+  "lat": 32.2400609,
+  "lon": 76.3265294,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Tashi Delek Cafe",
+    "name:en": "Tashi Delek Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 5061931723,
+  "lat": 32.2425173,
+  "lon": 76.3322196,
+  "tags": {
+    "name": "Rosewood",
+    "name:en": "Rosewood",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 5061931724,
+  "lat": 32.2427096,
+  "lon": 76.3318696,
+  "tags": {
+    "name": "Hotel Triund",
+    "name:en": "Hotel Triund",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 5061942121,
+  "lat": 32.2460414,
+  "lon": 76.3313599,
+  "tags": {
+    "name": "Sweet Chilli guesthouse",
+    "name:en": "Sweet Chilli guesthouse",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5061942221,
+  "lat": 32.2452550,
+  "lon": 76.3330779,
+  "tags": {
+    "name": "Sweet dreams",
+    "name:en": "Sweet dreams",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5061942222,
+  "lat": 32.2440492,
+  "lon": 76.3333468,
+  "tags": {
+    "amenity": "school",
+    "name": "Bhagsunag highschool",
+    "name:en": "Bhagsunag highschool"
+  }
+},
+{
+  "type": "node",
+  "id": 5061942223,
+  "lat": 32.2452471,
+  "lon": 76.3327795,
+  "tags": {
+    "name": "Sunshine salon",
+    "name:en": "Sunshine salon",
+    "shop": "cosmetics"
+  }
+},
+{
+  "type": "node",
+  "id": 5061942421,
+  "lat": 32.2397926,
+  "lon": 76.3301292,
+  "tags": {
+    "amenity": "fast_food",
+    "diet:vegetarian": "yes",
+    "name": "Tea Shop"
+  }
+},
+{
+  "type": "node",
+  "id": 5074567722,
+  "lat": 32.2549874,
+  "lon": 76.3551942,
+  "tags": {
+    "cabins": "no",
+    "caravans": "no",
+    "drinking_water": "no",
+    "fee": "yes",
+    "name": "Triund camp",
+    "name:en": "Triund camp",
+    "power_supply": "no",
+    "shower": "no",
+    "tents": "yes",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 5074567723,
+  "lat": 32.2383556,
+  "lon": 76.3239239,
+  "tags": {
+    "amenity": "cafe",
+    "cuisine": "breakfast;coffee_shop;cake;local",
+    "diet:vegetarian": "yes",
+    "name": "Snow Lion",
+    "name:en": "Snow Lion"
+  }
+},
+{
+  "type": "node",
+  "id": 5074576121,
+  "lat": 32.2593220,
+  "lon": 76.3192155,
+  "tags": {
+    "cabins": "no",
+    "caravans": "no",
+    "name": "Bal guesthouse",
+    "name:en": "Bahl guesthouse",
+    "tents": "yes",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 5076809124,
+  "lat": 32.2401361,
+  "lon": 76.3239326,
+  "tags": {
+    "name": "Festival",
+    "name:en": "Festival",
+    "tourism": "caravan_site"
+  }
+},
+{
+  "type": "node",
+  "id": 5076811523,
+  "lat": 32.2400907,
+  "lon": 76.3267488,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Food eating point",
+    "name:en": "Food eating point"
+  }
+},
+{
+  "type": "node",
+  "id": 5082082623,
+  "lat": 32.2404275,
+  "lon": 76.3313366,
+  "tags": {
+    "historic": "monument",
+    "name": "Pink Gompa",
+    "name:en": "Pink Gompa"
+  }
+},
+{
+  "type": "node",
+  "id": 5082082626,
+  "lat": 32.2557564,
+  "lon": 76.3397817,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Sharma store",
+    "name:en": "Sharma store"
+  }
+},
+{
+  "type": "node",
+  "id": 5082089521,
+  "lat": 32.2403567,
+  "lon": 76.3254448,
+  "tags": {
+    "name": "Taahi Delek house 280",
+    "name:en": "Taahi Delek house 280",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5082089721,
+  "lat": 32.2386269,
+  "lon": 76.3310203,
+  "tags": {
+    "name": "Riki's 250rs w/ hotshwr",
+    "name:en": "Riki's 250rs w/ hotshwr",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5082089726,
+  "lat": 32.2383297,
+  "lon": 76.3241018,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Kailash restaurant",
+    "name:en": "Kailash restaurant"
+  }
+},
+{
+  "type": "node",
+  "id": 5082089727,
+  "lat": 32.2388874,
+  "lon": 76.3240444,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Himalayan Kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 5082089728,
+  "lat": 32.2389128,
+  "lon": 76.3240899,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Vaishno punjabi Dhaba",
+    "name:en": "Vaishno punjabi Dhaba"
+  }
+},
+{
+  "type": "node",
+  "id": 5082089729,
+  "lat": 32.2407565,
+  "lon": 76.3296317,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Taste of India"
+  }
+},
+{
+  "type": "node",
+  "id": 5082090121,
+  "lat": 32.2390002,
+  "lon": 76.3304156,
+  "tags": {
+    "name": "Vill Dusalan: Omendra Niwas",
+    "name:en": "Vill Dusalan: Omendra Niwas",
+    "tourism": "chalet"
+  }
+},
+{
+  "type": "node",
+  "id": 5082090124,
+  "lat": 32.2454095,
+  "lon": 76.3324497,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Raku's bar and cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 5082090126,
+  "lat": 32.2525266,
+  "lon": 76.3388955,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Cafe moon peak & store",
+    "name:en": "Cafe moon peak & store"
+  }
+},
+{
+  "type": "node",
+  "id": 5082091521,
+  "lat": 32.2405919,
+  "lon": 76.3309152,
+  "tags": {
+    "fee": "no",
+    "name": "Folk Museum",
+    "name:en": "Folk Museum",
+    "tourism": "museum"
+  }
+},
+{
+  "type": "node",
+  "id": 5082092121,
+  "lat": 32.2614105,
+  "lon": 76.3547582,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Anil's Store",
+    "name:en": "Anil's Store",
+    "opening_hours": "Mo-Su 08:00-21:00"
+  }
+},
+{
+  "type": "node",
+  "id": 5130786021,
+  "lat": 32.2394281,
+  "lon": 76.3250280,
+  "tags": {
+    "name": "Kalsang Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5183831744,
+  "lat": 32.2580818,
+  "lon": 76.3220898,
+  "tags": {
+    "cabins": "no",
+    "caravans": "no",
+    "drinking_water": "yes",
+    "fee": "yes",
+    "name": "Jungle Camp",
+    "power_supply": "yes",
+    "shower": "yes",
+    "tents": "yes",
+    "toilets": "yes",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 5185978723,
+  "lat": 32.2561342,
+  "lon": 76.3431689,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "paragliding takeoff",
+    "name:fr": "décollage parapente"
+  }
+},
+{
+  "type": "node",
+  "id": 5201275313,
+  "lat": 32.2594681,
+  "lon": 76.3553463,
+  "tags": {
+    "amenity": "cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 5201275824,
+  "lat": 32.2598446,
+  "lon": 76.3552833,
+  "tags": {
+    "amenity": "cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 5201275829,
+  "lat": 32.2551667,
+  "lon": 76.3550393,
+  "tags": {
+    "check_date": "2026-11-12",
+    "ele": "2776",
+    "name": "Triund Mountain Lodge",
+    "phone": "+91-8894445007 , +91-9418021679 , 01892221679",
+    "tourism": "hotel",
+    "website": "https://triund.in/"
+  }
+},
+{
+  "type": "node",
+  "id": 5201275834,
+  "lat": 32.2543946,
+  "lon": 76.3547515,
+  "tags": {
+    "amenity": "cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 5212500221,
+  "lat": 32.2442044,
+  "lon": 76.3349138,
+  "tags": {
+    "amenity": "cafe",
+    "cuisine": "indian;local;coffee_shop",
+    "diet:vegetarian": "yes",
+    "name": "Punjabi tadka",
+    "opening_hours": "Mo-Su 08:00-22:00"
+  }
+},
+{
+  "type": "node",
+  "id": 5217517523,
+  "lat": 32.2437202,
+  "lon": 76.3338673,
+  "tags": {
+    "amenity": "cafe",
+    "check_date": "2023-12-11",
+    "cuisine": "indian",
+    "diet:vegetarian": "yes",
+    "name": "Shahi Tadka"
+  }
+},
+{
+  "type": "node",
+  "id": 5232071621,
+  "lat": 32.2458612,
+  "lon": 76.3328444,
+  "tags": {
+    "internet_access": "wlan",
+    "name": "View cafe guest house",
+    "name:he": "300 חדר זוגי עם שירוקלחת",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5232071721,
+  "lat": 32.2458722,
+  "lon": 76.3328694,
+  "tags": {
+    "amenity": "restaurant",
+    "internet_access": "wlan",
+    "name": "View cafe restaurant",
+    "name:he": "מסעדה מחירים סבבה"
+  }
+},
+{
+  "type": "node",
+  "id": 5293375525,
+  "lat": 32.2495140,
+  "lon": 76.3305940,
+  "tags": {
+    "addr:city": "Macleodganj Dharamshala",
+    "addr:district": "Kangra",
+    "addr:postcode": "176219",
+    "addr:street": "Utopia",
+    "email": "helloutopiaa@gmail.com",
+    "guest_house": "hostel",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "name": "Utopia",
+    "opening_hours": "24/7",
+    "phone": "+918091419848",
+    "rooms": "10",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 5295275634,
+  "lat": 32.2387632,
+  "lon": 76.3243262,
+  "tags": {
+    "addr:street": "Bhagsu road",
+    "amenity": "fast_food",
+    "diet:vegetarian": "yes",
+    "name": "Local good dhaba (Sansaru)"
+  }
+},
+{
+  "type": "node",
+  "id": 5425964012,
+  "lat": 32.2445977,
+  "lon": 76.3346821,
+  "tags": {
+    "amenity": "place_of_worship",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 5470211121,
+  "lat": 32.2423845,
+  "lon": 76.3306992,
+  "tags": {
+    "name": "International Youth Club",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 5482981324,
+  "lat": 32.2385044,
+  "lon": 76.3238397,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "chinese;italian;indian",
+    "diet:vegetarian": "yes",
+    "name": "Malabar restaurant",
+    "opening_hours": "Mo-Su 09:00-23:00"
+  }
+},
+{
+  "type": "node",
+  "id": 5568719421,
+  "lat": 32.2471340,
+  "lon": 76.3259420,
+  "tags": {
+    "name": "Anil's Guesthouse",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5568719621,
+  "lat": 32.2471297,
+  "lon": 76.3260708,
+  "tags": {
+    "name": "Shemsh Tours & Travels",
+    "shop": "travel_agency"
+  }
+},
+{
+  "type": "node",
+  "id": 5570364521,
+  "lat": 32.2480681,
+  "lon": 76.3253583,
+  "tags": {
+    "name": "Shanti House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5582131821,
+  "lat": 32.2475778,
+  "lon": 76.3261057,
+  "tags": {
+    "name": "Angel House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5632639205,
+  "lat": 32.2454531,
+  "lon": 76.3257754,
+  "tags": {
+    "amenity": "school",
+    "name": "Govt. Primary School Dharamkot"
+  }
+},
+{
+  "type": "node",
+  "id": 5635102921,
+  "lat": 32.2402297,
+  "lon": 76.3246327,
+  "tags": {
+    "amenity": "waste_disposal"
+  }
+},
+{
+  "type": "node",
+  "id": 5635303884,
+  "lat": 32.2476755,
+  "lon": 76.3335108,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Jungle calling"
+  }
+},
+{
+  "type": "node",
+  "id": 5660115470,
+  "lat": 32.2584494,
+  "lon": 76.3245611,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Sunset Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 5701601927,
+  "lat": 32.2508650,
+  "lon": 76.3277903,
+  "tags": {
+    "access": "yes",
+    "amenity": "parking",
+    "fee": "yes",
+    "parking": "surface"
+  }
+},
+{
+  "type": "node",
+  "id": 5876060885,
+  "lat": 32.2471237,
+  "lon": 76.3319494,
+  "tags": {
+    "internet_access": "wlan",
+    "name": "Welcome villa",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 5922069408,
+  "lat": 32.2437134,
+  "lon": 76.3311383,
+  "tags": {
+    "name": "Hotel Triund Heights",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 5947859888,
+  "lat": 32.2385481,
+  "lon": 76.3235447,
+  "tags": {
+    "name": "sunny communication center",
+    "shop": "mobile_phone"
+  }
+},
+{
+  "type": "node",
+  "id": 6026590287,
+  "lat": 32.2476728,
+  "lon": 76.3261570,
+  "tags": {
+    "internet_access": "wlan",
+    "name": "Dinesh GH",
+    "opening_hours": "24/7",
+    "operator": "Dinesh",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 6033473986,
+  "lat": 32.2455885,
+  "lon": 76.3284083,
+  "tags": {
+    "amenity": "clinic",
+    "healthcare": "clinic",
+    "name": "Kerala Ayurveda House",
+    "name:en": "Kerala Ayurveda House",
+    "name:hi": "आयुर्वेद हाउस"
+  }
+},
+{
+  "type": "node",
+  "id": 6034077585,
+  "lat": 32.2498894,
+  "lon": 76.3320780,
+  "tags": {
+    "name": "Jagatram Niwas",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 6317865186,
+  "lat": 32.2553486,
+  "lon": 76.3261645,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Amazing view"
+  }
+},
+{
+  "type": "node",
+  "id": 6317865187,
+  "lat": 32.2553408,
+  "lon": 76.3260392,
+  "tags": {
+    "tourism": "viewpoint"
+  }
+},
+{
+  "type": "node",
+  "id": 6322584287,
+  "lat": 32.2465732,
+  "lon": 76.3409792,
+  "tags": {
+    "tourism": "viewpoint"
+  }
+},
+{
+  "type": "node",
+  "id": 6322584288,
+  "lat": 32.2460312,
+  "lon": 76.3420773,
+  "tags": {
+    "tourism": "viewpoint"
+  }
+},
+{
+  "type": "node",
+  "id": 6325393485,
+  "lat": 32.2387933,
+  "lon": 76.3244876,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Kalingpong restaurant",
+    "name:ru": "Аутентичный тибетский ресторанчик"
+  }
+},
+{
+  "type": "node",
+  "id": 6326960886,
+  "lat": 32.2551379,
+  "lon": 76.3258175,
+  "tags": {
+    "check_date": "2025-05-09",
+    "name": "Amazing view",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 6395357085,
+  "lat": 32.2461317,
+  "lon": 76.3265268,
+  "tags": {
+    "name": "Aman place",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 6395357086,
+  "lat": 32.2461709,
+  "lon": 76.3266747,
+  "tags": {
+    "name": "The lodge",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 6395357385,
+  "lat": 32.2459555,
+  "lon": 76.3267835,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "The lodge restaurant"
+  }
+},
+{
+  "type": "node",
+  "id": 6401885685,
+  "lat": 32.2525102,
+  "lon": 76.3248305,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Little Chai shop"
+  }
+},
+{
+  "type": "node",
+  "id": 6401885686,
+  "lat": 32.2525967,
+  "lon": 76.3248709,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6408660485,
+  "lat": 32.2383921,
+  "lon": 76.3238989,
+  "tags": {
+    "amenity": "place_of_worship",
+    "name": "Shangrila monastery",
+    "religion": "buddhist"
+  }
+},
+{
+  "type": "node",
+  "id": 6420030331,
+  "lat": 32.2453969,
+  "lon": 76.3327180,
+  "tags": {
+    "addr:city": "Dharamshala",
+    "addr:postcode": "176215",
+    "addr:street": "Behind \"Raku's place\" Hotel, Opposite Vishnu Devi Temple, Upper Bhagsu, Mcleodganj",
+    "internet_access": "wlan",
+    "name": "Worlds Hostel Mcleodganj",
+    "payment:cash": "yes",
+    "rooms": "11",
+    "smoking": "outside",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 6424859587,
+  "lat": 32.2508936,
+  "lon": 76.3303826,
+  "tags": {
+    "amenity": "cafe",
+    "cuisine": "indian;breakfast",
+    "diet:vegetarian": "yes",
+    "name": "Café Friends Corner",
+    "name:en": "Café Friends Corner"
+  }
+},
+{
+  "type": "node",
+  "id": 6440081186,
+  "lat": 32.2466272,
+  "lon": 76.3294416,
+  "tags": {
+    "amenity": "cafe",
+    "name": "B&B ॐTara Café",
+    "phone": "+919816879749"
+  }
+},
+{
+  "type": "node",
+  "id": 6447124385,
+  "lat": 32.2496685,
+  "lon": 76.3282203,
+  "tags": {
+    "addr:street": "Upper Dharamkot",
+    "check_date": "2025-05-11",
+    "email": "booking@altlifehostels.com",
+    "internet_access": "wlan",
+    "name": "Alt Life",
+    "opening_hours": "Mo-Su 08:00-23:00",
+    "operator": "Alt life hospitality pvt. Ltd.",
+    "phone": "+919857520087",
+    "tourism": "hostel",
+    "website": "http://www.altlifehistels.com"
+  }
+},
+{
+  "type": "node",
+  "id": 6463945186,
+  "lat": 32.2521231,
+  "lon": 76.3374922,
+  "tags": {
+    "name": "Seasonal chai shop",
+    "shop": "tea"
+  }
+},
+{
+  "type": "node",
+  "id": 6464366785,
+  "lat": 32.2591296,
+  "lon": 76.3462789,
+  "tags": {
+    "amenity": "cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 6464366985,
+  "lat": 32.2606658,
+  "lon": 76.3475116,
+  "tags": {
+    "amenity": "cafe",
+    "outdoor_seating": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6464367185,
+  "lat": 32.2626957,
+  "lon": 76.3521731,
+  "tags": {
+    "amenity": "cafe",
+    "trail_visibility": "excellent"
+  }
+},
+{
+  "type": "node",
+  "id": 6466224188,
+  "lat": 32.2594258,
+  "lon": 76.3553301,
+  "tags": {
+    "name": "Mool Raj Camp-Triund",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 6466224189,
+  "lat": 32.2577444,
+  "lon": 76.3438555,
+  "tags": {
+    "amenity": "cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 6467100123,
+  "lat": 32.2385701,
+  "lon": 76.3243511,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "thai;chinese;italian;tibetan;nepali",
+    "diet:vegan": "yes",
+    "diet:vegetarian": "yes",
+    "name": "The Clay Oven"
+  }
+},
+{
+  "type": "node",
+  "id": 6467100324,
+  "lat": 32.2463481,
+  "lon": 76.3443215,
+  "tags": {
+    "name": "Cafe Alibababa",
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 6467100535,
+  "lat": 32.2607374,
+  "lon": 76.3479507,
+  "tags": {
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 6467100556,
+  "lat": 32.2479364,
+  "lon": 76.3388027,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Peace Cafe",
+    "opening_hours": "Mo-Su 09:00-19:00"
+  }
+},
+{
+  "type": "node",
+  "id": 6467100603,
+  "lat": 32.2556885,
+  "lon": 76.3427393,
+  "tags": {
+    "name": "Magic View",
+    "tourism": "viewpoint"
+  }
+},
+{
+  "type": "node",
+  "id": 6467100649,
+  "lat": 32.2473139,
+  "lon": 76.3402607,
+  "tags": {
+    "name": "Jungle-Cafe",
+    "opening_hours": "Mo-Su 09:00-18:00",
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 6467101605,
+  "lat": 32.2462554,
+  "lon": 76.3364965,
+  "tags": {
+    "amenity": "cafe",
+    "name": "OM Cafe",
+    "opening_hours": "Mo-Su 09:00-18:00"
+  }
+},
+{
+  "type": "node",
+  "id": 6467101843,
+  "lat": 32.2473727,
+  "lon": 76.3384597,
+  "tags": {
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 6467102037,
+  "lat": 32.2451139,
+  "lon": 76.3351235,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Adventure Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 6467102408,
+  "lat": 32.2457166,
+  "lon": 76.3355186,
+  "tags": {
+    "name": "Smile Cafe",
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 6485189185,
+  "lat": 32.2460036,
+  "lon": 76.3319670,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Munchies"
+  }
+},
+{
+  "type": "node",
+  "id": 6518462886,
+  "lat": 32.2456215,
+  "lon": 76.3318307,
+  "tags": {
+    "name:he": "חדר ב400 בלי מקלחת..",
+    "tourism": "apartment"
+  }
+},
+{
+  "type": "node",
+  "id": 6536301085,
+  "lat": 32.2743892,
+  "lon": 76.3614668,
+  "tags": {
+    "name": "Snow line",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 6536384285,
+  "lat": 32.2473420,
+  "lon": 76.3326957,
+  "tags": {
+    "addr:housenumber": "270",
+    "addr:street": "Khasra",
+    "charge": "From 368 Rs.",
+    "check_date": "2025-11-17",
+    "internet_access": "wlan",
+    "name": "The Hosteller Mcleodganj (Upper Bhagsu)",
+    "tourism": "hostel",
+    "website": "https://www.thehosteller.com/hostels/the-hosteller-mcleodganj-mini/"
+  }
+},
+{
+  "type": "node",
+  "id": 6536464685,
+  "lat": 32.2475319,
+  "lon": 76.3318894,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Magic Mountain"
+  }
+},
+{
+  "type": "node",
+  "id": 6591544823,
+  "lat": 32.2424694,
+  "lon": 76.3180631,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes",
+    "material": "metal"
+  }
+},
+{
+  "type": "node",
+  "id": 6591544831,
+  "lat": 32.2386220,
+  "lon": 76.3237033,
+  "tags": {
+    "amenity": "drinking_water",
+    "man_made": "water_tap"
+  }
+},
+{
+  "type": "node",
+  "id": 6591544832,
+  "lat": 32.2425201,
+  "lon": 76.3179419,
+  "tags": {
+    "amenity": "waste_basket",
+    "waste": "trash"
+  }
+},
+{
+  "type": "node",
+  "id": 6591544834,
+  "lat": 32.2425626,
+  "lon": 76.3180991,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes",
+    "material": "concrete"
+  }
+},
+{
+  "type": "node",
+  "id": 6621967285,
+  "lat": 32.2514323,
+  "lon": 76.3309234,
+  "tags": {
+    "amenity": "restaurant",
+    "internet_access": "wlan",
+    "name": "Gatheround - Lebanese",
+    "name:he": "הלבנונית",
+    "opening_hours": "Mo-Sa 18:00-23:00; Su 13:00-23:00"
+  }
+},
+{
+  "type": "node",
+  "id": 6660602386,
+  "lat": 32.2394671,
+  "lon": 76.3256490,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegan": "yes",
+    "diet:vegetarian": "yes",
+    "name": "Trekkers Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 6673771485,
+  "lat": 32.2388191,
+  "lon": 76.3247246,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Night Owl Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 6681596825,
+  "lat": 32.2548773,
+  "lon": 76.3262126,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Cafe 5060",
+    "opening_hours": "Mo-Su 08:00-20:00"
+  }
+},
+{
+  "type": "node",
+  "id": 6698507997,
+  "lat": 32.2461317,
+  "lon": 76.3323027,
+  "tags": {
+    "name:he": "גסטאהוס שלנו. Little buddha",
+    "tourism": "apartment"
+  }
+},
+{
+  "type": "node",
+  "id": 6717732387,
+  "lat": 32.2437096,
+  "lon": 76.3334468,
+  "tags": {
+    "name": "Golak",
+    "tourism": "artwork"
+  }
+},
+{
+  "type": "node",
+  "id": 6737844985,
+  "lat": 32.2477633,
+  "lon": 76.3261112,
+  "tags": {
+    "amenity": "restaurant",
+    "check_date": "2025-06-14",
+    "cuisine": "chicken;asian;italian;mexican;coffee_shop;curry;local;deli;tea;japanese;cake;pasta;breakfast;international;indian;arab",
+    "diet:vegetarian": "yes",
+    "internet_access": "wlan",
+    "name": "Organic Thali",
+    "name:en": "Organic Thali Dhaba & Cafe",
+    "opening_hours": "Mo-Su 08:00-22:00",
+    "operator": "Binod",
+    "phone": "+919530516039"
+  }
+},
+{
+  "type": "node",
+  "id": 6784242886,
+  "lat": 32.2388624,
+  "lon": 76.3239617,
+  "tags": {
+    "name": "Jimmy's Bakery",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 6805423586,
+  "lat": 32.2462460,
+  "lon": 76.3262116,
+  "tags": {
+    "name": "Spike",
+    "opening_hours": "Mo-Fr 12:00-20:00",
+    "shop": "tattoo"
+  }
+},
+{
+  "type": "node",
+  "id": 6812309986,
+  "lat": 32.2471945,
+  "lon": 76.3262622,
+  "tags": {
+    "name": "ריטה",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 7085595885,
+  "lat": 32.2394643,
+  "lon": 76.3534557,
+  "tags": {
+    "amenity": "place_of_worship"
+  }
+},
+{
+  "type": "node",
+  "id": 9245763168,
+  "lat": 32.2450434,
+  "lon": 76.3220186,
+  "tags": {
+    "addr:street": "Above Mall Road, upper Dharamashala, Himachal Pradesh, INDIA 176219",
+    "description": "Glenmoor Cottages (also known as Aum Cottages) are situated at an altitude of about 6,300 feet above sea level in Upper Dharamshala, District Kangra, Himachal, India. The distance from McLeodganj is one kilometer.",
+    "email": "info@glenmoorcottages.com",
+    "fax": "+91 1892 221021",
+    "name": "Aum (Glenmoor) cottage",
+    "opening_hours": "Mo-Su 07:00-22:00",
+    "phone": "+91 1892 221010;+91 9418 221010",
+    "tourism": "hotel",
+    "website": "http://glenmoorcottages.com/"
+  }
+},
+{
+  "type": "node",
+  "id": 9698304638,
+  "lat": 32.2577317,
+  "lon": 76.3248080,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Sundowner Café"
+  }
+},
+{
+  "type": "node",
+  "id": 9734107705,
+  "lat": 32.2513419,
+  "lon": 76.3368029,
+  "tags": {
+    "amenity": "drinking_water",
+    "fee": "no",
+    "seasonal": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 9796166817,
+  "lat": 32.2510963,
+  "lon": 76.3308418,
+  "tags": {
+    "name": "BR Resort",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 9796243120,
+  "lat": 32.2511736,
+  "lon": 76.3285486,
+  "tags": {
+    "amenity": "restaurant",
+    "internet_access": "wlan",
+    "name": "Morgan's Place",
+    "opening_hours": "Mo-Su 10:30-22:30",
+    "phone": "919736087955"
+  }
+},
+{
+  "type": "node",
+  "id": 9801305070,
+  "lat": 32.2513819,
+  "lon": 76.3288991,
+  "tags": {
+    "check_date": "2025-05-07",
+    "name": "Zostel",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 9802365394,
+  "lat": 32.2487210,
+  "lon": 76.3288207,
+  "tags": {
+    "amenity": "place_of_worship",
+    "name:signed": "no",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 9802962617,
+  "lat": 32.2514735,
+  "lon": 76.3290759,
+  "tags": {
+    "amenity": "cafe",
+    "contact:instagram": "rains.coffeehouse",
+    "cuisine": "bagel;cake;coffee_shop",
+    "internet_access": "wlan",
+    "name": "Rains Coffee House",
+    "name:en": "Rains Coffee House",
+    "opening_hours": "Mo-Su 09:00-19:00",
+    "phone": "9805037035"
+  }
+},
+{
+  "type": "node",
+  "id": 9803106817,
+  "lat": 32.2529329,
+  "lon": 76.3281305,
+  "tags": {
+    "name": "Tejas Massage",
+    "opening_hours": "Mo-Su 09:00-18:00",
+    "phone": "+91 82787 79367",
+    "shop": "massage"
+  }
+},
+{
+  "type": "node",
+  "id": 9831627817,
+  "lat": 32.2477622,
+  "lon": 76.3259550,
+  "tags": {
+    "amenity": "internet_cafe",
+    "check_date": "2025-06-14",
+    "name": "Zenith cyber cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 10284841609,
+  "lat": 32.2400060,
+  "lon": 76.3264537,
+  "tags": {
+    "name": "Potala Thanka Painting Shop",
+    "tourism": "artwork"
+  }
+},
+{
+  "type": "node",
+  "id": 10561935525,
+  "lat": 32.2523889,
+  "lon": 76.3296040,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Molly’s cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 10561943745,
+  "lat": 32.2523591,
+  "lon": 76.3297843,
+  "tags": {
+    "name": "Madpacker",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 10567027690,
+  "lat": 32.2490791,
+  "lon": 76.3259516,
+  "tags": {
+    "name": "Kishore singh Homestay",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 10567775280,
+  "lat": 32.2491537,
+  "lon": 76.3265240,
+  "tags": {
+    "amenity": "place_of_worship",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 10567794382,
+  "lat": 32.2492491,
+  "lon": 76.3266076,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 10570822548,
+  "lat": 32.2531189,
+  "lon": 76.3295707,
+  "tags": {
+    "name": "Hippie Trail cottage",
+    "tourism": "wilderness_hut"
+  }
+},
+{
+  "type": "node",
+  "id": 10574322321,
+  "lat": 32.2535552,
+  "lon": 76.3238141,
+  "tags": {
+    "amenity": "shelter",
+    "bench": "no",
+    "bin": "no",
+    "check_date": "23-11-2025",
+    "lit": "yes",
+    "lockable": "yes",
+    "note": "Concrete hut made for the priest",
+    "shelter_type": "basic_hut"
+  }
+},
+{
+  "type": "node",
+  "id": 10574322324,
+  "lat": 32.2535406,
+  "lon": 76.3239109,
+  "tags": {
+    "amenity": "place_of_worship",
+    "name": "Naag Temple"
+  }
+},
+{
+  "type": "node",
+  "id": 10574322332,
+  "lat": 32.2459587,
+  "lon": 76.3230497,
+  "tags": {
+    "name": "Aum Glennmore Cottage",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 10574344930,
+  "lat": 32.2516903,
+  "lon": 76.3198558,
+  "tags": {
+    "name": "Eagles Nest",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 10578901775,
+  "lat": 32.2484304,
+  "lon": 76.3293738,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Crossover cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 10578955070,
+  "lat": 32.2457108,
+  "lon": 76.3328274,
+  "tags": {
+    "amenity": "cafe",
+    "check_date": "2025-05-06",
+    "cuisine": "russian",
+    "name": "Astral Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 10773438705,
+  "lat": 32.2451822,
+  "lon": 76.3327002,
+  "tags": {
+    "amenity": "fast_food",
+    "diet:vegetarian": "yes",
+    "name": "Meating Point - Cheap Food"
+  }
+},
+{
+  "type": "node",
+  "id": 10907106629,
+  "lat": 32.2557268,
+  "lon": 76.3430782,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Halfway food point"
+  }
+},
+{
+  "type": "node",
+  "id": 10916466505,
+  "lat": 32.2472558,
+  "lon": 76.3317265,
+  "tags": {
+    "amenity": "cafe",
+    "name": "en Café"
+  }
+},
+{
+  "type": "node",
+  "id": 10936220499,
+  "lat": 32.2513223,
+  "lon": 76.3290356,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Mysore Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 10936229367,
+  "lat": 32.2512532,
+  "lon": 76.3292314,
+  "tags": {
+    "amenity": "place_of_worship",
+    "name:signed": "no",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 10936237740,
+  "lat": 32.2514022,
+  "lon": 76.3290545,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Roja Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 10947673305,
+  "lat": 32.2480383,
+  "lon": 76.3332484,
+  "tags": {
+    "amenity": "restaurant",
+    "internet_access": "wlan",
+    "name": "Dzen Den",
+    "opening_hours": "Mo-Su 09:00-23:00",
+    "website": "http://DzenDen.com"
+  }
+},
+{
+  "type": "node",
+  "id": 11056106105,
+  "lat": 32.2396533,
+  "lon": 76.3251112,
+  "tags": {
+    "name": "Kaliwood Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 11088514243,
+  "lat": 32.2508169,
+  "lon": 76.3301966,
+  "tags": {
+    "charge": "From 480 Rs.",
+    "check_date": "2023-08-03",
+    "name": "Young Monk Hostel",
+    "tourism": "hostel",
+    "wheelchair": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 11091188090,
+  "lat": 32.2482425,
+  "lon": 76.3391861,
+  "tags": {
+    "amenity": "public_bath",
+    "fee": "no",
+    "name": "Mountain Water Pools",
+    "opening_hours": "24/7",
+    "shower": "no",
+    "toilets": "no",
+    "tourism": "attraction"
+  }
+},
+{
+  "type": "node",
+  "id": 11091188244,
+  "lat": 32.2454859,
+  "lon": 76.3340535,
+  "tags": {
+    "amenity": "place_of_worship",
+    "check_date": "2026-11-12",
+    "name": "Temple",
+    "religion": "hindu",
+    "tourism": "viewpoint"
+  }
+},
+{
+  "type": "node",
+  "id": 11091194128,
+  "lat": 32.2482891,
+  "lon": 76.3392660,
+  "tags": {
+    "access": "customers",
+    "amenity": "toilets",
+    "wheelchair": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 11091233403,
+  "lat": 32.2481713,
+  "lon": 76.3393304,
+  "tags": {
+    "covered": "no",
+    "leisure": "picnic_table"
+  }
+},
+{
+  "type": "node",
+  "id": 11091238436,
+  "lat": 32.2481393,
+  "lon": 76.3392490,
+  "tags": {
+    "access": "yes",
+    "amenity": "toilets",
+    "fee": "no",
+    "wheelchair": "no"
+  }
+},
+{
+  "type": "node",
+  "id": 11093485329,
+  "lat": 32.2509874,
+  "lon": 76.3306391,
+  "tags": {
+    "name:signed": "no",
+    "shop": "greengrocer"
+  }
+},
+{
+  "type": "node",
+  "id": 11093485330,
+  "lat": 32.2508717,
+  "lon": 76.3299088,
+  "tags": {
+    "name": "Manu's Place",
+    "shop": "greengrocer"
+  }
+},
+{
+  "type": "node",
+  "id": 11099335229,
+  "lat": 32.2508847,
+  "lon": 76.3292644,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Tin Tin Café",
+    "phone": "8219671072"
+  }
+},
+{
+  "type": "node",
+  "id": 11367866712,
+  "lat": 32.2483500,
+  "lon": 76.3322675,
+  "tags": {
+    "amenity": "place_of_worship",
+    "name:signed": "no",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 11380884442,
+  "lat": 32.2385737,
+  "lon": 76.3236325,
+  "tags": {
+    "name": "The Pastry Den",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 11380906062,
+  "lat": 32.2385451,
+  "lon": 76.3236471,
+  "tags": {
+    "name": "The Pastry Shop",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 11380924235,
+  "lat": 32.2391774,
+  "lon": 76.3237972,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Jaitu Dhaba"
+  }
+},
+{
+  "type": "node",
+  "id": 11380926954,
+  "lat": 32.2391502,
+  "lon": 76.3237744,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Ajju Tea Shop"
+  }
+},
+{
+  "type": "node",
+  "id": 11380967314,
+  "lat": 32.2391213,
+  "lon": 76.3237484,
+  "tags": {
+    "name:signed": "no",
+    "shop": "copyshop"
+  }
+},
+{
+  "type": "node",
+  "id": 11380986679,
+  "lat": 32.2390964,
+  "lon": 76.3237237,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Zom Zom Tea Point",
+    "opening_hours": "Mo-Su 08:00-19:00"
+  }
+},
+{
+  "type": "node",
+  "id": 11381033861,
+  "lat": 32.2469272,
+  "lon": 76.3317705,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Tara Café"
+  }
+},
+{
+  "type": "node",
+  "id": 11383210844,
+  "lat": 32.2391460,
+  "lon": 76.3238860,
+  "tags": {
+    "female": "yes",
+    "male": "yes",
+    "name": "Black Scissors",
+    "shop": "hairdresser"
+  }
+},
+{
+  "type": "node",
+  "id": 11383217829,
+  "lat": 32.2451343,
+  "lon": 76.3256760,
+  "tags": {
+    "name:signed": "no",
+    "opening_hours": "Mo-Su 10:00-17:00",
+    "shop": "greengrocer"
+  }
+},
+{
+  "type": "node",
+  "id": 11383225811,
+  "lat": 32.2451377,
+  "lon": 76.3256997,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11402441368,
+  "lat": 32.2388574,
+  "lon": 76.3243374,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Nomad Kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 11402445068,
+  "lat": 32.2444227,
+  "lon": 76.3329481,
+  "tags": {
+    "amenity": "pharmacy",
+    "healthcare": "pharmacy",
+    "name": "Chandel Medicos"
+  }
+},
+{
+  "type": "node",
+  "id": 11402472698,
+  "lat": 32.2388394,
+  "lon": 76.3242789,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Juniper Café"
+  }
+},
+{
+  "type": "node",
+  "id": 11402484391,
+  "lat": 32.2388866,
+  "lon": 76.3241108,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Tsampa Café"
+  }
+},
+{
+  "type": "node",
+  "id": 11402627914,
+  "lat": 32.2465329,
+  "lon": 76.3313034,
+  "tags": {
+    "leisure": "dance",
+    "name": "Tejaswini Gautam School of Dance"
+  }
+},
+{
+  "type": "node",
+  "id": 11402631018,
+  "lat": 32.2432835,
+  "lon": 76.3319629,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Desi Tadka"
+  }
+},
+{
+  "type": "node",
+  "id": 11402652388,
+  "lat": 32.2465934,
+  "lon": 76.3311677,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Milaan Café",
+    "name:en": "Milaan Café"
+  }
+},
+{
+  "type": "node",
+  "id": 11402682939,
+  "lat": 32.2484929,
+  "lon": 76.3322150,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Astral Café"
+  }
+},
+{
+  "type": "node",
+  "id": 11402736434,
+  "lat": 32.2439023,
+  "lon": 76.3333632,
+  "tags": {
+    "amenity": "school",
+    "name": "Bhagsunag Primary School"
+  }
+},
+{
+  "type": "node",
+  "id": 11402736435,
+  "lat": 32.2483900,
+  "lon": 76.3322622,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes",
+    "material": "metal"
+  }
+},
+{
+  "type": "node",
+  "id": 11404947166,
+  "lat": 32.2393956,
+  "lon": 76.3255273,
+  "tags": {
+    "amenity": "restaurant",
+    "diet:vegetarian": "yes",
+    "name": "Himachali Dham"
+  }
+},
+{
+  "type": "node",
+  "id": 11406800922,
+  "lat": 32.2517762,
+  "lon": 76.3292651,
+  "tags": {
+    "name": "Golden Hammer Woodcarving",
+    "shop": "gift"
+  }
+},
+{
+  "type": "node",
+  "id": 11406941395,
+  "lat": 32.2508597,
+  "lon": 76.3299408,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11406942511,
+  "lat": 32.2508686,
+  "lon": 76.3298490,
+  "tags": {
+    "amenity": "cafe",
+    "diet:vegetarian": "yes",
+    "name": "Mowgli Café"
+  }
+},
+{
+  "type": "node",
+  "id": 11406950933,
+  "lat": 32.2510398,
+  "lon": 76.3304988,
+  "tags": {
+    "name": "Watch your head",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 11406951684,
+  "lat": 32.2508114,
+  "lon": 76.3300666,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Butterfly Mandala"
+  }
+},
+{
+  "type": "node",
+  "id": 11407114352,
+  "lat": 32.2527721,
+  "lon": 76.3209919,
+  "tags": {
+    "hiking": "yes",
+    "information": "guidepost",
+    "name": "Dal Lake, Naddi",
+    "tourism": "information"
+  }
+},
+{
+  "type": "node",
+  "id": 11909596285,
+  "lat": 32.2495015,
+  "lon": 76.3323731,
+  "tags": {
+    "name": "JR Resort",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 11922460670,
+  "lat": 32.2426072,
+  "lon": 76.3301568,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Cafe Foresta"
+  }
+},
+{
+  "type": "node",
+  "id": 11942715269,
+  "lat": 32.2390661,
+  "lon": 76.3249572,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Doljam Kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 11989696335,
+  "lat": 32.2450992,
+  "lon": 76.3316131,
+  "tags": {
+    "addr:city": "Dharamshala",
+    "addr:district": "Kangra",
+    "addr:housenumber": "2226",
+    "addr:postcode": "176219",
+    "addr:street": "Bhagsu nag to Gallu devi road, Upper Bhagsunag",
+    "email": "hello@thevoidlife.com",
+    "internet_access": "wlan",
+    "internet_access:fee": "customers",
+    "name": "The VOID - Dharamkot",
+    "phone": "+91 8087080121",
+    "tourism": "hotel",
+    "website": "https://thevoidlife.com/"
+  }
+},
+{
+  "type": "node",
+  "id": 11989705640,
+  "lat": 32.2453300,
+  "lon": 76.3317958,
+  "tags": {
+    "addr:city": "Dharamshala",
+    "addr:district": "Kangra",
+    "addr:postcode": "176219",
+    "addr:street": "Bhagsu nag to Gallu devi road, Upper Bhagsu Nag",
+    "email": "omadicinnbookings@gmail.com",
+    "internet_access": "wlan",
+    "internet_access:fee": "customers",
+    "name": "Nomadic Inn",
+    "phone": "+918091229679;  8894445007; 01892-293775",
+    "tourism": "hotel",
+    "website": "https://nomadicinn.com/"
+  }
+},
+{
+  "type": "node",
+  "id": 11989895732,
+  "lat": 32.2450575,
+  "lon": 76.3316991,
+  "tags": {
+    "addr:city": "Dharamshala",
+    "addr:district": "Kangra",
+    "addr:postcode": "176219",
+    "addr:street": "Bhagsu Nag Road to Gallu Devi Road",
+    "name": "HImalayan Spiritual Centre",
+    "shop": "psychic"
+  }
+},
+{
+  "type": "node",
+  "id": 12098317301,
+  "lat": 32.2458296,
+  "lon": 76.3279869,
+  "tags": {
+    "name": "Eevolve Conifer Lodge",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 12189372401,
+  "lat": 32.2497191,
+  "lon": 76.3275267,
+  "tags": {
+    "addr:postcode": "176219",
+    "addr:street": "Dharamkot - Haini Road",
+    "contact:instagram": "theunmad",
+    "email": "theunmad@gmail.com",
+    "internet_access": "wlan",
+    "name": "The Unmad",
+    "opening_hours": "Mo-Su 07:00-23:00",
+    "phone": "7678109406",
+    "tourism": "guest_house",
+    "website": "https://www.theunmad.com/"
+  }
+},
+{
+  "type": "node",
+  "id": 12320044101,
+  "lat": 32.2436075,
+  "lon": 76.3350733,
+  "tags": {
+    "name": "Anuj Regency Hotel",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12320771614,
+  "lat": 32.2388382,
+  "lon": 76.3239200,
+  "tags": {
+    "name": "Ballantine's",
+    "shop": "alcohol"
+  }
+},
+{
+  "type": "node",
+  "id": 12320771616,
+  "lat": 32.2450129,
+  "lon": 76.3326895,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "The Old German Bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 12320771617,
+  "lat": 32.2455692,
+  "lon": 76.3321980,
+  "tags": {
+    "name": "Cat & Cow",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12320771712,
+  "lat": 32.2429504,
+  "lon": 76.3321735,
+  "tags": {
+    "shop": "alcohol"
+  }
+},
+{
+  "type": "node",
+  "id": 12320771714,
+  "lat": 32.2401674,
+  "lon": 76.3262094,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "noodle",
+    "name": "Yangsel"
+  }
+},
+{
+  "type": "node",
+  "id": 12320771715,
+  "lat": 32.2434561,
+  "lon": 76.3324846,
+  "tags": {
+    "amenity": "fast_food",
+    "name": "Chicken"
+  }
+},
+{
+  "type": "node",
+  "id": 12320771716,
+  "lat": 32.2442197,
+  "lon": 76.3331798,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Annapurna"
+  }
+},
+{
+  "type": "node",
+  "id": 12320772404,
+  "lat": 32.2454268,
+  "lon": 76.3321407,
+  "tags": {
+    "laundry_service": "yes",
+    "name": "Prime Laundry",
+    "self_service": "no",
+    "shop": "laundry"
+  }
+},
+{
+  "type": "node",
+  "id": 12324262701,
+  "lat": 32.2493870,
+  "lon": 76.3294796,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "3 Trees Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12324345319,
+  "lat": 32.2397382,
+  "lon": 76.3261967,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Tashi Delek Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12324345320,
+  "lat": 32.2401291,
+  "lon": 76.3267888,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "ZomZom"
+  }
+},
+{
+  "type": "node",
+  "id": 12324352802,
+  "lat": 32.2400991,
+  "lon": 76.3260009,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Dolma's Kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 12324352803,
+  "lat": 32.2438409,
+  "lon": 76.3338247,
+  "tags": {
+    "amenity": "restaurant"
+  }
+},
+{
+  "type": "node",
+  "id": 12324352804,
+  "lat": 32.2435804,
+  "lon": 76.3349346,
+  "tags": {
+    "name": "Adventure Inn Guest House",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12324352808,
+  "lat": 32.2394991,
+  "lon": 76.3256383,
+  "tags": {
+    "name": "Amit Fresh Chicken Corner",
+    "shop": "butcher"
+  }
+},
+{
+  "type": "node",
+  "id": 12324355504,
+  "lat": 32.2442047,
+  "lon": 76.3342879,
+  "tags": {
+    "historic": "city_gate"
+  }
+},
+{
+  "type": "node",
+  "id": 12324355514,
+  "lat": 32.2391214,
+  "lon": 76.3254804,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Jimmys Italian Kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 12324382801,
+  "lat": 32.2401998,
+  "lon": 76.3265236,
+  "tags": {
+    "amenity": "fast_food",
+    "name": "Usmani Halal Chicken Fry"
+  }
+},
+{
+  "type": "node",
+  "id": 12324382901,
+  "lat": 32.2441557,
+  "lon": 76.3342653,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Sher-E-Punjab"
+  }
+},
+{
+  "type": "node",
+  "id": 12328660101,
+  "lat": 32.2465843,
+  "lon": 76.3409298,
+  "tags": {
+    "name": "Viewpoint Cafe",
+    "opening_hours": "Mo-Su 08:00-18:00",
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 12328660102,
+  "lat": 32.2443821,
+  "lon": 76.3469293,
+  "tags": {
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 12328661001,
+  "lat": 32.2460949,
+  "lon": 76.3423095,
+  "tags": {
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 12328661002,
+  "lat": 32.2445237,
+  "lon": 76.3468868,
+  "tags": {
+    "tourism": "viewpoint"
+  }
+},
+{
+  "type": "node",
+  "id": 12328661003,
+  "lat": 32.2475909,
+  "lon": 76.3513464,
+  "tags": {
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 12328661201,
+  "lat": 32.2463924,
+  "lon": 76.3438796,
+  "tags": {
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 12328662301,
+  "lat": 32.2465465,
+  "lon": 76.3442039,
+  "tags": {
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 12328662302,
+  "lat": 32.2427347,
+  "lon": 76.3498105,
+  "tags": {
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 12328662303,
+  "lat": 32.2439732,
+  "lon": 76.3498843,
+  "tags": {
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 12698216301,
+  "lat": 32.2446214,
+  "lon": 76.3327065,
+  "tags": {
+    "name": "One More Night Hostel",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 12698216401,
+  "lat": 32.2495444,
+  "lon": 76.3304027,
+  "tags": {
+    "name": "Shalom backpackers",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 12698216501,
+  "lat": 32.2475794,
+  "lon": 76.3267871,
+  "tags": {
+    "name": "Lama bakery",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 12698216701,
+  "lat": 32.2403303,
+  "lon": 76.3236470,
+  "tags": {
+    "amenity": "bus_station",
+    "name": "Mcleodganj ISBT Bus stand",
+    "wheelchair": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12705625506,
+  "lat": 32.2466337,
+  "lon": 76.3250268,
+  "tags": {
+    "tourism": "viewpoint"
+  }
+},
+{
+  "type": "node",
+  "id": 12756904606,
+  "lat": 32.2420194,
+  "lon": 76.3310088,
+  "tags": {
+    "name": "Thrillomania Hostel",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 12791236745,
+  "lat": 32.2504300,
+  "lon": 76.3247533,
+  "tags": {
+    "name": "Small Ground",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "node",
+  "id": 12813271374,
+  "lat": 32.2461765,
+  "lon": 76.3335825,
+  "tags": {
+    "name": "Chinmay Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 12813384665,
+  "lat": 32.2427797,
+  "lon": 76.3321651,
+  "tags": {
+    "amenity": "atm",
+    "cash_in": "no",
+    "indoor": "yes",
+    "operator": "HDFC Bank"
+  }
+},
+{
+  "type": "node",
+  "id": 12813417214,
+  "lat": 32.2461121,
+  "lon": 76.3322528,
+  "tags": {
+    "name": "Kibbutz",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 12813477388,
+  "lat": 32.2465432,
+  "lon": 76.3297057,
+  "tags": {
+    "amenity": "place_of_worship",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 12813479607,
+  "lat": 32.2465390,
+  "lon": 76.3312278,
+  "tags": {
+    "leisure": "fitness_centre",
+    "name": "Aranya Yoga",
+    "sport": "yoga"
+  }
+},
+{
+  "type": "node",
+  "id": 12813500946,
+  "lat": 32.2485222,
+  "lon": 76.3292081,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Hang Out Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12813515396,
+  "lat": 32.2466148,
+  "lon": 76.3316811,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Cafe Pedro"
+  }
+},
+{
+  "type": "node",
+  "id": 12813521479,
+  "lat": 32.2466553,
+  "lon": 76.3316805,
+  "tags": {
+    "name": "Summer Nest",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12813527568,
+  "lat": 32.2482361,
+  "lon": 76.3283478,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Da' wiara cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12813719160,
+  "lat": 32.2458288,
+  "lon": 76.3318786,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Tashi Delek"
+  }
+},
+{
+  "type": "node",
+  "id": 12813721799,
+  "lat": 32.2458914,
+  "lon": 76.3319174,
+  "tags": {
+    "name": "Hemp house shop",
+    "shop": "clothes"
+  }
+},
+{
+  "type": "node",
+  "id": 12813750171,
+  "lat": 32.2456887,
+  "lon": 76.3330960,
+  "tags": {
+    "name": "Sunrise Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 12813826321,
+  "lat": 32.2467246,
+  "lon": 76.3318550,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Crêpes & love"
+  }
+},
+{
+  "type": "node",
+  "id": 12814051369,
+  "lat": 32.2456943,
+  "lon": 76.3321600,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12814099913,
+  "lat": 32.2456653,
+  "lon": 76.3322793,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Maya's cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12814130054,
+  "lat": 32.2457555,
+  "lon": 76.3321507,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12815919765,
+  "lat": 32.2486752,
+  "lon": 76.3289971,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Center point cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12815921245,
+  "lat": 32.2493550,
+  "lon": 76.3292848,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Homie's Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12815929897,
+  "lat": 32.2478322,
+  "lon": 76.3298328,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Backwoods Bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 12815939910,
+  "lat": 32.2508204,
+  "lon": 76.3301563,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Young Monk Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12815951507,
+  "lat": 32.2513238,
+  "lon": 76.3288242,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Forest view Café"
+  }
+},
+{
+  "type": "node",
+  "id": 12815954372,
+  "lat": 32.2510223,
+  "lon": 76.3292103,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Charli's place"
+  }
+},
+{
+  "type": "node",
+  "id": 12815954826,
+  "lat": 32.2475558,
+  "lon": 76.3321559,
+  "tags": {
+    "leisure": "fitness_centre",
+    "name": "Brahma Yoga",
+    "sport": "yoga"
+  }
+},
+{
+  "type": "node",
+  "id": 12815957350,
+  "lat": 32.2510883,
+  "lon": 76.3307895,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Dream Catcher"
+  }
+},
+{
+  "type": "node",
+  "id": 12815957351,
+  "lat": 32.2512176,
+  "lon": 76.3290927,
+  "tags": {
+    "name": "Kali Yuga",
+    "shop": "bakery"
+  }
+},
+{
+  "type": "node",
+  "id": 12815965637,
+  "lat": 32.2514006,
+  "lon": 76.3288047,
+  "tags": {
+    "name": "Abanshika Guest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 12815973571,
+  "lat": 32.2513914,
+  "lon": 76.3291428,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Honey's Falafel"
+  }
+},
+{
+  "type": "node",
+  "id": 12816011047,
+  "lat": 32.2475042,
+  "lon": 76.3299129,
+  "tags": {
+    "leisure": "fitness_centre",
+    "name": "Swaraj Yoga",
+    "sport": "yoga"
+  }
+},
+{
+  "type": "node",
+  "id": 12816021574,
+  "lat": 32.2485630,
+  "lon": 76.3293370,
+  "tags": {
+    "amenity": "restaurant",
+    "cuisine": "pizza",
+    "name": "Family pizzeria"
+  }
+},
+{
+  "type": "node",
+  "id": 12816033375,
+  "lat": 32.2486552,
+  "lon": 76.3291994,
+  "tags": {
+    "name": "The princess silver shop",
+    "shop": "jewelry"
+  }
+},
+{
+  "type": "node",
+  "id": 12816176749,
+  "lat": 32.2459534,
+  "lon": 76.3323125,
+  "tags": {
+    "name": "Bhagsu flower nursery",
+    "shop": "florist"
+  }
+},
+{
+  "type": "node",
+  "id": 12816484895,
+  "lat": 32.2442786,
+  "lon": 76.3329465,
+  "tags": {
+    "name": "Meghavan",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12816496483,
+  "lat": 32.2452251,
+  "lon": 76.3349809,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Lockdown Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12816496484,
+  "lat": 32.2441378,
+  "lon": 76.3341369,
+  "tags": {
+    "name": "Gorav gift shop",
+    "shop": "gift"
+  }
+},
+{
+  "type": "node",
+  "id": 12816499192,
+  "lat": 32.2455398,
+  "lon": 76.3323307,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Sunny's Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12816510243,
+  "lat": 32.2454608,
+  "lon": 76.3361258,
+  "tags": {
+    "leisure": "amusement_arcade",
+    "name": "Bhagsu Zip Line"
+  }
+},
+{
+  "type": "node",
+  "id": 12816511779,
+  "lat": 32.2442001,
+  "lon": 76.3349384,
+  "tags": {
+    "name": "Taboo ink",
+    "shop": "tattoo"
+  }
+},
+{
+  "type": "node",
+  "id": 12816512193,
+  "lat": 32.2451554,
+  "lon": 76.3322992,
+  "tags": {
+    "amenity": "money_transfer",
+    "name": "Paul Merchants"
+  }
+},
+{
+  "type": "node",
+  "id": 12816516804,
+  "lat": 32.2441187,
+  "lon": 76.3337958,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "The Coy's Café"
+  }
+},
+{
+  "type": "node",
+  "id": 12816517554,
+  "lat": 32.2442577,
+  "lon": 76.3340421,
+  "tags": {
+    "name": "Dream",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 12816523033,
+  "lat": 32.2453895,
+  "lon": 76.3350936,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Flight mode cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12816529380,
+  "lat": 32.2453019,
+  "lon": 76.3328046,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Meeting point Dhaba"
+  }
+},
+{
+  "type": "node",
+  "id": 12816530537,
+  "lat": 32.2454021,
+  "lon": 76.3322247,
+  "tags": {
+    "amenity": "money_transfer",
+    "name": "Western Union"
+  }
+},
+{
+  "type": "node",
+  "id": 12818475323,
+  "lat": 32.2457321,
+  "lon": 76.3295722,
+  "tags": {
+    "name": "Tara Homestay",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 12818476444,
+  "lat": 32.2456170,
+  "lon": 76.3290522,
+  "tags": {
+    "name": "Kalyan House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 12818480058,
+  "lat": 32.2458072,
+  "lon": 76.3282082,
+  "tags": {
+    "name": "Mustard House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 12818483417,
+  "lat": 32.2454483,
+  "lon": 76.3295533,
+  "tags": {
+    "name": "Verdant Escapes",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12818487281,
+  "lat": 32.2455931,
+  "lon": 76.3275106,
+  "tags": {
+    "name": "Hotel dev cottage",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12818555516,
+  "lat": 32.2454649,
+  "lon": 76.3273414,
+  "tags": {
+    "name": "Gagan resort",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12818558761,
+  "lat": 32.2457121,
+  "lon": 76.3277041,
+  "tags": {
+    "leisure": "fitness_centre",
+    "name": "Himalayan Iyengar Yoga centre",
+    "sport": "yoga"
+  }
+},
+{
+  "type": "node",
+  "id": 12818634995,
+  "lat": 32.2459990,
+  "lon": 76.3281573,
+  "tags": {
+    "name": "SOMA by Eevolve",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 12818859745,
+  "lat": 32.2458432,
+  "lon": 76.3288316,
+  "tags": {
+    "name": "Golden Rock",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12818861927,
+  "lat": 32.2470878,
+  "lon": 76.3298958,
+  "tags": {
+    "name": "Getaway Stays",
+    "tourism": "apartment"
+  }
+},
+{
+  "type": "node",
+  "id": 12818869145,
+  "lat": 32.2472244,
+  "lon": 76.3298372,
+  "tags": {
+    "name": "Himalayan Crown",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12818912400,
+  "lat": 32.2458140,
+  "lon": 76.3279510,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Eevolve Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12821559986,
+  "lat": 32.2459621,
+  "lon": 76.3312586,
+  "tags": {
+    "leisure": "fitness_centre",
+    "name": "Chandra Shala",
+    "sport": "yoga"
+  }
+},
+{
+  "type": "node",
+  "id": 12821576658,
+  "lat": 32.2469257,
+  "lon": 76.3310680,
+  "tags": {
+    "amenity": "place_of_worship",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 12825295618,
+  "lat": 32.2534020,
+  "lon": 76.3289058,
+  "tags": {
+    "amenity": "place_of_worship",
+    "name": "Shiva Parvati Temple",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 12825329107,
+  "lat": 32.2550560,
+  "lon": 76.3263664,
+  "tags": {
+    "amenity": "restaurant"
+  }
+},
+{
+  "type": "node",
+  "id": 12825393550,
+  "lat": 32.2507595,
+  "lon": 76.3353900,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Nature Cafe Best Sunset Point",
+    "opening_hours": "Mo-Su 09:00-20:00"
+  }
+},
+{
+  "type": "node",
+  "id": 12825529065,
+  "lat": 32.2505834,
+  "lon": 76.3294494,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Rana Tea Shop"
+  }
+},
+{
+  "type": "node",
+  "id": 12828028890,
+  "lat": 32.2491238,
+  "lon": 76.3291944,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Nukkad"
+  }
+},
+{
+  "type": "node",
+  "id": 12828066471,
+  "lat": 32.2485327,
+  "lon": 76.3276598,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Lhasa Tibetan kitchen"
+  }
+},
+{
+  "type": "node",
+  "id": 12828136489,
+  "lat": 32.2494401,
+  "lon": 76.3284545,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Chillax Café"
+  }
+},
+{
+  "type": "node",
+  "id": 12828138858,
+  "lat": 32.2484574,
+  "lon": 76.3273893,
+  "tags": {
+    "addr:city": "Dharamshala",
+    "addr:district": "Kangra",
+    "addr:postcode": "176219",
+    "addr:street": "Dharamkot - Haini Road",
+    "air_conditioning": "no",
+    "amenity": "restaurant",
+    "bar": "no",
+    "brand": "Bodhi greens",
+    "cuisine": "pizza;coffee_shop;cake;sandwich;noodle;salad;soup;sushi",
+    "delivery": "yes",
+    "diet:vegan": "yes",
+    "email": "chefvarun@bodhigreens.in",
+    "image": "https://bodhigreens.in/cdn/shop/files/IMG_1429_1.heic?v=1732520619&width=1070",
+    "internet_access": "wlan",
+    "internet_access:fee": "no",
+    "level": "0",
+    "mobile": "+91 79755 76350",
+    "name": "Bodhi Greens",
+    "opening_hours": "Mo-Su 08:30-21:45",
+    "organic": "yes",
+    "outdoor_seating": "yes",
+    "payment:cash": "yes",
+    "payment:credit_cards": "yes",
+    "payment:debit_cards": "yes",
+    "payment:upi": "yes",
+    "takeaway": "yes",
+    "toilets": "yes",
+    "website": "https://bodhigreens.in/",
+    "website:menu": "https://drive.google.com/file/d/19YGrYmlJgLFbPsfVJn0ED13S5ev0rB82/view?usp=sharing"
+  }
+},
+{
+  "type": "node",
+  "id": 12829559275,
+  "lat": 32.2392620,
+  "lon": 76.3311213,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12829573559,
+  "lat": 32.2396899,
+  "lon": 76.3298242,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12830223580,
+  "lat": 32.2466436,
+  "lon": 76.3310696,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12833596579,
+  "lat": 32.2494045,
+  "lon": 76.3293022,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Tapri Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12833612148,
+  "lat": 32.2491232,
+  "lon": 76.3291665,
+  "tags": {
+    "name": "Nukkad",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 12835212312,
+  "lat": 32.2486740,
+  "lon": 76.3284919,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Open Heart Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12835317739,
+  "lat": 32.2484776,
+  "lon": 76.3281452,
+  "tags": {
+    "laundry_service": "yes",
+    "name": "The Laundry Hub",
+    "self_service": "no",
+    "shop": "laundry"
+  }
+},
+{
+  "type": "node",
+  "id": 12836586202,
+  "lat": 32.2392392,
+  "lon": 76.3317211,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12839210963,
+  "lat": 32.2513504,
+  "lon": 76.3289799,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Salvation"
+  }
+},
+{
+  "type": "node",
+  "id": 12870313765,
+  "lat": 32.2702250,
+  "lon": 76.3527225,
+  "tags": {
+    "amenity": "shelter",
+    "bench": "no",
+    "bin": "no",
+    "name": "Trimund Sarai"
+  }
+},
+{
+  "type": "node",
+  "id": 12883365630,
+  "lat": 32.2485495,
+  "lon": 76.3278510,
+  "tags": {
+    "name": "The leather shop",
+    "shop": "leather"
+  }
+},
+{
+  "type": "node",
+  "id": 12883365631,
+  "lat": 32.2484930,
+  "lon": 76.3275266,
+  "tags": {
+    "shop": "jewelry"
+  }
+},
+{
+  "type": "node",
+  "id": 12891895668,
+  "lat": 32.2490422,
+  "lon": 76.3325659,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Paradise cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12891938606,
+  "lat": 32.2508539,
+  "lon": 76.3307412,
+  "tags": {
+    "name": "The corner store",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "node",
+  "id": 12891946894,
+  "lat": 32.2508033,
+  "lon": 76.3297011,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Pinku family place"
+  }
+},
+{
+  "type": "node",
+  "id": 12903856400,
+  "lat": 32.2493125,
+  "lon": 76.3254223,
+  "tags": {
+    "amenity": "bench",
+    "backrest": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12903897161,
+  "lat": 32.2450858,
+  "lon": 76.3255969,
+  "tags": {
+    "amenity": "shelter",
+    "shelter_type": "public_transport"
+  }
+},
+{
+  "type": "node",
+  "id": 12903904816,
+  "lat": 32.2466404,
+  "lon": 76.3249836,
+  "tags": {
+    "amenity": "place_of_worship",
+    "religion": "buddhist"
+  }
+},
+{
+  "type": "node",
+  "id": 12904038038,
+  "lat": 32.2523405,
+  "lon": 76.3203132,
+  "tags": {
+    "name": "Eagle's Nest",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12904039412,
+  "lat": 32.2520905,
+  "lon": 76.3252783,
+  "tags": {
+    "name": "Open Heart Cafe",
+    "shop": "kiosk"
+  }
+},
+{
+  "type": "node",
+  "id": 12904060076,
+  "lat": 32.2501118,
+  "lon": 76.3273950,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Udgam Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12909194906,
+  "lat": 32.2493635,
+  "lon": 76.3302947,
+  "tags": {
+    "name": "Nisha House Homestay",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "node",
+  "id": 12911707096,
+  "lat": 32.2485039,
+  "lon": 76.3288057,
+  "tags": {
+    "leisure": "fitness_centre",
+    "name": "Lokis Yoga Village",
+    "sport": "yoga"
+  }
+},
+{
+  "type": "node",
+  "id": 12911753640,
+  "lat": 32.2487418,
+  "lon": 76.3318874,
+  "tags": {
+    "leisure": "sauna",
+    "name": "SteamSpace"
+  }
+},
+{
+  "type": "node",
+  "id": 12912272078,
+  "lat": 32.2447281,
+  "lon": 76.3294717,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "Om nom greens"
+  }
+},
+{
+  "type": "node",
+  "id": 12912287806,
+  "lat": 32.2448499,
+  "lon": 76.3292998,
+  "tags": {
+    "name": "Hotel oak valley",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "node",
+  "id": 12913603850,
+  "lat": 32.2472326,
+  "lon": 76.3270846,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Zula Cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 12917648153,
+  "lat": 32.2397783,
+  "lon": 76.3236099,
+  "tags": {
+    "amenity": "fast_food",
+    "name": "Sanjay fast food & Dhaba",
+    "opening_hours": "Mo-Su 09:00-19:00"
+  }
+},
+{
+  "type": "node",
+  "id": 12961194243,
+  "lat": 32.2388091,
+  "lon": 76.3245744,
+  "tags": {
+    "addr:city": "Dharmsala, Macleod Ganj",
+    "addr:district": "Kangra",
+    "addr:postcode": "176216",
+    "addr:street": "Bhagsu Road",
+    "amenity": "cafe",
+    "contact:facebook": "https://www.facebook.com/profile.php?id=61577895811051",
+    "cuisine": "bubble_tea;american;asian",
+    "delivery": "yes",
+    "name": "Tego Bubble Tea shop",
+    "opening_hours": "Mo-Su 11:00-23:00",
+    "outdoor_seating": "yes",
+    "payment:cash": "yes",
+    "payment:contactless": "yes",
+    "payment:credit_cards": "yes",
+    "payment:debit_cards": "yes",
+    "payment:google_pay": "yes",
+    "payment:mastercard": "yes",
+    "payment:visa": "yes",
+    "phone": "+919886329198",
+    "takeaway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 13011636512,
+  "lat": 32.2385995,
+  "lon": 76.3245066,
+  "tags": {
+    "addr:street": "Bhagsu road",
+    "amenity": "cafe",
+    "name": "Juniper Terrace",
+    "opening_hours": "Mo-Su 09:00-21:00"
+  }
+},
+{
+  "type": "node",
+  "id": 13015287101,
+  "lat": 32.2457425,
+  "lon": 76.3260567,
+  "tags": {
+    "addr:housenumber": "1",
+    "addr:postcode": "176219",
+    "addr:street": "Main Square - Tushita Road",
+    "amenity": "restaurant",
+    "contact:instagram": "khanabadosh_cafe",
+    "cuisine": "indian",
+    "internet_access": "wlan",
+    "name": "Khanabadosh",
+    "name:hi": "खानाबदोश",
+    "opening_hours": "Th-Tu 09:00-21:00",
+    "phone": "9769470086",
+    "self_service": "partially",
+    "website": "https://maps.app.goo.gl/ZhR6Uyxq89njxPRe9",
+    "website:menu": "https://drive.google.com/file/d/1Tdkf-DMZuY8ERxrG5xuk_xufnRguHkVd/view?usp=drivesdk"
+  }
+},
+{
+  "type": "node",
+  "id": 13264089627,
+  "lat": 32.2652089,
+  "lon": 76.3537780,
+  "tags": {
+    "amenity": "shelter",
+    "bench": "no",
+    "bin": "no",
+    "name": "Shepherds Tarp Shelter"
+  }
+},
+{
+  "type": "node",
+  "id": 13264095276,
+  "lat": 32.2409190,
+  "lon": 76.3484122,
+  "tags": {
+    "amenity": "place_of_worship",
+    "religion": "animist"
+  }
+},
+{
+  "type": "node",
+  "id": 13264112146,
+  "lat": 32.2709663,
+  "lon": 76.3600770,
+  "tags": {
+    "amenity": "shelter",
+    "bench": "no",
+    "bin": "no",
+    "name": "Shepherds Cave Shelter"
+  }
+},
+{
+  "type": "node",
+  "id": 13264427909,
+  "lat": 32.2469517,
+  "lon": 76.3259750,
+  "tags": {
+    "addr:city": "Dharamkot",
+    "addr:district": "Kangra",
+    "addr:postcode": "176219",
+    "addr:street": "Dharamkot - Haini Road",
+    "amenity": "restaurant",
+    "bar": "no",
+    "delivery": "yes",
+    "diet:vegan": "yes",
+    "diet:vegetarian": "yes",
+    "mobile": "+91 9960000136",
+    "name": "Joy Food",
+    "opening_hours": "Mo-Su 10:00-22:00",
+    "outdoor_seating": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 13325762391,
+  "lat": 32.2458383,
+  "lon": 76.3366908,
+  "tags": {
+    "amenity": "shelter"
+  }
+},
+{
+  "type": "node",
+  "id": 13325762392,
+  "lat": 32.2454226,
+  "lon": 76.3372125,
+  "tags": {
+    "historic": "wayside_shrine",
+    "religion": "hindu"
+  }
+},
+{
+  "type": "node",
+  "id": 13325762393,
+  "lat": 32.2470827,
+  "lon": 76.3316697,
+  "tags": {
+    "amenity": "cafe",
+    "cuisine": "south_indian",
+    "name": "South Cliff cafe"
+  }
+},
+{
+  "type": "node",
+  "id": 13327355065,
+  "lat": 32.2436190,
+  "lon": 76.3360448,
+  "tags": {
+    "amenity": "shelter",
+    "bench": "no",
+    "bin": "no",
+    "name": "Boulder Shelter"
+  }
+},
+{
+  "type": "node",
+  "id": 13327587196,
+  "lat": 32.2524210,
+  "lon": 76.3241401,
+  "tags": {
+    "amenity": "place_of_worship"
+  }
+},
+{
+  "type": "node",
+  "id": 13354687535,
+  "lat": 32.2407031,
+  "lon": 76.3351820,
+  "tags": {
+    "amenity": "shelter",
+    "name": "Cave Shelter"
+  }
+},
+{
+  "type": "node",
+  "id": 13507939033,
+  "lat": 32.2394323,
+  "lon": 76.3471697,
+  "tags": {
+    "amenity": "place_of_worship",
+    "name": "Shri Hanuman Ji"
+  }
+},
+{
+  "type": "node",
+  "id": 13614354932,
+  "lat": 32.2421647,
+  "lon": 76.3505183,
+  "tags": {
+    "amenity": "cafe",
+    "description": "Cafe and Camping",
+    "name": "Bhai Chara Cafe",
+    "opening_hours": "Mo-Su 08:00-21:00"
+  }
+},
+{
+  "type": "node",
+  "id": 13713154701,
+  "lat": 32.2439724,
+  "lon": 76.3322088,
+  "tags": {
+    "name": "The Hosteller",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "node",
+  "id": 13718566701,
+  "lat": 32.2461895,
+  "lon": 76.3327627,
+  "tags": {
+    "leisure": "fitness_centre",
+    "name": "Himalayan Academy of Martial Arts"
+  }
+},
+{
+  "type": "node",
+  "id": 13729915701,
+  "lat": 32.2391921,
+  "lon": 76.3310345,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Strings Cafe and Bistro",
+    "opening_hours": "Mo-Su 09:00-18:00"
+  }
+},
+{
+  "type": "node",
+  "id": 13752156296,
+  "lat": 32.2456854,
+  "lon": 76.3254062,
+  "tags": {
+    "board_type": "tourism",
+    "information": "board",
+    "tourism": "information"
+  }
+},
+{
+  "type": "node",
+  "id": 13752181903,
+  "lat": 32.2470829,
+  "lon": 76.3177250,
+  "tags": {
+    "information": "board",
+    "tourism": "information"
+  }
+},
+{
+  "type": "node",
+  "id": 13759933901,
+  "lat": 32.2390956,
+  "lon": 76.3253522,
+  "tags": {
+    "addr:postcode": "176219",
+    "addr:street": "Bhagsu Road",
+    "amenity": "cafe",
+    "name": "Peace Coffee House"
+  }
+},
+{
+  "type": "node",
+  "id": 13823403963,
+  "lat": 32.2558278,
+  "lon": 76.3428784,
+  "tags": {
+    "amenity": "place_of_worship"
+  }
+},
+{
+  "type": "node",
+  "id": 14065971605,
+  "lat": 32.2465217,
+  "lon": 76.3259716,
+  "tags": {
+    "amenity": "taxi",
+    "name": "Dharamkot Taxi Stand"
+  }
+},
+{
+  "type": "node",
+  "id": 14065971606,
+  "lat": 32.2466270,
+  "lon": 76.3258951,
+  "tags": {
+    "amenity": "cafe",
+    "name": "Cafe Sweet Moments"
+  }
+},
+{
+  "type": "node",
+  "id": 14175467801,
+  "lat": 32.2439484,
+  "lon": 76.3301382,
+  "tags": {
+    "amenity": "clinic",
+    "name": "Shivani Ayurveda (Bhagsu)",
+    "phone": "+9194180 69406",
+    "website": "https://www.shivaniayurveda.com"
+  }
+},
+{
+  "type": "node",
+  "id": 14175467802,
+  "lat": 32.2385334,
+  "lon": 76.3238413,
+  "tags": {
+    "amenity": "restaurant",
+    "name": "D.Town Restaurant",
+    "opening_hours": "Mo-Su 07:30-23:30"
+  }
+},
+{
+  "type": "node",
+  "id": 14196391182,
+  "lat": 32.2548244,
+  "lon": 76.3263076,
+  "tags": {
+    "amenity": "waste_disposal"
+  }
+},
+{
+  "type": "node",
+  "id": 14196391183,
+  "lat": 32.2544567,
+  "lon": 76.3255497,
+  "tags": {
+    "board_type": "welcome_sign",
+    "information": "board",
+    "name": "Triund Wilderness",
+    "tourism": "information"
+  }
+},
+{
+  "type": "way",
+  "id": 43752491,
+  "bounds": {
+    "minlat": 32.2423150,
+    "minlon": 76.3171210,
+    "maxlat": 32.2433609,
+    "maxlon": 76.3190629
+  },
+  "geometry": [
+    { "lat": 32.2428338, "lon": 76.3178354 },
+    { "lat": 32.2429432, "lon": 76.3180585 },
+    { "lat": 32.2430578, "lon": 76.3181269 },
+    { "lat": 32.2432501, "lon": 76.3183413 },
+    { "lat": 32.2433609, "lon": 76.3185716 },
+    { "lat": 32.2430244, "lon": 76.3190629 },
+    { "lat": 32.2425243, "lon": 76.3186859 },
+    { "lat": 32.2423378, "lon": 76.3186544 },
+    { "lat": 32.2423150, "lon": 76.3180794 },
+    { "lat": 32.2426175, "lon": 76.3171210 },
+    { "lat": 32.2427910, "lon": 76.3171882 },
+    { "lat": 32.2428321, "lon": 76.3173920 },
+    { "lat": 32.2428234, "lon": 76.3176051 },
+    { "lat": 32.2428338, "lon": 76.3178354 }
+  ],
+  "tags": {
+    "amenity": "place_of_worship",
+    "denomination": "anglican",
+    "name": "Church of Saint John in the Wilderness",
+    "note": "Service end time estimated.",
+    "religion": "christian",
+    "service_times": "Su 11:30-12:30",
+    "start_date": "1852",
+    "tourism": "attraction",
+    "wheelchair": "yes",
+    "wikidata": "Q7588934",
+    "wikipedia": "en:St. John in the Wilderness Church (Dharamshala)"
+  }
+},
+{
+  "type": "way",
+  "id": 56688111,
+  "bounds": {
+    "minlat": 32.2426050,
+    "minlon": 76.3250948,
+    "maxlat": 32.2428539,
+    "maxlon": 76.3253987
+  },
+  "geometry": [
+    { "lat": 32.2427201, "lon": 76.3253987 },
+    { "lat": 32.2428334, "lon": 76.3251816 },
+    { "lat": 32.2428539, "lon": 76.3251423 },
+    { "lat": 32.2426050, "lon": 76.3250948 },
+    { "lat": 32.2427201, "lon": 76.3253987 }
+  ],
+  "tags": {
+    "leisure": "sports_centre",
+    "name": "Regional Mountaineering Center"
+  }
+},
+{
+  "type": "way",
+  "id": 102806562,
+  "bounds": {
+    "minlat": 32.2392216,
+    "minlon": 76.3238185,
+    "maxlat": 32.2399294,
+    "maxlon": 76.3241779
+  },
+  "geometry": [
+    { "lat": 32.2399113, "lon": 76.3240104 },
+    { "lat": 32.2395891, "lon": 76.3240143 },
+    { "lat": 32.2394666, "lon": 76.3240008 },
+    { "lat": 32.2392828, "lon": 76.3238185 },
+    { "lat": 32.2392615, "lon": 76.3238474 },
+    { "lat": 32.2392216, "lon": 76.3239016 },
+    { "lat": 32.2394280, "lon": 76.3240894 },
+    { "lat": 32.2395755, "lon": 76.3241645 },
+    { "lat": 32.2397615, "lon": 76.3241779 },
+    { "lat": 32.2399294, "lon": 76.3241635 },
+    { "lat": 32.2399113, "lon": 76.3240104 }
+  ],
+  "tags": {
+    "access": "private",
+    "amenity": "parking",
+    "parking": "surface"
+  }
+},
+{
+  "type": "way",
+  "id": 103122026,
+  "bounds": {
+    "minlat": 32.2381737,
+    "minlon": 76.3237490,
+    "maxlat": 32.2383408,
+    "maxlon": 76.3239021
+  },
+  "geometry": [
+    { "lat": 32.2383102, "lon": 76.3237490 },
+    { "lat": 32.2381737, "lon": 76.3238305 },
+    { "lat": 32.2382044, "lon": 76.3239021 },
+    { "lat": 32.2383408, "lon": 76.3238205 },
+    { "lat": 32.2383102, "lon": 76.3237490 }
+  ],
+  "tags": {
+    "amenity": "place_of_worship",
+    "building": "temple",
+    "building:levels": "3",
+    "name": "Kalachakra Temple",
+    "religion": "buddhist"
+  }
+},
+{
+  "type": "way",
+  "id": 192888195,
+  "bounds": {
+    "minlat": 32.2424990,
+    "minlon": 76.3181134,
+    "maxlat": 32.2425958,
+    "maxlon": 76.3184510
+  },
+  "geometry": [
+    { "lat": 32.2425699, "lon": 76.3184510 },
+    { "lat": 32.2425246, "lon": 76.3184498 },
+    { "lat": 32.2425260, "lon": 76.3183756 },
+    { "lat": 32.2424990, "lon": 76.3183747 },
+    { "lat": 32.2425043, "lon": 76.3181583 },
+    { "lat": 32.2425301, "lon": 76.3181592 },
+    { "lat": 32.2425310, "lon": 76.3181134 },
+    { "lat": 32.2425533, "lon": 76.3181140 },
+    { "lat": 32.2425763, "lon": 76.3181146 },
+    { "lat": 32.2425754, "lon": 76.3181608 },
+    { "lat": 32.2425958, "lon": 76.3181615 },
+    { "lat": 32.2425905, "lon": 76.3183778 },
+    { "lat": 32.2425713, "lon": 76.3183772 },
+    { "lat": 32.2425699, "lon": 76.3184510 }
+  ],
+  "tags": {
+    "amenity": "place_of_worship",
+    "building": "church",
+    "building:architecture": "neo-gothic",
+    "denomination": "anglican",
+    "name": "Saint John in the Wilderness",
+    "religion": "christian"
+  }
+},
+{
+  "type": "way",
+  "id": 284639277,
+  "bounds": {
+    "minlat": 32.2393003,
+    "minlon": 76.3233513,
+    "maxlat": 32.2398210,
+    "maxlon": 76.3236821
+  },
+  "geometry": [
+    { "lat": 32.2393003, "lon": 76.3235778 },
+    { "lat": 32.2393094, "lon": 76.3235198 },
+    { "lat": 32.2396856, "lon": 76.3234591 },
+    { "lat": 32.2397164, "lon": 76.3233596 },
+    { "lat": 32.2397925, "lon": 76.3233513 },
+    { "lat": 32.2398210, "lon": 76.3233984 },
+    { "lat": 32.2397783, "lon": 76.3236099 },
+    { "lat": 32.2397635, "lon": 76.3236564 },
+    { "lat": 32.2394821, "lon": 76.3236821 },
+    { "lat": 32.2393003, "lon": 76.3235778 }
+  ],
+  "tags": {
+    "access": "yes",
+    "amenity": "parking",
+    "fee": "yes",
+    "name": "Main Parking",
+    "parking": "rooftop"
+  }
+},
+{
+  "type": "way",
+  "id": 285621776,
+  "bounds": {
+    "minlat": 32.2416303,
+    "minlon": 76.3277242,
+    "maxlat": 32.2426362,
+    "maxlon": 76.3288420
+  },
+  "geometry": [
+    { "lat": 32.2423318, "lon": 76.3288420 },
+    { "lat": 32.2426362, "lon": 76.3284103 },
+    { "lat": 32.2422576, "lon": 76.3279933 },
+    { "lat": 32.2420134, "lon": 76.3277242 },
+    { "lat": 32.2416303, "lon": 76.3281385 },
+    { "lat": 32.2423318, "lon": 76.3288420 }
+  ],
+  "tags": {
+    "email": "chopra.guesthouse@gmail.com",
+    "name": "Chopra House",
+    "phone": "+91 9990929248",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "way",
+  "id": 344749326,
+  "bounds": {
+    "minlat": 32.2438997,
+    "minlon": 76.3345375,
+    "maxlat": 32.2440633,
+    "maxlon": 76.3346657
+  },
+  "geometry": [
+    { "lat": 32.2440633, "lon": 76.3346521 },
+    { "lat": 32.2440566, "lon": 76.3345375 },
+    { "lat": 32.2438997, "lon": 76.3345540 },
+    { "lat": 32.2439055, "lon": 76.3346657 },
+    { "lat": 32.2440633, "lon": 76.3346521 }
+  ],
+  "tags": {
+    "leisure": "swimming_pool",
+    "name": "Bhagsu Nag Pool",
+    "name:en": "Bhagsu Nag Pool",
+    "name:hi": "भागसू नाग पवित्र डल",
+    "opening_hours": "Mo-Su 05:00-20:00",
+    "sport": "swimming"
+  }
+},
+{
+  "type": "way",
+  "id": 345223496,
+  "bounds": {
+    "minlat": 32.2432662,
+    "minlon": 76.3322796,
+    "maxlat": 32.2436597,
+    "maxlon": 76.3330759
+  },
+  "geometry": [
+    { "lat": 32.2435122, "lon": 76.3322796 },
+    { "lat": 32.2436328, "lon": 76.3324312 },
+    { "lat": 32.2435412, "lon": 76.3327311 },
+    { "lat": 32.2436597, "lon": 76.3330506 },
+    { "lat": 32.2434464, "lon": 76.3330442 },
+    { "lat": 32.2432963, "lon": 76.3330759 },
+    { "lat": 32.2432662, "lon": 76.3328969 },
+    { "lat": 32.2433299, "lon": 76.3328689 },
+    { "lat": 32.2433867, "lon": 76.3328461 },
+    { "lat": 32.2434191, "lon": 76.3328281 },
+    { "lat": 32.2434077, "lon": 76.3327153 },
+    { "lat": 32.2434687, "lon": 76.3325485 },
+    { "lat": 32.2434230, "lon": 76.3324583 },
+    { "lat": 32.2433638, "lon": 76.3324515 },
+    { "lat": 32.2433886, "lon": 76.3323162 },
+    { "lat": 32.2435122, "lon": 76.3322796 }
+  ],
+  "tags": {
+    "access": "yes",
+    "amenity": "parking",
+    "fee": "yes",
+    "parking": "surface"
+  }
+},
+{
+  "type": "way",
+  "id": 407868129,
+  "bounds": {
+    "minlat": 32.2495598,
+    "minlon": 76.3295397,
+    "maxlat": 32.2497020,
+    "maxlon": 76.3297608
+  },
+  "geometry": [
+    { "lat": 32.2497020, "lon": 76.3295779 },
+    { "lat": 32.2496379, "lon": 76.3297608 },
+    { "lat": 32.2495598, "lon": 76.3297225 },
+    { "lat": 32.2496239, "lon": 76.3295397 },
+    { "lat": 32.2497020, "lon": 76.3295779 }
+  ],
+  "tags": {
+    "building": "yes",
+    "internet_access": "wlan",
+    "name": "Aju's place",
+    "name:en": "Aju's place",
+    "operator": "Aju",
+    "phone": "+918350979662",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "way",
+  "id": 407872283,
+  "bounds": {
+    "minlat": 32.2490001,
+    "minlon": 76.3319802,
+    "maxlat": 32.2491029,
+    "maxlon": 76.3321751
+  },
+  "geometry": [
+    { "lat": 32.2490001, "lon": 76.3319935 },
+    { "lat": 32.2490818, "lon": 76.3319802 },
+    { "lat": 32.2491029, "lon": 76.3321618 },
+    { "lat": 32.2490212, "lon": 76.3321751 },
+    { "lat": 32.2490001, "lon": 76.3319935 }
+  ],
+  "tags": {
+    "building": "yes",
+    "name": "High Sky Resort",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "way",
+  "id": 407872295,
+  "bounds": {
+    "minlat": 32.2493952,
+    "minlon": 76.3315926,
+    "maxlat": 32.2495480,
+    "maxlon": 76.3317764
+  },
+  "geometry": [
+    { "lat": 32.2493952, "lon": 76.3317234 },
+    { "lat": 32.2495021, "lon": 76.3315926 },
+    { "lat": 32.2495480, "lon": 76.3316523 },
+    { "lat": 32.2494423, "lon": 76.3317764 },
+    { "lat": 32.2494233, "lon": 76.3317551 },
+    { "lat": 32.2493952, "lon": 76.3317234 }
+  ],
+  "tags": {
+    "amenity": "yoga",
+    "building": "yes",
+    "leisure": "sports_centre",
+    "name": "Shivam Neelkant Yoga Kendra",
+    "sport": "yoga"
+  }
+},
+{
+  "type": "way",
+  "id": 407879533,
+  "bounds": {
+    "minlat": 32.2454987,
+    "minlon": 76.3325064,
+    "maxlat": 32.2456138,
+    "maxlon": 76.3327070
+  },
+  "geometry": [
+    { "lat": 32.2454987, "lon": 76.3325255 },
+    { "lat": 32.2455851, "lon": 76.3325064 },
+    { "lat": 32.2456138, "lon": 76.3326879 },
+    { "lat": 32.2455275, "lon": 76.3327070 },
+    { "lat": 32.2454987, "lon": 76.3325255 }
+  ],
+  "tags": {
+    "building": "yes",
+    "name": "La Siesta",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "way",
+  "id": 407879615,
+  "bounds": {
+    "minlat": 32.2452527,
+    "minlon": 76.3327676,
+    "maxlat": 32.2453922,
+    "maxlon": 76.3330082
+  },
+  "geometry": [
+    { "lat": 32.2453687, "lon": 76.3328844 },
+    { "lat": 32.2453922, "lon": 76.3329384 },
+    { "lat": 32.2453043, "lon": 76.3330082 },
+    { "lat": 32.2452815, "lon": 76.3329563 },
+    { "lat": 32.2453226, "lon": 76.3329263 },
+    { "lat": 32.2452527, "lon": 76.3328142 },
+    { "lat": 32.2453015, "lon": 76.3327676 },
+    { "lat": 32.2453687, "lon": 76.3328844 }
+  ],
+  "tags": {
+    "addr:street": "Vaishno Mata Mandir, Bhagsu Nag",
+    "building": "yes",
+    "charge": "From 250 Rs./person",
+    "check_date": "2023-08-04",
+    "internet_access": "wlan",
+    "name": "Rahgir Hostel",
+    "tourism": "hostel"
+  }
+},
+{
+  "type": "way",
+  "id": 407879635,
+  "bounds": {
+    "minlat": 32.2449906,
+    "minlon": 76.3327688,
+    "maxlat": 32.2452642,
+    "maxlon": 76.3329890
+  },
+  "geometry": [
+    { "lat": 32.2452277, "lon": 76.3327688 },
+    { "lat": 32.2452642, "lon": 76.3328831 },
+    { "lat": 32.2450272, "lon": 76.3329890 },
+    { "lat": 32.2449906, "lon": 76.3328747 },
+    { "lat": 32.2452277, "lon": 76.3327688 }
+  ],
+  "tags": {
+    "building": "yes",
+    "internet_access": "wlan",
+    "name:en": "Sky Pie",
+    "opening_hours": "24/7",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "way",
+  "id": 458084444,
+  "bounds": {
+    "minlat": 32.2506839,
+    "minlon": 76.3291338,
+    "maxlat": 32.2507669,
+    "maxlon": 76.3292267
+  },
+  "geometry": [
+    { "lat": 32.2507669, "lon": 76.3291409 },
+    { "lat": 32.2506896, "lon": 76.3291338 },
+    { "lat": 32.2506839, "lon": 76.3292196 },
+    { "lat": 32.2507612, "lon": 76.3292267 },
+    { "lat": 32.2507669, "lon": 76.3291409 }
+  ],
+  "tags": {
+    "amenity": "community_centre",
+    "building": "house",
+    "name": "Kashmir Shaivism Yoga School"
+  }
+},
+{
+  "type": "way",
+  "id": 593399258,
+  "bounds": {
+    "minlat": 32.2495563,
+    "minlon": 76.3277763,
+    "maxlat": 32.2495936,
+    "maxlon": 76.3278389
+  },
+  "geometry": [
+    { "lat": 32.2495924, "lon": 76.3277763 },
+    { "lat": 32.2495563, "lon": 76.3277773 },
+    { "lat": 32.2495575, "lon": 76.3278389 },
+    { "lat": 32.2495936, "lon": 76.3278379 },
+    { "lat": 32.2495924, "lon": 76.3277763 }
+  ],
+  "tags": {
+    "building": "yes",
+    "name": "Aditya Tea Shop",
+    "shop": "convenience"
+  }
+},
+{
+  "type": "way",
+  "id": 710684148,
+  "bounds": {
+    "minlat": 32.2546454,
+    "minlon": 76.3256155,
+    "maxlat": 32.2547859,
+    "maxlon": 76.3257856
+  },
+  "geometry": [
+    { "lat": 32.2546737, "lon": 76.3256155 },
+    { "lat": 32.2547859, "lon": 76.3256477 },
+    { "lat": 32.2547575, "lon": 76.3257856 },
+    { "lat": 32.2546454, "lon": 76.3257534 },
+    { "lat": 32.2546737, "lon": 76.3256155 }
+  ],
+  "tags": {
+    "building": "hotel",
+    "name": "Forest Rest House",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "way",
+  "id": 944732686,
+  "bounds": {
+    "minlat": 32.2420939,
+    "minlon": 76.3283795,
+    "maxlat": 32.2422757,
+    "maxlon": 76.3285734
+  },
+  "geometry": [
+    { "lat": 32.2422757, "lon": 76.3283867 },
+    { "lat": 32.2422702, "lon": 76.3285734 },
+    { "lat": 32.2420939, "lon": 76.3285662 },
+    { "lat": 32.2420993, "lon": 76.3283795 },
+    { "lat": 32.2422757, "lon": 76.3283867 }
+  ],
+  "tags": {
+    "building": "yes",
+    "tourism": "guest_house"
+  }
+},
+{
+  "type": "way",
+  "id": 1384512133,
+  "bounds": {
+    "minlat": 32.2457658,
+    "minlon": 76.3281311,
+    "maxlat": 32.2459327,
+    "maxlon": 76.3282980
+  },
+  "geometry": [
+    { "lat": 32.2457658, "lon": 76.3281661 },
+    { "lat": 32.2459098, "lon": 76.3281311 },
+    { "lat": 32.2459327, "lon": 76.3282630 },
+    { "lat": 32.2457887, "lon": 76.3282980 },
+    { "lat": 32.2457658, "lon": 76.3281661 }
+  ],
+  "tags": {
+    "building": "yes",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "way",
+  "id": 1384512134,
+  "bounds": {
+    "minlat": 32.2459420,
+    "minlon": 76.3280494,
+    "maxlat": 32.2461196,
+    "maxlon": 76.3282698
+  },
+  "geometry": [
+    { "lat": 32.2459420, "lon": 76.3280819 },
+    { "lat": 32.2459699, "lon": 76.3282698 },
+    { "lat": 32.2460952, "lon": 76.3282438 },
+    { "lat": 32.2460884, "lon": 76.3281981 },
+    { "lat": 32.2461196, "lon": 76.3281916 },
+    { "lat": 32.2460985, "lon": 76.3280494 },
+    { "lat": 32.2459420, "lon": 76.3280819 }
+  ],
+  "tags": {
+    "building": "yes",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "way",
+  "id": 1392701719,
+  "bounds": {
+    "minlat": 32.2495239,
+    "minlon": 76.3293327,
+    "maxlat": 32.2496108,
+    "maxlon": 76.3294363
+  },
+  "geometry": [
+    { "lat": 32.2496020, "lon": 76.3293327 },
+    { "lat": 32.2496108, "lon": 76.3294261 },
+    { "lat": 32.2495327, "lon": 76.3294363 },
+    { "lat": 32.2495239, "lon": 76.3293430 },
+    { "lat": 32.2496020, "lon": 76.3293327 }
+  ],
+  "tags": {
+    "amenity": "cafe",
+    "building": "yes",
+    "cuisine": "chinese;italian_pizza;italian;asian",
+    "diet:vegetarian": "yes",
+    "internet_access": "wlan",
+    "level": "0",
+    "name": "Flügler Cafe",
+    "outdoor_seating": "yes",
+    "wheelchair": "limited"
+  }
+},
+{
+  "type": "way",
+  "id": 1392701720,
+  "bounds": {
+    "minlat": 32.2494878,
+    "minlon": 76.3288254,
+    "maxlat": 32.2496175,
+    "maxlon": 76.3290622
+  },
+  "geometry": [
+    { "lat": 32.2495444, "lon": 76.3288254 },
+    { "lat": 32.2496175, "lon": 76.3288530 },
+    { "lat": 32.2495609, "lon": 76.3290622 },
+    { "lat": 32.2494878, "lon": 76.3290346 },
+    { "lat": 32.2495444, "lon": 76.3288254 }
+  ],
+  "tags": {
+    "building": "yes",
+    "check_date": "2025-05-06",
+    "internet_access": "wlan",
+    "name": "Raj residency",
+    "name:en": "Raj residency",
+    "name:he": "מלון ראג'",
+    "tourism": "hotel;guest_house"
+  }
+},
+{
+  "type": "way",
+  "id": 1394452186,
+  "bounds": {
+    "minlat": 32.2461425,
+    "minlon": 76.3256194,
+    "maxlat": 32.2462657,
+    "maxlon": 76.3257376
+  },
+  "geometry": [
+    { "lat": 32.2462523, "lon": 76.3256194 },
+    { "lat": 32.2462657, "lon": 76.3257164 },
+    { "lat": 32.2461559, "lon": 76.3257376 },
+    { "lat": 32.2461425, "lon": 76.3256406 },
+    { "lat": 32.2462523, "lon": 76.3256194 }
+  ],
+  "tags": {
+    "leisure": "fitness_station",
+    "lit": "no",
+    "sport": "fitness"
+  }
+},
+{
+  "type": "way",
+  "id": 1453236390,
+  "bounds": {
+    "minlat": 32.2512065,
+    "minlon": 76.3187241,
+    "maxlat": 32.2527195,
+    "maxlon": 76.3208029
+  },
+  "geometry": [
+    { "lat": 32.2527195, "lon": 76.3199124 },
+    { "lat": 32.2525448, "lon": 76.3205802 },
+    { "lat": 32.2517872, "lon": 76.3208029 },
+    { "lat": 32.2514583, "lon": 76.3204381 },
+    { "lat": 32.2512065, "lon": 76.3192713 },
+    { "lat": 32.2514764, "lon": 76.3188234 },
+    { "lat": 32.2517895, "lon": 76.3187241 },
+    { "lat": 32.2521796, "lon": 76.3193518 },
+    { "lat": 32.2527195, "lon": 76.3199124 }
+  ],
+  "tags": {
+    "building": "yes",
+    "layer": "-1",
+    "name": "Hell Zone",
+    "tourism": "hotel"
+  }
+},
+{
+  "type": "way",
+  "id": 1453261380,
+  "bounds": {
+    "minlat": 32.2550003,
+    "minlon": 76.3263848,
+    "maxlat": 32.2550685,
+    "maxlon": 76.3264734
+  },
+  "geometry": [
+    { "lat": 32.2550685, "lon": 76.3264476 },
+    { "lat": 32.2550368, "lon": 76.3264734 },
+    { "lat": 32.2550003, "lon": 76.3264105 },
+    { "lat": 32.2550321, "lon": 76.3263848 },
+    { "lat": 32.2550685, "lon": 76.3264476 }
+  ],
+  "tags": {
+    "amenity": "cafe",
+    "building": "yes",
+    "name": "Thapa Tea Shop"
+  }
+},
+{
+  "type": "way",
+  "id": 1453261387,
+  "bounds": {
+    "minlat": 32.2542277,
+    "minlon": 76.3254695,
+    "maxlat": 32.2544570,
+    "maxlon": 76.3257113
+  },
+  "geometry": [
+    { "lat": 32.2544557, "lon": 76.3254695 },
+    { "lat": 32.2544567, "lon": 76.3255497 },
+    { "lat": 32.2544570, "lon": 76.3255711 },
+    { "lat": 32.2543033, "lon": 76.3257113 },
+    { "lat": 32.2542525, "lon": 76.3256774 },
+    { "lat": 32.2542277, "lon": 76.3256405 },
+    { "lat": 32.2544557, "lon": 76.3254695 }
+  ],
+  "tags": {
+    "amenity": "parking"
+  }
+},
+{
+  "type": "way",
+  "id": 1453261388,
+  "bounds": {
+    "minlat": 32.2546889,
+    "minlon": 76.3260811,
+    "maxlat": 32.2548231,
+    "maxlon": 76.3262567
+  },
+  "geometry": [
+    { "lat": 32.2548231, "lon": 76.3262474 },
+    { "lat": 32.2547840, "lon": 76.3262567 },
+    { "lat": 32.2546889, "lon": 76.3260957 },
+    { "lat": 32.2547137, "lon": 76.3260811 },
+    { "lat": 32.2547671, "lon": 76.3261442 },
+    { "lat": 32.2548231, "lon": 76.3262474 }
+  ],
+  "tags": {
+    "amenity": "parking",
+    "parking": "street_side"
+  }
+},
+{
+  "type": "way",
+  "id": 1453261389,
+  "bounds": {
+    "minlat": 32.2548815,
+    "minlon": 76.3262247,
+    "maxlat": 32.2549497,
+    "maxlon": 76.3263133
+  },
+  "geometry": [
+    { "lat": 32.2549497, "lon": 76.3262875 },
+    { "lat": 32.2549180, "lon": 76.3263133 },
+    { "lat": 32.2548815, "lon": 76.3262505 },
+    { "lat": 32.2549133, "lon": 76.3262247 },
+    { "lat": 32.2549497, "lon": 76.3262875 }
+  ],
+  "tags": {
+    "amenity": "cafe",
+    "building": "yes",
+    "name": "Thapa Tea Shop"
+  }
+},
+{
+  "type": "way",
+  "id": 1472122460,
+  "bounds": {
+    "minlat": 32.2421465,
+    "minlon": 76.3504845,
+    "maxlat": 32.2422021,
+    "maxlon": 76.3505387
+  },
+  "geometry": [
+    { "lat": 32.2422021, "lon": 76.3504869 },
+    { "lat": 32.2422005, "lon": 76.3505387 },
+    { "lat": 32.2421465, "lon": 76.3505364 },
+    { "lat": 32.2421481, "lon": 76.3504845 },
+    { "lat": 32.2422021, "lon": 76.3504869 }
+  ],
+  "tags": {
+    "amenity": "cafe",
+    "building": "yes",
+    "internet_access": "no",
+    "name": "Make Shift Cafe",
+    "opening_hours": "Mo-Su 09:00+"
+  }
+},
+{
+  "type": "way",
+  "id": 1472122461,
+  "bounds": {
+    "minlat": 32.2427265,
+    "minlon": 76.3498136,
+    "maxlat": 32.2427496,
+    "maxlon": 76.3498464
+  },
+  "geometry": [
+    { "lat": 32.2427496, "lon": 76.3498140 },
+    { "lat": 32.2427492, "lon": 76.3498464 },
+    { "lat": 32.2427265, "lon": 76.3498460 },
+    { "lat": 32.2427269, "lon": 76.3498136 },
+    { "lat": 32.2427496, "lon": 76.3498140 }
+  ],
+  "tags": {
+    "amenity": "cafe",
+    "building": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1472122462,
+  "bounds": {
+    "minlat": 32.2440571,
+    "minlon": 76.3498682,
+    "maxlat": 32.2441042,
+    "maxlon": 76.3499219
+  },
+  "geometry": [
+    { "lat": 32.2441042, "lon": 76.3498716 },
+    { "lat": 32.2441015, "lon": 76.3499219 },
+    { "lat": 32.2440571, "lon": 76.3499185 },
+    { "lat": 32.2440598, "lon": 76.3498682 },
+    { "lat": 32.2441042, "lon": 76.3498716 }
+  ],
+  "tags": {
+    "amenity": "cafe",
+    "building": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1512854564,
+  "bounds": {
+    "minlat": 32.2570165,
+    "minlon": 76.3430835,
+    "maxlat": 32.2570801,
+    "maxlon": 76.3431583
+  },
+  "geometry": [
+    { "lat": 32.2570801, "lon": 76.3431229 },
+    { "lat": 32.2570447, "lon": 76.3431583 },
+    { "lat": 32.2570165, "lon": 76.3431189 },
+    { "lat": 32.2570518, "lon": 76.3430835 },
+    { "lat": 32.2570801, "lon": 76.3431229 }
+  ],
+  "tags": {
+    "amenity": "shelter",
+    "bench": "no",
+    "bin": "no",
+    "building": "yes",
+    "name": "Seasonal Cattle Herders Shelter"
+  }
+},
+{
+  "type": "way",
+  "id": 1516246194,
+  "bounds": {
+    "minlat": 32.2554436,
+    "minlon": 76.3257575,
+    "maxlat": 32.2556549,
+    "maxlon": 76.3259447
+  },
+  "geometry": [
+    { "lat": 32.2556549, "lon": 76.3258482 },
+    { "lat": 32.2555842, "lon": 76.3259447 },
+    { "lat": 32.2554436, "lon": 76.3258227 },
+    { "lat": 32.2554872, "lon": 76.3257575 },
+    { "lat": 32.2555771, "lon": 76.3258415 },
+    { "lat": 32.2556043, "lon": 76.3258008 },
+    { "lat": 32.2556549, "lon": 76.3258482 }
+  ],
+  "tags": {
+    "building": "yes",
+    "tourism": "chalet"
+  }
+},
+{
+  "type": "way",
+  "id": 1516246195,
+  "bounds": {
+    "minlat": 32.2544178,
+    "minlon": 76.3258246,
+    "maxlat": 32.2544906,
+    "maxlon": 76.3259124
+  },
+  "geometry": [
+    { "lat": 32.2544906, "lon": 76.3258474 },
+    { "lat": 32.2544705, "lon": 76.3259124 },
+    { "lat": 32.2544178, "lon": 76.3258896 },
+    { "lat": 32.2544379, "lon": 76.3258246 },
+    { "lat": 32.2544906, "lon": 76.3258474 }
+  ],
+  "tags": {
+    "amenity": "cafe",
+    "building": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1516246196,
+  "bounds": {
+    "minlat": 32.2553589,
+    "minlon": 76.3265095,
+    "maxlat": 32.2555306,
+    "maxlon": 76.3266471
+  },
+  "geometry": [
+    { "lat": 32.2555248, "lon": 76.3265095 },
+    { "lat": 32.2555306, "lon": 76.3266365 },
+    { "lat": 32.2553647, "lon": 76.3266471 },
+    { "lat": 32.2553589, "lon": 76.3265200 },
+    { "lat": 32.2555248, "lon": 76.3265095 }
+  ],
+  "tags": {
+    "caravans": "no",
+    "fee": "yes",
+    "group_only": "no",
+    "static_caravans": "no",
+    "tents": "yes",
+    "tourism": "camp_site"
+  }
+},
+{
+  "type": "way",
+  "id": 1560456181,
+  "bounds": {
+    "minlat": 32.2401592,
+    "minlon": 76.3305578,
+    "maxlat": 32.2404609,
+    "maxlon": 76.3308098
+  },
+  "geometry": [
+    { "lat": 32.2404513, "lon": 76.3305578 },
+    { "lat": 32.2404609, "lon": 76.3307931 },
+    { "lat": 32.2401688, "lon": 76.3308098 },
+    { "lat": 32.2401592, "lon": 76.3305745 },
+    { "lat": 32.2404513, "lon": 76.3305578 }
+  ],
+  "tags": {
+    "amenity": "community_centre",
+    "building": "yes",
+    "community_centre": "community_hall"
+  }
+},
+{
+  "type": "relation",
+  "id": 6243817,
+  "bounds": {
+    "minlat": 32.2621446,
+    "minlon": 76.3537168,
+    "maxlat": 32.2625316,
+    "maxlon": 76.3539953
+  },
+  "tags": {
+    "addr:city": "Dharamsala",
+    "addr:housenumber": "Triund Campsite",
+    "addr:place": "Triund Hill Trail",
+    "addr:postcode": "176216",
+    "building": "yes",
+    "building:levels": "1",
+    "name": "Forest Rest House",
+    "tourism": "guest_house",
+    "type": "multipolygon"
+  }
+}
+
+  ]
+}
