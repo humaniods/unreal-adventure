@@ -1,0 +1,1256 @@
+<meta charset="utf-8">
+<title>Triund Walk Test</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+/* Layout: full-bleed WebGL trail; one glass panel anchored left; smartwatch on the left wrist, bottom-left */
+:root{
+  --ink:#0d1613;
+  --panel:rgba(13,22,19,.86);
+  --line:rgba(214,226,220,.18);
+  --mist:#e7ede9;
+  --muted:#a3b4ac;
+  --marigold:#f2a93b;
+  --marigold-ink:#2a1a04;
+  --ok:#5fc48a;
+  --warn:#f2a93b;
+  --bad:#e8604c;
+  --steel:#3a403d;
+  --f-display:'Rajdhani','Arial Narrow',sans-serif;
+  --f-body:'Hind',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden;background:var(--ink);color:var(--mist);font-family:var(--f-body);font-size:15px}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--marigold);outline-offset:2px}
+
+/* ---------- screens ---------- */
+.screen{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;overflow-y:auto;
+  padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:linear-gradient(90deg,rgba(13,22,19,.94) 0%,rgba(13,22,19,.7) 42%,rgba(13,22,19,0) 78%)}
+.card{margin-block:auto;max-width:540px;width:100%;display:grid;gap:18px;padding-left:clamp(0px,4vw,48px)}
+.eyebrow{font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.16em;font-size:13px;color:var(--marigold)}
+h1,h2{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.01em;line-height:.92;margin:0;text-wrap:balance}
+h1{font-size:clamp(44px,8vw,76px)}
+h2{font-size:clamp(34px,6vw,52px)}
+.lede{margin:0;font-size:17px;line-height:1.55;color:var(--mist);max-width:62ch}
+.fine{margin:0;font-size:13px;line-height:1.5;color:var(--muted);max-width:62ch}
+.label{font-family:var(--f-display);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.field{display:grid;gap:8px}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.seg.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.seg button{background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px 8px;display:grid;gap:0;text-align:left}
+.seg button b{font-family:var(--f-display);font-size:22px;font-weight:700;line-height:1}
+.seg button span{font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--mist);color:var(--ink);border-color:var(--mist)}
+.seg button[aria-pressed="true"] span{color:#41504a}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;color:var(--mist)}
+.check input{margin-top:3px;accent-color:var(--marigold);width:16px;height:16px;flex:none}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:0;border-radius:10px;padding:13px 22px;font-family:var(--f-display);font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.06em}
+.btn.primary{background:var(--marigold);color:var(--marigold-ink)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--mist)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:14px;align-items:center}
+.keys dt{white-space:nowrap}
+.keys dd{margin:0;color:var(--muted)}
+kbd{font-family:var(--f-display);font-weight:600;font-size:13px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 7px;background:rgba(255,255,255,.04)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px 18px;margin:0}
+.stats div{display:grid;gap:2px;border-top:1px solid var(--line);padding-top:8px}
+.stats dt{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-family:var(--f-display);font-weight:600}
+.stats dd{margin:0;font-family:var(--f-display);font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.05}
+.want button[aria-pressed="true"]{background:var(--ok);color:var(--ink);border-color:var(--ok)}
+
+/* ---------- in-game layer ---------- */
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:2;opacity:0;
+  background:radial-gradient(ellipse at 50% 48%,rgba(0,0,0,0) 38%,rgba(14,4,4,.92) 100%)}
+#cross{position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:rgba(255,255,255,.55);z-index:3;pointer-events:none}
+#subtitle{position:fixed;left:50%;bottom:calc(24% + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:6;
+  max-width:min(640px,calc(100% - 32px));text-align:center;font-size:18px;line-height:1.4;padding:8px 14px;border-radius:8px;
+  background:rgba(8,12,10,.62);color:var(--mist);pointer-events:none;transition:opacity .4s}
+#prompt{position:fixed;left:50%;top:58%;transform:translateX(-50%);z-index:6;font-family:var(--f-display);font-weight:600;font-size:18px;
+  letter-spacing:.04em;padding:6px 12px;border-radius:8px;background:rgba(8,12,10,.62);pointer-events:none;white-space:nowrap}
+#prompt kbd{color:var(--marigold);border-color:var(--marigold)}
+
+/* smartwatch */
+#watch{position:fixed;z-index:7;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  width:184px;transform:rotate(-5deg) scale(.78);transform-origin:bottom left;transition:transform .38s cubic-bezier(.2,.8,.2,1);cursor:pointer}
+#watch.up{transform:rotate(-3deg) scale(1.08)}
+#watch .strap{position:absolute;left:50%;width:86px;margin-left:-43px;top:-46px;bottom:-60px;border-radius:20px;
+  background:linear-gradient(90deg,#1a1d1c,#2c312f 50%,#1a1d1c);z-index:-1}
+.face{--zone:var(--ok);--hrp:30;position:relative;width:184px;height:184px;border-radius:50%;border:6px solid var(--steel);
+  background:radial-gradient(circle at 50% 35%,#18231f,#040706 75%);box-shadow:0 10px 30px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.06);
+  display:grid;place-items:center;overflow:hidden}
+.face::before{content:"";position:absolute;inset:5px;border-radius:50%;
+  background:conic-gradient(from 210deg,var(--zone) calc(var(--hrp) * 0.83%),rgba(255,255,255,.07) 0 83%,transparent 0);
+  -webkit-mask:radial-gradient(circle,transparent 74px,#000 75px);mask:radial-gradient(circle,transparent 74px,#000 75px)}
+.wpage{display:grid;justify-items:center;gap:2px;text-align:center;font-variant-numeric:tabular-nums}
+.wclock{font-family:var(--f-display);font-size:12px;color:var(--muted);letter-spacing:.12em}
+.whr{font-family:var(--f-display);font-weight:700;font-size:50px;line-height:.9;color:var(--zone)}
+.whr small{font-size:13px;color:var(--muted);margin-left:2px;font-weight:600}
+.wzone{font-family:var(--f-display);font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--mist)}
+.wbr{display:flex;align-items:center;gap:6px;font-family:var(--f-display);font-size:14px;font-weight:600;color:var(--mist);margin-top:1px}
+.wbr i{width:10px;height:10px;border-radius:50%;background:var(--zone);box-shadow:0 0 6px var(--zone);transform:scale(var(--lung,.6))}
+.wgrid{display:grid;grid-template-columns:repeat(3,auto);gap:4px;margin-top:4px;padding-inline:10px}
+.wgrid div{display:grid;justify-items:center}
+.wgrid b{font-family:var(--f-display);font-size:16px;font-weight:700;line-height:1}
+.wgrid small{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.wlist{display:grid;gap:3px;font-size:13px;width:124px}
+.wlist div{display:flex;justify-content:space-between;gap:6px}
+.wlist span{color:var(--muted)}
+.wlist b{font-family:var(--f-display);font-size:16px}
+.wtitle{font-family:var(--f-display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--marigold)}
+.wdots{display:flex;gap:4px;margin-top:4px}
+.wdots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25)}
+.wdots i.on{background:var(--mist)}
+#watch.buzz .face{animation:buzz .32s linear 2}
+@keyframes buzz{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+
+/* breathing mini-game */
+#breath{position:fixed;left:50%;bottom:calc(30% + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:6;display:grid;justify-items:center;gap:4px;pointer-events:none}
+#breath canvas{width:170px;height:170px}
+#breathCue{font-family:var(--f-display);font-weight:700;font-size:24px;letter-spacing:.14em}
+#breathHelp{font-size:13px;color:var(--mist);background:rgba(8,12,10,.6);padding:3px 10px;border-radius:6px;text-align:center}
+
+#debug{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));z-index:8;
+  font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;background:rgba(8,12,10,.78);padding:8px 10px;border-radius:8px;white-space:pre;color:var(--mist)}
+
+/* tuning panel */
+#tune{position:fixed;top:0;right:0;bottom:0;z-index:25;width:min(400px,100%);overflow-y:auto;background:var(--panel);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-left:1px solid var(--line);
+  padding-block:calc(18px + env(safe-area-inset-top,0px)) calc(18px + env(safe-area-inset-bottom,0px));
+  padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));display:grid;gap:14px;align-content:start}
+#tune h3{margin:0;font-family:var(--f-display);font-size:26px;text-transform:uppercase}
+.trow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline}
+.trow label{font-size:13px;color:var(--mist)}
+.trow output{font-family:var(--f-display);font-weight:600;font-variant-numeric:tabular-nums}
+.trow input{grid-column:1/-1;width:100%;accent-color:var(--marigold)}
+
+#touch{position:fixed;inset:0;z-index:4;pointer-events:none}
+#joy{position:absolute;left:calc(20px + env(safe-area-inset-left,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:130px;height:130px;border-radius:50%;
+  border:1px solid var(--line);background:rgba(8,12,10,.3);pointer-events:auto}
+#knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(231,237,233,.35)}
+#tbtns{position:absolute;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(3,58px);gap:8px;pointer-events:auto}
+#tbtns button{height:52px;border-radius:12px;border:1px solid var(--line);background:rgba(8,12,10,.5);font-family:var(--f-display);font-weight:700;font-size:14px;text-transform:uppercase}
+#tbtns button.on{background:var(--marigold);color:var(--marigold-ink)}
+body.touchmode #watch{bottom:auto;top:calc(8px + env(safe-area-inset-top,0px));transform:rotate(4deg) scale(.6);transform-origin:top left}
+body.touchmode #watch.up{transform:rotate(2deg) scale(.85)}
+body.touchmode #watch .strap{top:-60px;bottom:-46px}
+
+#droneHud{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:8;background:rgba(8,12,10,.72);
+  color:var(--mist);padding:10px 16px;border-radius:10px;text-align:center;width:max-content;max-width:calc(100vw - 32px);pointer-events:none}
+#droneHud .dt{display:flex;gap:12px;align-items:baseline;justify-content:center;flex-wrap:wrap}
+#droneHud b{font-family:var(--f-display);font-size:19px;letter-spacing:.04em}
+#droneHud .dt span{font-variant-numeric:tabular-nums}
+#droneHud .dn{font-size:14px;margin-top:3px;color:var(--marigold)}
+#droneHud .dk{font-size:12px;opacity:.82;margin-top:5px}
+#droneHud kbd{font-size:11px;padding:0 4px;border:1px solid var(--line);border-radius:4px;margin:0 1px}
+#toast{position:fixed;top:calc(16px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:40;background:var(--mist);color:var(--ink);padding:8px 14px;border-radius:8px;font-weight:500}
+#copyFallback{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:41;width:min(560px,calc(100% - 32px));height:160px;
+  background:var(--ink);color:var(--mist);border:1px solid var(--marigold);border-radius:8px;font:12px ui-monospace,monospace;padding:8px}
+
+@media (max-width:640px){
+  .screen{background:rgba(13,22,19,.86)}
+  .card{padding-left:0}
+}
+@media (prefers-reduced-motion:reduce){
+  #watch{transition:none}
+  #watch.buzz .face{animation:none}
+}
+</style>
+
+<canvas id="c" tabindex="-1" aria-label="3D trail view"></canvas>
+<div id="vignette"></div>
+<div id="cross" hidden></div>
+<div id="subtitle" hidden></div>
+<div id="prompt" hidden></div>
+
+<div id="watch" hidden title="Watch (Q)">
+  <div class="strap"></div>
+  <div class="face" id="face">
+    <div class="wpage" id="wp0">
+      <div class="wclock" id="wClock">07:00</div>
+      <div class="whr"><span id="wHr">72</span><small>bpm</small></div>
+      <div class="wzone" id="wZone">Z1 · Rest</div>
+      <div class="wbr" title="Breathing"><i id="wLung"></i><span id="wBr">14/min · easy</span></div>
+      <div class="wgrid">
+        <div><b id="wTemp">36.7°</b><small>body</small></div>
+        <div><b id="wHyd">100%</b><small>water</small></div>
+        <div><b id="wAlt">2100</b><small>metre</small></div>
+      </div>
+      <div class="wdots"><i class="on"></i><i></i><i></i></div>
+    </div>
+    <div class="wpage" id="wp1" hidden>
+      <div class="wtitle">Route</div>
+      <div class="wlist">
+        <div><span>Walked</span><b id="rDone">0 m</b></div>
+        <div><span>To top</span><b id="rLeft">0 m</b></div>
+        <div><span>Climb</span><b id="rClimb">0 m</b></div>
+        <div><span>Next</span><b id="rNext">Stall</b></div>
+      </div>
+      <div class="wdots"><i></i><i class="on"></i><i></i></div>
+    </div>
+    <div class="wpage" id="wp2" hidden>
+      <div class="wtitle">Body</div>
+      <div class="wlist">
+        <div><span>Energy</span><b id="bEnergy">100%</b></div>
+        <div><span>SpO₂</span><b id="bSpo">97%</b></div>
+        <div><span>Bag</span><b id="bBag">12 kg</b></div>
+        <div><span>Outside</span><b id="bAmb">9°C</b></div>
+      </div>
+      <div class="wdots"><i></i><i></i><i class="on"></i></div>
+    </div>
+  </div>
+</div>
+
+<div id="breath" hidden>
+  <canvas id="breathCanvas" width="340" height="340"></canvas>
+  <div id="breathCue">IN</div>
+  <div id="breathHelp">Breathe with the ring: hold <kbd>Space</kbd> to breathe in, release to breathe out</div>
+</div>
+
+<div id="debug" hidden></div>
+
+<div id="touch" hidden>
+  <div id="joy"><div id="knob"></div></div>
+  <div id="tbtns">
+    <button type="button" id="tbSprint">Sprint</button>
+    <button type="button" id="tbBreath">Breathe</button>
+    <button type="button" id="tbWatch">Watch</button>
+    <button type="button" id="tbUse">Use</button>
+    <button type="button" id="tbWater">Water</button>
+    <button type="button" id="tbMenu">Pause</button>
+  </div>
+</div>
+
+<!-- start -->
+<section class="screen" id="start">
+  <div class="card">
+    <div class="eyebrow">ECP feel test · build 0.5</div>
+    <h1>Triund Walk Test</h1>
+    <p class="lede">The real Triund trails above McLeod Ganj, up to the meadow at 2,838 m facing the Dhauladhar range. Take the classic 5 km path from Gallu Devi temple through oak and deodar forest, past Magic View Cafe and up the switchbacks, or the steeper, quieter climb from Bhagsu past the waterfall, Shiva Cafe and Karthani. There is no health bar. Your breathing, your heartbeat and the smartwatch on your wrist tell you how your body is holding up.</p>
+    <div class="field">
+      <div class="label" id="packLabel">Pack weight</div>
+      <div class="seg" role="group" aria-labelledby="packLabel" id="packSeg">
+        <button type="button" data-kg="8" aria-pressed="false"><b>8 kg</b><span>Light</span></button>
+        <button type="button" data-kg="12" aria-pressed="true"><b>12 kg</b><span>Normal</span></button>
+        <button type="button" data-kg="18" aria-pressed="false"><b>18 kg</b><span>Heavy, ×2 drain</span></button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="label" id="fromLabel">Start from</div>
+      <div class="seg" role="group" aria-labelledby="fromLabel" id="fromSeg">
+        <button type="button" data-from="galu" aria-pressed="true"><b>Gallu Devi</b><span>Classic route · 5.0 km</span></button>
+        <button type="button" data-from="magic" aria-pressed="false"><b>Magic View</b><span>Final climb · 2.4 km</span></button>
+        <button type="button" data-from="shiva" aria-pressed="false"><b>Bhagsu</b><span>Via Shiva Cafe · 4.8 km</span></button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="label" id="gfxLabel">Graphics</div>
+      <div class="seg two" role="group" aria-labelledby="gfxLabel" id="gfxSeg">
+        <button type="button" data-q="high" aria-pressed="true"><b>High</b><span>Shadows, dense grass</span></button>
+        <button type="button" data-q="low" aria-pressed="false"><b>Low</b><span>For older laptops</span></button>
+      </div>
+    </div>
+    <label class="check"><input type="checkbox" id="assistBox"> Breathing assist: the breathing mini-game plays itself (accessibility)</label>
+    <div class="row">
+      <button type="button" class="btn primary" id="startBtn" disabled>Loading the mountain…</button>
+      <button type="button" class="btn ghost" id="droneBtn" disabled>Drone flyover</button>
+    </div>
+    <dl class="keys">
+      <dt><kbd>W A S D</kbd></dt><dd>walk · look with the mouse</dd>
+      <dt><kbd>Shift</kbd></dt><dd>walk fast (drains stamina quicker)</dd>
+      <dt><kbd>Space</kbd></dt><dd>hold to breathe in (during the mini-game)</dd>
+      <dt><kbd>Q</kbd> <kbd>F</kbd></dt><dd>raise watch · next watch screen</dd>
+      <dt><kbd>E</kbd> <kbd>R</kbd></dt><dd>buy chai or talk · sip water</dd>
+      <dt><kbd>V</kbd> <kbd>T</kbd> <kbd>Esc</kbd></dt><dd>camera · tuning panel · pause</dd>
+      <dt>Drone flyover</dt><dd>fly over the whole chosen route from above</dd>
+    </dl>
+    <p class="fine">Prototype. Trails: OpenStreetMap route "Galu Devi – Triund" and the OpenStreetMap paths from Bhagsu via Shiva Cafe and Karthani (map data © OpenStreetMap contributors, ODbL). Temples, cafes, camps, streams and building outlines also come from OpenStreetMap; buildings OSM has not traced come from Microsoft Global ML Building Footprints (ODbL); building heights and colours are estimates. Terrain: SRTM elevation via AWS Terrain Tiles at about 30 m detail, so the shape of the mountain is real but small steps and rocks are not. Imagery: Sentinel-2 cloudless 2016 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0. Ground textures: Poly Haven (CC0). Values from the tuning panel (<kbd>T</kbd>) will move into the UE5 DT_Stamina table.</p>
+  </div>
+</section>
+
+<!-- pause -->
+<section class="screen" id="pause" hidden>
+  <div class="card">
+    <div class="eyebrow">Paused</div>
+    <h2>Catch your breath</h2>
+    <div class="row">
+      <button type="button" class="btn primary" id="resumeBtn">Back to the trail</button>
+      <button type="button" class="btn ghost" id="pauseTuneBtn">Tuning</button>
+      <button type="button" class="btn ghost" id="restartBtn">Restart</button>
+      <button type="button" class="btn ghost" id="pauseGfxBtn">Graphics: High</button>
+    </div>
+    <p class="fine">If the mouse cannot be locked, drag on the screen to look around. <kbd>M</kbd> mutes or unmutes sound.</p>
+  </div>
+</section>
+
+<!-- end -->
+<section class="screen" id="end" hidden>
+  <div class="card">
+    <div class="eyebrow">Triund top · <span id="endAlt">2,839 m</span></div>
+    <h2>You made it</h2>
+    <dl class="stats" id="endStats"></dl>
+    <div class="field">
+      <div class="label" id="wantLabel">Would you play more? (Gate G2 question)</div>
+      <div class="seg want" role="group" aria-labelledby="wantLabel" id="wantSeg">
+        <button type="button" data-v="yes" aria-pressed="false"><b>Yes</b><span>I want more</span></button>
+        <button type="button" data-v="maybe" aria-pressed="false"><b>Maybe</b><span>it was okay</span></button>
+        <button type="button" data-v="no" aria-pressed="false"><b>No</b><span>not fun</span></button>
+      </div>
+    </div>
+    <div class="row">
+      <button type="button" class="btn primary" id="copyResults">Copy results</button>
+      <button type="button" class="btn ghost" id="againBtn">Walk again</button>
+    </div>
+    <p class="fine">The results JSON includes pack weight, rest stops, exhaustion, breathing sync and every tuning value. Collect one JSON per tester; if 3 of 5 answer "Yes", start spending on art.</p>
+  </div>
+</section>
+
+<!-- tuning -->
+<aside id="tune" hidden aria-label="Tuning panel">
+  <h3>Tuning</h3>
+  <p class="fine">This is the point of the feel test: adjust these values until the climb feels right. They are saved in this browser.</p>
+  <div id="tuneRows" style="display:grid;gap:12px"></div>
+  <label class="check"><input type="checkbox" id="tAssist"> Breathing assist</label>
+  <label class="check"><input type="checkbox" id="tBob"> Head bob (turn off for reduced motion)</label>
+  <div class="row">
+    <button type="button" class="btn primary" id="tuneClose">Resume</button>
+    <button type="button" class="btn ghost" id="tuneCopy">Copy JSON</button>
+    <button type="button" class="btn ghost" id="tuneReset">Defaults</button>
+  </div>
+</aside>
+
+<div id="toast" hidden></div>
+<div id="droneHud" hidden>
+  <div class="dt"><b id="dRoute">Drone</b><span id="dProg"></span></div>
+  <div class="dn" id="dNext"></div>
+  <div class="dk"><kbd>Space</kbd> pause · <kbd>←</kbd><kbd>→</kbd> speed · <kbd>↑</kbd><kbd>↓</kbd> height · <kbd>V</kbd> map view · <kbd>L</kbd> line · <kbd>R</kbd> restart · <kbd>Esc</kbd> exit</div>
+</div>
+<textarea id="copyFallback" hidden readonly aria-label="Copy this text"></textarea>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Sky.js"></script>
+<script src="triund-data.js"></script>
+<script src="quality.js"></script>
+<script src="sky.js"></script>
+<script src="terrain-material.js"></script>
+<script src="flora.js"></script>
+<script src="places.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const smooth=(e0,e1,x)=>{const t=clamp((x-e0)/(e1-e0),0,1);return t*t*(3-2*t);};
+const T0=performance.now();
+const css=getComputedStyle(document.documentElement);
+const tok=n=>css.getPropertyValue(n).trim();
+
+if(!window.THREE){ $('startBtn').disabled=true; $('startBtn').textContent='3D library failed to load'; return; }
+
+/* ================= tuning ================= */
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DEFAULTS={speedScale:1.9,sprintMult:1.6,packKg:12,gradeCost:9,effortK:2.8,aerobicHR:135,drainK:0.0047,regenK:0.05,
+  hrRise:6,hrFall:14,breathHR:162,breathPeriod:4,maxGrade:0.75,assist:false,headBob:!reduced};
+const TUNE=[
+  ['packKg','Bag weight (kg)',4,20,1],
+  ['speedScale','Walk speed scale (× Tobler)',1,3,0.05],
+  ['sprintMult','Sprint multiplier',1.2,2.2,0.05],
+  ['gradeCost','Uphill effort per unit grade',3,15,0.5],
+  ['effortK','Effort → HR softness',1.5,4.5,0.1],
+  ['aerobicHR','Stamina drain starts above (bpm)',120,155,1],
+  ['drainK','Stamina drain k',0.001,0.015,0.0005],
+  ['regenK','Stamina regen k',0.01,0.12,0.005],
+  ['hrRise','HR rise τ (s)',2,15,0.5],
+  ['hrFall','HR fall τ (s)',5,30,0.5],
+  ['breathHR','Breathing mini-game at (bpm)',150,185,1],
+  ['breathPeriod','Breath cycle (s)',2.5,6,0.25],
+  ['maxGrade','Max climbable grade',0.5,1.2,0.05]
+];
+let T=Object.assign({},DEFAULTS);
+try{const s=JSON.parse(localStorage.getItem('triund-tune')||'null'); if(s&&typeof s==='object') Object.assign(T,s);}catch(e){}
+function saveTune(){try{localStorage.setItem('triund-tune',JSON.stringify(T));}catch(e){}}
+const loadMult=()=>T.packKg<=8?1:1+0.1*(T.packKg-8);          // D-11: ×2.0 at 18 kg
+const loadSpeed=()=>1-0.012*Math.max(0,T.packKg-8);
+
+/* ================= noise + terrain math ================= */
+function hash(i,j){let h=(Math.imul(i,374761393)+Math.imul(j,668265263))|0;h=Math.imul(h^(h>>>13),1274126177);h^=h>>>16;return (h>>>0)/4294967295;}
+function vnoise(x,y){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1);return (a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v)*2-1;}
+function fbm(x,y){let s=0,a=0.5,f=1;for(let i=0;i<4;i++){s+=a*vnoise(x*f,y*f);f*=2.03;a*=0.5;}return s;}
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+
+/* ================= real map: OSM trail + SRTM terrain (generated by prototype/geo/build.py) ================= */
+// world axes: x = metres east of Gallu Devi temple, z = metres SOUTH of it (north is -z), y = metres above sea level
+const TD=window.TRIUND_DATA;
+if(!TD){ $('startBtn').disabled=true; $('startBtn').textContent='Map data failed to load'; return; }
+function u16grid(g){const bin=atob(g.data),n=bin.length>>1,a=new Float32Array(n);
+  for(let i=0;i<n;i++)a[i]=(bin.charCodeAt(2*i)|(bin.charCodeAt(2*i+1)<<8))*g.scale;
+  return {a,e0:g.e0,n0:g.n0,st:g.step,nx:g.nx,nz:g.nz};}
+const NEAR=u16grid(TD.near),FAR=u16grid(TD.far);
+const crom=(p0,p1,p2,p3,t)=>p1+0.5*t*(p2-p0+t*(2*p0-5*p1+4*p2-p3+t*(3*(p1-p2)+p3-p0)));
+function gridH(G,e,n,cubic){
+  const fx=clamp((e-G.e0)/G.st,1,G.nx-3.001),fy=clamp((n-G.n0)/G.st,1,G.nz-3.001);
+  const i=fx|0,j=fy|0,tx=fx-i,ty=fy-j,a=G.a,W=G.nx;
+  if(!cubic){const k=j*W+i;return (a[k]*(1-tx)+a[k+1]*tx)*(1-ty)+(a[k+W]*(1-tx)+a[k+W+1]*tx)*ty;}
+  const r=jj=>{const k=jj*W+i;return crom(a[k-1],a[k],a[k+1],a[k+2],tx);};
+  return crom(r(j-1),r(j),r(j+1),r(j+2),ty);
+}
+// play area uses the 8 m DEM; beyond it the 100 m DEM reaches 22 km out to the Dhauladhar range
+// (snapped to whole 64 m terrain tiles so the far mesh hole matches the detailed mesh exactly)
+const BOX=(()=>{const b={e0:TD.near.e0+36,e1:TD.near.e1-20,n0:TD.near.n0+20,n1:TD.near.n1-60};
+  b.e1=b.e0+Math.floor((b.e1-b.e0)/64)*64;b.n1=b.n0+Math.floor((b.n1-b.n0)/64)*64;return b;})(),EDGE=160;
+function demH(x,z){
+  const n=-z,de=Math.min(x-BOX.e0,BOX.e1-x,n-BOX.n0,BOX.n1-n);
+  if(de<=0)return gridH(FAR,x,n,false);
+  const h=gridH(NEAR,x,n,true);if(de>=EDGE)return h;
+  const f=gridH(FAR,x,n,false);return f+(h-f)*smooth(0,EDGE,de);
+}
+
+// trails, resampled every 3 m (prototype/geo/build.py):
+//   galu  = OSM route relation 15522720 "Galu Devi - Triund"
+//   shiva = OSM paths Bhagsu Naag Waterfall Pathway -> Shiva Cafe -> Karthani -> Triund
+// Both are real paths in the world: terrain is shaped around every trail; progress uses the active one (ACT).
+const SURF={gravel:0,dirt:1,ground:1,rock:2,concrete:3,paving_stones:3};
+const SEG=[];   // segments of all trails
+const CELL=12,HASH=new Map(),ckey=(cx,cz)=>(cx+4096)*8192+(cz+4096);
+function makeTrail(id,td){
+  const segs=[],N=td.e.length;let total=0;
+  const runs=td.seg.map(r=>({s0:r.s0,s1:r.s1,surf:SURF[r.surface]!=null?SURF[r.surface]:1,steep:r.sac!=='hiking'}));
+  const surfAt=s=>{for(const r of runs)if(s<r.s1)return r.surf;return runs[runs.length-1].surf;};
+  for(let i=0;i<N-1;i++){const ax=td.e[i],az=-td.n[i],dx=td.e[i+1]-ax,dz=-td.n[i+1]-az,l2=dx*dx+dz*dz,len=Math.sqrt(l2);
+    if(len<1e-6)continue;
+    // where the trail had to leave the 30 m DEM (gullies the OSM line cuts straight through), shape a wider
+    // spur or cutting instead of a narrow wall: the blend radius grows with the height difference
+    const dev=Math.abs(td.h[i]-demH(ax,az)),r=Math.min(60,9.5+1.3*Math.max(0,dev-2));
+    const g={ax,az,dx,dz,l2,len,s0:total,h0:td.h[i],dh:td.h[i+1]-td.h[i],tr:id,r,surf:surfAt(total)};
+    segs.push(g);SEG.push(g);total+=len;}
+  const T={id,segs,total,topAlt:td.h[N-1],runs,surfAt,
+    pointAtS(s){s=clamp(s,0,total);let lo=0,hi=segs.length-1;while(lo<hi){const m=(lo+hi+1)>>1;if(segs[m].s0<=s)lo=m;else hi=m-1;}
+      const g=segs[lo],t=clamp((s-g.s0)/g.len,0,1);return{x:g.ax+g.dx*t,z:g.az+g.dz*t,h:g.h0+g.dh*t};},
+    dirAtS(s,span){const a=T.pointAtS(s-span/2),b=T.pointAtS(s+span/2),dx=b.x-a.x,dz=b.z-a.z,l=Math.hypot(dx,dz)||1;return{dx:dx/l,dz:dz/l};}};
+  return T;
+}
+const TRAILS={galu:makeTrail('galu',TD.trails.galu),shiva:makeTrail('shiva',TD.trails.shiva)};
+const GT=TRAILS.galu,ST=TRAILS.shiva;
+let ACT=GT;   // active trail (set on start)
+// spatial hash: terrain and tree queries only test trail segments that can reach the cell
+SEG.forEach((g,ix)=>{const R=g.r+1;
+  const x0=Math.floor((Math.min(g.ax,g.ax+g.dx)-R)/CELL),x1=Math.floor((Math.max(g.ax,g.ax+g.dx)+R)/CELL);
+  const z0=Math.floor((Math.min(g.az,g.az+g.dz)-R)/CELL),z1=Math.floor((Math.max(g.az,g.az+g.dz)+R)/CELL);
+  for(let cx=x0;cx<=x1;cx++)for(let cz=z0;cz<=z1;cz++){const k=ckey(cx,cz);let l=HASH.get(k);if(!l)HASH.set(k,l=[]);l.push(ix);}
+});
+const TQ={d:Infinity,s:0,px:0,pz:0,h:0,k:0,surf:0,tr:''};
+// nearest trail point (any trail), plus a blended height target so close switchback legs do not leave a step between them
+function trailQ(x,z){
+  TQ.d=Infinity;TQ.k=0;let ws=0,hs=0;
+  const l=HASH.get(ckey(Math.floor(x/CELL),Math.floor(z/CELL)));if(!l)return TQ;
+  for(let q=0;q<l.length;q++){const g=SEG[l[q]];let t=((x-g.ax)*g.dx+(z-g.az)*g.dz)/g.l2;t=t<0?0:t>1?1:t;
+    const px=g.ax+g.dx*t,pz=g.az+g.dz*t,d=Math.hypot(x-px,z-pz);
+    if(d<TQ.d){TQ.d=d;TQ.s=g.s0+t*g.len;TQ.px=px;TQ.pz=pz;TQ.surf=g.surf;TQ.tr=g.tr;}
+    const k=1-smooth(2.2,g.r,d);if(k>0){const w=k*k*k;ws+=w;hs+=w*(g.h0+g.dh*t);if(k>TQ.k)TQ.k=k;}}
+  if(ws>0)TQ.h=hs/ws;return TQ;
+}
+// nearest point on the ACTIVE trail (route progress, off-trail warnings)
+const NQ={d:Infinity,s:0,px:0,pz:0};
+function nearestTrail(x,z){
+  NQ.d=Infinity;let best=Infinity;
+  const test=g=>{let t=((x-g.ax)*g.dx+(z-g.az)*g.dz)/g.l2;t=t<0?0:t>1?1:t;
+    const px=g.ax+g.dx*t,pz=g.az+g.dz*t,d2=(x-px)*(x-px)+(z-pz)*(z-pz);if(d2<best){best=d2;NQ.s=g.s0+t*g.len;NQ.px=px;NQ.pz=pz;}};
+  const l=HASH.get(ckey(Math.floor(x/CELL),Math.floor(z/CELL)));
+  if(l)for(let q=0;q<l.length;q++){const g=SEG[l[q]];if(g.tr===ACT.id)test(g);}
+  if(best===Infinity)for(const g of ACT.segs)test(g);
+  NQ.d=Math.sqrt(best);return NQ;
+}
+const pointAtS=(s,tr)=>(tr||ACT).pointAtS(s);
+const dirAtS=(s,span,tr)=>(tr||ACT).dirAtS(s,span);
+
+// real landmarks (OSM); stalls sit beside the trail on the side OSM puts them
+const MK=TD.marks,mk=k=>({x:MK[k].e,z:-MK[k].n,s:MK[k].s,tr:TRAILS[MK[k].trail]});
+const GALU=mk('galu'),TOP=mk('triund'),BHAGSU=mk('bhagsuTemple');
+function besideTrail(s,refX,refZ,off,tr){const p=pointAtS(s,tr),d=dirAtS(s,10,tr);let rx=-d.dz,rz=d.dx;
+  if((refX-p.x)*rx+(refZ-p.z)*rz<0){rx=-rx;rz=-rz;}
+  return{x:p.x+rx*off,z:p.z+rz*off,h:p.h,tx:-rx,tz:-rz};}   // tx,tz: unit vector back toward the trail
+const PADS=[];
+function addPad(x,z,h,r0,r1,dirt){PADS.push({x,z,h,r0,r1,dirt:dirt||0});}
+const STOPS=[];
+function addStop(key,label,short,off){const m=mk(key),b=besideTrail(m.s,m.x,m.z,off,m.tr);
+  STOPS.push({key,label,short,trail:m.tr.id,s:m.s,x:b.x,z:b.z,h:b.h,tx:b.tx,tz:b.tz,spot:{x:b.x+b.tx*4.2,z:b.z+b.tz*4.2},taken:false,seen:false});
+  addPad(b.x,b.z,b.h,6.5,11,0.7);}
+addStop('cafeGalu','Cafe Galu','Cafe',9);
+addStop('magic','Magic View Cafe','Magic View',9);
+addStop('shivaCafe','Shiva Cafe','Shiva Cafe',9);
+const GALU_H=demH(GALU.x,GALU.z);addPad(GALU.x,GALU.z,GALU_H,4.5,9,0.6);
+const BHT=besideTrail(4,BHAGSU.x,BHAGSU.z,9,ST);   // Bhagsu Naag temple sits just off the start of the pathway
+addPad(BHT.x,BHT.z,BHT.h,4.5,9,0.6);
+const KARTHANI=(()=>{const m=mk('karthani');return besideTrail(m.s,m.x,m.z,8,ST);})();
+addPad(KARTHANI.x,KARTHANI.z,KARTHANI.h,4,8,0.5);
+const stopOf=key=>STOPS.find(st=>st.key===key);
+
+let lastW=0,lastSurf=0;
+function H(x,z){
+  let h=demH(x,z)+fbm(x*0.045,z*0.045)*1.1+fbm(x*0.21,z*0.21)*0.22;lastW=0;lastSurf=1;
+  trailQ(x,z);if(TQ.k>0){h+=(TQ.h-h)*TQ.k;lastW=1-smooth(0.6,1.8,TQ.d);lastSurf=TQ.surf;
+    h-=0.15*(1-smooth(0.4,1.6,TQ.d));}   // worn trail bed, slightly sunk with soft shoulders
+  for(let i=0;i<PADS.length;i++){const p=PADS[i],d=Math.hypot(x-p.x,z-p.z);
+    if(d<p.r1){h+=(p.h-h)*(1-smooth(p.r0,p.r1,d));if(p.dirt){const w=(1-smooth(p.r0*0.7,p.r0+1,d))*p.dirt;if(w>lastW){lastW=w;lastSurf=1;}}}}
+  return h;
+}
+const tobler=g=>6*Math.exp(-3.5*Math.abs(g+0.05))/3.6; // m/s, Tobler hiking function
+
+/* ================= renderer + scene ================= */
+const canvas=$('c');
+const QL=window.TriundQuality;let QP=QL.params();
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance',logarithmicDepthBuffer:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,QP.pixelRatio));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+// the sun's shadow map follows the player; fade shadows out near its edge so nothing pops dark/light at the boundary
+(function(){const SC=THREE.ShaderChunk,re=/getShadow\( directionalShadowMap\[ i \], ([^;]*?), vDirectionalShadowCoord\[ i \] \)/g;
+  const to='mix( 1.0, getShadow( directionalShadowMap[ i ], $1, vDirectionalShadowCoord[ i ] ), shFade( vDirectionalShadowCoord[ i ] ) )';
+  const n1=(SC.lights_fragment_begin.match(re)||[]).length,n2=(SC.shadowmask_pars_fragment.match(re)||[]).length;
+  SC.lights_fragment_begin=SC.lights_fragment_begin.replace(re,to);SC.shadowmask_pars_fragment=SC.shadowmask_pars_fragment.replace(re,to);
+  SC.shadowmap_pars_fragment=SC.shadowmap_pars_fragment.replace('uniform DirectionalLightShadow directionalLightShadows[ NUM_DIR_LIGHT_SHADOWS ];',
+    'uniform DirectionalLightShadow directionalLightShadows[ NUM_DIR_LIGHT_SHADOWS ];\n\t\tfloat shFade( vec4 c ) { vec2 e = min( c.xy, 1.0 - c.xy ); return smoothstep( 0.0, 0.14, min( e.x, e.y ) ); }');
+  if(n1!==1||n2!==1)console.warn('shadow fade patch: unexpected chunk text',n1,n2);})();
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(70,1,0.15,60000);camera.rotation.order='YXZ';
+const SKY=window.TriundSky.init({THREE,scene,renderer,sunAz:TD.sun.az,sunEl:TD.sun.el});
+const sun=SKY.sun,SUND=SKY.sunDir;
+const lin=c=>new THREE.Color(c).convertSRGBToLinear();
+sun.castShadow=true;
+function applyShadowQuality(){const r=QP.shadowRange,c=sun.shadow.camera;c.left=-r;c.right=r;c.top=r;c.bottom=-r;c.near=1;c.far=900;c.updateProjectionMatrix();
+  sun.shadow.mapSize.set(QP.shadowSize,QP.shadowSize);sun.shadow.bias=-0.0005;sun.shadow.normalBias=0.05;
+  if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}
+applyShadowQuality();
+// the shadow camera follows the player, snapped to whole shadow texels in light space so edges do not shimmer
+const SU=new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0),SUND).normalize(),SV=new THREE.Vector3().crossVectors(SUND,SU).normalize(),_fp=new THREE.Vector3();
+function followSun(x,y,z){const tx=2*QP.shadowRange/QP.shadowSize;_fp.set(x,y,z);
+  const pu=Math.round(_fp.dot(SU)/tx)*tx,pv=Math.round(_fp.dot(SV)/tx)*tx,pw=_fp.dot(SUND);
+  sun.target.position.copy(SU).multiplyScalar(pu).addScaledVector(SV,pv).addScaledVector(SUND,pw);
+  sun.position.copy(sun.target.position).addScaledVector(SUND,450);sun.target.updateMatrixWorld();}
+function resize(){const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+window.addEventListener('resize',resize);resize();
+
+/* ---- baked light (build.py): mountain cast shadow for the fixed morning sun + ambient occlusion ---- */
+function u8grid(g,key){const bin=atob(g[key]),a=new Float32Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i)/255;return{a,e0:g.e0,n0:g.n0,st:g.step,nx:g.nx,nz:g.nz};}
+const SHN={sun:u8grid(TD.shade.near,'sun'),ao:u8grid(TD.shade.near,'ao')},SHF={sun:u8grid(TD.shade.far,'sun'),ao:u8grid(TD.shade.far,'ao')};
+function bil(G,e,n){const fx=clamp((e-G.e0)/G.st,0,G.nx-1.001),fy=clamp((n-G.n0)/G.st,0,G.nz-1.001),i=fx|0,j=fy|0,tx=fx-i,ty=fy-j,W=G.nx,a=G.a,k=j*W+i;
+  return (a[k]*(1-tx)+a[k+1]*tx)*(1-ty)+(a[k+W]*(1-tx)+a[k+W+1]*tx)*ty;}
+const inNearGrid=(e,n)=>e>TD.near.e0&&e<TD.near.e1&&n>TD.near.n0&&n<TD.near.n1;
+const sunAt=(x,z)=>inNearGrid(x,-z)?bil(SHN.sun,x,-z):bil(SHF.sun,x,-z);
+const aoAt=(x,z)=>inNearGrid(x,-z)?bil(SHN.ao,x,-z):bil(SHF.ao,x,-z);
+
+/* ---- satellite imagery (Sentinel-2 cloudless 2016): ground colour, forest mask, grass tint ---- */
+const SAT={px:null,w:0,h:0,failed:false};
+function satRGB(x,z){const N=TD.sat.near,e=x,n=-z;if(!SAT.px||!inNearGrid(e,n))return null;
+  const i=clamp(((e-N.e0)/(N.e1-N.e0)*SAT.w)|0,0,SAT.w-1),j=clamp(((N.n1-n)/(N.n1-N.n0)*SAT.h)|0,0,SAT.h-1),k=(j*SAT.w+i)*4;
+  return [SAT.px[k]/255,SAT.px[k+1]/255,SAT.px[k+2]/255];}
+// dark green canopy = forest (luminance about 0.16-0.20), brighter grass and brown meadow = open (0.30-0.36)
+function forest(x,z){const c=satRGB(x,z);if(!c){const m=fbm(x*0.007+5,z*0.007-3)*0.5+0.5;return smooth(0.35,0.6,m);}
+  return 1-smooth(0.19,0.3,0.299*c[0]+0.587*c[1]+0.114*c[2]);}
+function groundTint(x,z,out){const c=satRGB(x,z);if(!c)return out.setRGB(0.07,0.11,0.04);
+  return out.setRGB(Math.pow(c[0],2.2)*1.3,Math.pow(c[1],2.2)*1.3,Math.pow(c[2],2.2)*1.3);}
+
+/* ---- ground colours (fallback when the imagery is missing; the shader also keeps snow from here) ---- */
+const GC={dirt:[0.47,0.37,0.26],rock:[0.45,0.44,0.42],forest:[0.15,0.23,0.12],oak:[0.23,0.3,0.15],grass:[0.34,0.44,0.2],meadow:[0.5,0.55,0.27],alpine:[0.44,0.43,0.34],snow:[0.93,0.95,0.98]};
+function isMeadow(x,z,h){return h>2950||Math.hypot(x-TOP.x,z-TOP.z)<430+fbm(x*0.006,z*0.006)*120;}
+function groundColor(x,z,h,ny,w,out,o){
+  const n=fbm(x*0.03,z*0.03)*0.5+0.5,m=fbm(x*0.007+5,z*0.007-3)*0.5+0.5;
+  let c;
+  if(h>3500+n*250&&ny>0.5)c=GC.snow;
+  else if(h>3250)c=GC.alpine;
+  else if(ny>0.8&&isMeadow(x,z,h))c=GC.meadow;
+  else c=m>0.5?GC.forest:(n>0.45?GC.oak:GC.grass);
+  const v=0.85+0.3*n;let r=c[0]*v,g=c[1]*v,b=c[2]*v;
+  const al=smooth(2700,3300,h),rk=1-smooth(0.46+0.16*al,0.62+0.18*al,ny);r+=(GC.rock[0]-r)*rk;g+=(GC.rock[1]-g)*rk;b+=(GC.rock[2]-b)*rk;
+  r+=(GC.dirt[0]-r)*w;g+=(GC.dirt[1]-g)*w;b+=(GC.dirt[2]-b)*w;
+  out[o]=Math.pow(r,2.2);out[o+1]=Math.pow(g,2.2);out[o+2]=Math.pow(b,2.2);   // palette is sRGB; vertex colours are linear
+}
+const terrainMat=window.TriundTerrain.material({THREE,satNear:null,satFar:null,nearBox:TD.sat.near,farBox:TD.sat.far,tex:{dir:'tex/',renderer}});
+function loadTex(src){return new Promise(res=>{const t=new THREE.TextureLoader().load(src,()=>res(t),undefined,()=>res(null));t.anisotropy=8;});}
+const satReady=Promise.race([
+  Promise.all([loadTex(TD.sat.near.src),loadTex(TD.sat.far.src)]).then(([n,f])=>{
+    if(!n||!f){SAT.failed=true;return;}
+    const U=terrainMat.userData.uniforms;U.uSatN.value=n;U.uSatF.value=f;U.uSatOK.value=1;
+    try{const c=document.createElement('canvas');c.width=n.image.width;c.height=n.image.height;const g=c.getContext('2d');g.drawImage(n.image,0,0);
+      SAT.px=g.getImageData(0,0,c.width,c.height).data;SAT.w=c.width;SAT.h=c.height;}catch(e){SAT.failed=true;}
+  }),
+  new Promise(res=>setTimeout(()=>{SAT.failed=SAT.failed||!SAT.px;res();},20000))]);
+
+/* ---- play-area terrain: 64 m tiles, 2 m mesh along the trails, coarser further away ----
+   tiles are grouped into 512 m chunks (one mesh each) so the camera frustum culls what is behind the player */
+const nearPad=(x,z)=>PADS.some(p=>Math.hypot(x-p.x,z-p.z)<p.r1+2);
+const inBox=(x,z)=>x>BOX.e0+20&&x<BOX.e1-20&&-z>BOX.n0+20&&-z<BOX.n1-20;
+(function buildNear(){
+  const TS=64,NTX=Math.floor((BOX.e1-BOX.e0)/TS),NTZ=Math.floor((BOX.n1-BOX.n0)/TS),CH=8;
+  const smp=[];for(const tr of [GT,ST])for(let s=0;s<=tr.total;s+=10){const p=tr.pointAtS(s);smp.push(p.x,p.z);}
+  const tiles=[];
+  for(let tj=0;tj<NTZ;tj++)for(let ti=0;ti<NTX;ti++){
+    const e0=BOX.e0+ti*TS,n0=BOX.n0+tj*TS,cx=e0+TS/2,cz=-(n0+TS/2);
+    let dm=Infinity;for(let k=0;k<smp.length;k+=2){const dx=smp[k]-cx,dz=smp[k+1]-cz,d=dx*dx+dz*dz;if(d<dm)dm=d;}
+    for(const p of PADS){const dx=p.x-cx,dz=p.z-cz;dm=Math.min(dm,dx*dx+dz*dz);}
+    dm=Math.sqrt(dm);const st=dm<70?2:dm<220?4:dm<600?8:16,n=TS/st;
+    tiles.push({e0,n0,st,n,ti,tj});}
+  // skirts only where the neighbour has a different resolution (that is where T-junction cracks appear)
+  const stAt=(ti,tj)=>ti<0||tj<0||ti>=NTX||tj>=NTZ?0:tiles[tj*NTX+ti].st;
+  for(const t of tiles)t.sk=[stAt(t.ti,t.tj-1)!==t.st,stAt(t.ti,t.tj+1)!==t.st,stAt(t.ti-1,t.tj)!==t.st,stAt(t.ti+1,t.tj)!==t.st];
+  for(let cj=0;cj<NTZ;cj+=CH)for(let ci=0;ci<NTX;ci+=CH){
+    const list=tiles.filter(t=>t.ti>=ci&&t.ti<ci+CH&&t.tj>=cj&&t.tj<cj+CH);let nv=0,ni=0;
+    for(const t of list){const k=t.sk.filter(Boolean).length;nv+=(t.n+1)*(t.n+1)+k*(t.n+1);ni+=(t.n*t.n+k*t.n)*6;}
+    const pos=new Float32Array(nv*3),nrm=new Float32Array(nv*3),col=new Float32Array(nv*3),td=new Float32Array(nv*4),idx=new Uint32Array(ni);
+    let v=0,q=0;
+    for(const t of list){
+      const n=t.n,st=t.st,M=n+3,hg=new Float32Array(M*M),wg=new Float32Array(M*M),sg=new Uint8Array(M*M);
+      for(let j=0;j<M;j++)for(let i=0;i<M;i++){hg[j*M+i]=H(t.e0+(i-1)*st,-(t.n0+(j-1)*st));wg[j*M+i]=lastW;sg[j*M+i]=lastSurf;}
+      const base=v;
+      for(let j=0;j<=n;j++)for(let i=0;i<=n;i++){
+        const g=(j+1)*M+i+1,x=t.e0+i*st,z=-(t.n0+j*st),h=hg[g];
+        const sx=(hg[g+1]-hg[g-1])/(2*st),sz=-(hg[g+M]-hg[g-M])/(2*st);   // dh/dx, dh/dz
+        const l=Math.hypot(sx,1,sz),o=v*3;
+        pos[o]=x;pos[o+1]=h;pos[o+2]=z;nrm[o]=-sx/l;nrm[o+1]=1/l;nrm[o+2]=-sz/l;
+        groundColor(x,z,h,1/l,wg[g],col,o);
+        td[v*4]=wg[g];td[v*4+1]=sg[g]/4;td[v*4+2]=sunAt(x,z);td[v*4+3]=aoAt(x,z);v++;}
+      for(let j=0;j<n;j++)for(let i=0;i<n;i++){const a=base+j*(n+1)+i,b=a+1,c=a+n+1,d=c+1;idx[q++]=a;idx[q++]=b;idx[q++]=c;idx[q++]=b;idx[q++]=d;idx[q++]=c;}
+      // skirts hide the cracks where tiles of different resolution meet
+      const edges=[[],[],[],[]];for(let k=0;k<=n;k++){edges[0].push(k);edges[1].push(n*(n+1)+k);edges[2].push(k*(n+1));edges[3].push(k*(n+1)+n);}
+      for(let ei=0;ei<4;ei++){if(!t.sk[ei])continue;const E=edges[ei],s0=v;
+        for(const k of E){const src=base+k,o=v*3;pos[o]=pos[src*3];pos[o+1]=pos[src*3+1]-4;pos[o+2]=pos[src*3+2];
+          for(let c=0;c<3;c++){nrm[o+c]=nrm[src*3+c];col[o+c]=col[src*3+c];}for(let c=0;c<4;c++)td[v*4+c]=td[src*4+c];v++;}
+        for(let m=0;m<n;m++){const a=base+E[m],b=base+E[m+1],c=s0+m,d=s0+m+1;idx[q++]=a;idx[q++]=c;idx[q++]=b;idx[q++]=b;idx[q++]=c;idx[q++]=d;}}
+    }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('normal',new THREE.BufferAttribute(nrm,3));
+    geo.setAttribute('color',new THREE.BufferAttribute(col,3));geo.setAttribute('tdat',new THREE.BufferAttribute(td,4));geo.setIndex(new THREE.BufferAttribute(idx,1));
+    geo.computeBoundingSphere();
+    const mesh=new THREE.Mesh(geo,terrainMat);mesh.receiveShadow=true;scene.add(mesh);
+  }
+})();
+
+/* ---- 44 km around: Kangra valley below, Dhauladhar range above (100 m DEM), in 11 x 11 culled chunks ---- */
+(function buildFar(){
+  const G=FAR,W=G.nx,N=W*G.nz,pos=new Float32Array(N*3),col=new Float32Array(N*3),td=new Float32Array(N*4);
+  const inside=(x,n)=>x>BOX.e0&&x<BOX.e1&&n>BOX.n0&&n<BOX.n1;
+  for(let j=0;j<G.nz;j++)for(let i=0;i<W;i++){const k=j*W+i,x=G.e0+i*G.st,n=G.n0+j*G.st;
+    pos[k*3]=x;pos[k*3+1]=G.a[k]-(inside(x,n)?3:0);pos[k*3+2]=-n;td[k*4+1]=0.25;td[k*4+2]=sunAt(x,-n);td[k*4+3]=aoAt(x,-n);}
+  const full=new THREE.BufferGeometry();full.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const all=[];for(let j=0;j<G.nz-1;j++)for(let i=0;i<W-1;i++){const a=j*W+i;all.push(a,a+1,a+W,a+1,a+W+1,a+W);}
+  full.setIndex(all);full.computeVertexNormals();
+  const nrm=full.attributes.normal;
+  for(let k=0;k<N;k++)groundColor(pos[k*3],pos[k*3+2],pos[k*3+1],nrm.array[k*3+1],0,col,k*3);
+  const colA=new THREE.BufferAttribute(col,3),tdA=new THREE.BufferAttribute(td,4),posA=full.attributes.position;
+  const C=40;   // 40 x 40 cells = 4 km per chunk
+  for(let cj=0;cj<G.nz-1;cj+=C)for(let ci=0;ci<W-1;ci+=C){
+    const idx=[];let lo=Infinity,hi=-Infinity;
+    for(let j=cj;j<Math.min(cj+C,G.nz-1);j++)for(let i=ci;i<Math.min(ci+C,W-1);i++){const x0=G.e0+i*G.st,n0=G.n0+j*G.st;
+      if(x0>=BOX.e0&&x0+G.st<=BOX.e1&&n0>=BOX.n0&&n0+G.st<=BOX.n1)continue;   // covered by the detailed mesh
+      const a=j*W+i;idx.push(a,a+1,a+W,a+1,a+W+1,a+W);lo=Math.min(lo,G.a[a]);hi=Math.max(hi,G.a[a]);}
+    if(!idx.length)continue;
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',posA);geo.setAttribute('normal',nrm);geo.setAttribute('color',colA);geo.setAttribute('tdat',tdA);geo.setIndex(idx);
+    // shared attributes hold the whole grid, so give each chunk its own bounds for culling
+    const x0=G.e0+ci*G.st,x1=G.e0+Math.min(ci+C,W-1)*G.st,n0=G.n0+cj*G.st,n1=G.n0+Math.min(cj+C,G.nz-1)*G.st;
+    const c=new THREE.Vector3((x0+x1)/2,(lo+hi)/2,-(n0+n1)/2);
+    geo.boundingSphere=new THREE.Sphere(c,Math.hypot(x1-x0,n1-n0,hi-lo+400)/2);
+    scene.add(new THREE.Mesh(geo,terrainMat));
+  }
+})();
+
+/* ---- trees, bushes, grass, flowers, trail stones (flora.js); built once the imagery is in ---- */
+let FLORA=null,PLACES=null;
+function buildFlora(){
+  FLORA=window.TriundFlora.build({THREE,scene,H,rng,renderer,quality:QP,isMeadow,forest,groundTint,sunAt,aoAt,trails:[GT,ST],
+    trailD:(x,z)=>{trailQ(x,z);return TQ.d;},
+    randomTrailPoint:R=>{const t=R()*(GT.total+ST.total);return t<GT.total?GT.pointAtS(t):ST.pointAtS(t-GT.total);},
+    accept:(x,z)=>inBox(x,z)&&!nearPad(x,z)&&!(PLACES&&PLACES.blocked(x,z))});
+}
+// real buildings, temples, stalls, camps, waterfalls and streams from OSM + Microsoft footprints (build.py)
+function buildPlaces(){
+  window.__placesErr='started';if(!TD.places||!window.TriundPlaces){window.__placesErr='no data';return;}
+  const skip=[{x:GALU.x,z:GALU.z,r:16},{x:BHT.x,z:BHT.z,r:14},{x:KARTHANI.x,z:KARTHANI.z,r:14}].concat(STOPS.map(st=>({x:st.x,z:st.z,r:18})));
+  try{PLACES=window.TriundPlaces.build({THREE,scene,H,data:TD.places,trails:[GT,ST],textPlane,lin,rng,skip,prayerFlags});}
+  catch(e){console.error('places failed',e);window.__placesErr=String(e&&e.stack||e);PLACES=null;return;}
+  for(const st of PLACES.stops)STOPS.push(st);
+  STOPS.sort((a,b)=>a.s-b.s);
+}
+
+/* ---- props: temples, chai stops, shelter, signs, flags, NPCs, avatar ---- */
+function textPlane(lines,w,h,bg,fg){
+  const c=document.createElement('canvas');c.width=512;c.height=Math.round(512*h/w);const g=c.getContext('2d');
+  g.fillStyle=bg;g.fillRect(0,0,c.width,c.height);g.strokeStyle=fg;g.lineWidth=6;g.strokeRect(10,10,c.width-20,c.height-20);
+  g.fillStyle=fg;g.textAlign='center';g.textBaseline='middle';const lh=c.height/(lines.length+1);
+  lines.forEach((l,i)=>{g.font=(l.w||600)+' '+(l.size||46)+'px '+(l.font||'Hind, sans-serif');g.fillText(l.t,c.width/2,lh*(i+1));});
+  const tex=new THREE.CanvasTexture(c);tex.anisotropy=4;tex.encoding=THREE.sRGBEncoding;
+  return new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshLambertMaterial({map:tex,side:THREE.DoubleSide}));
+}
+const lam=c=>new THREE.MeshLambertMaterial({color:lin(c)});
+function box(w,h,d,color){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),lam(color));}
+function post(x,z,h,color){const m=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.09,h,6),lam(color||0x5a4632));m.position.set(x,H(x,z)+h/2-0.2,z);scene.add(m);return m;}
+function prayerFlags(x1,z1,x2,z2,h){
+  post(x1,z1,h);post(x2,z2,h);const y1=H(x1,z1)+h-0.3,y2=H(x2,z2)+h-0.3;const cols=[0x2f6fd6,0xf2f2ee,0xd83b30,0x2f9a52,0xf2c230].map(c=>new THREE.MeshLambertMaterial({color:lin(c),side:THREE.DoubleSide}));
+  const geo=new THREE.PlaneGeometry(0.38,0.48);geo.translate(0,-0.24,0);const n=Math.max(8,Math.round(Math.hypot(x2-x1,z2-z1)/0.6));
+  for(let i=1;i<n;i++){const t=i/n;const m=new THREE.Mesh(geo,cols[i%5]);
+    m.position.set(x1+(x2-x1)*t,y1+(y2-y1)*t-Math.sin(Math.PI*t)*0.9,z1+(z2-z1)*t);m.rotation.y=Math.atan2(x2-x1,z2-z1)+Math.PI/2;m.rotation.z=(i%2?0.06:-0.06);scene.add(m);}
+}
+const npcs=[];
+function makeNPC(tr,s,side,shirt,lines){
+  const p=pointAtS(s,tr),dr=dirAtS(s,8,tr);const x=p.x-dr.dz*2.6*side,z=p.z+dr.dx*2.6*side,y=H(x,z);const g=new THREE.Group();
+  const legs=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.85,8),lam(0x2b2e3a));legs.position.y=0.43;
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.21,0.7,8),lam(shirt));body.position.y=1.18;
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.15,10,8),lam(0x8a5a3c));head.position.y=1.68;
+  const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.16,0.12,10),lam(0xb8432f));cap.position.y=1.8;
+  const stick=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,1.3,5),lam(0x6b5236));stick.position.set(0.32,0.65,0);stick.rotation.z=-0.12;
+  g.add(legs,body,head,cap,stick);g.position.set(x,y,z);g.rotation.y=Math.atan2(-dr.dx,-dr.dz);scene.add(g);
+  npcs.push({x,z,lines,said:false});
+}
+const avatar=new THREE.Group();let pack;const limbs={};
+(function(){
+  // limb = pivot group at the joint, mesh hanging below it
+  function limb(len,r,color,x,y){const g=new THREE.Group();g.position.set(x,y,0);
+    const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r*0.85,len,8),lam(color));m.position.y=-len/2;g.add(m);avatar.add(g);return g;}
+  limbs.legL=limb(0.88,0.1,0x2a3140,-0.11,0.9);limbs.legR=limb(0.88,0.1,0x2a3140,0.11,0.9);
+  const bootGeo=new THREE.BoxGeometry(0.14,0.1,0.26);
+  [limbs.legL,limbs.legR].forEach(l=>{const b=new THREE.Mesh(bootGeo,lam(0x4a3524));b.position.set(0,-0.88,-0.05);l.add(b);});
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(0.23,0.2,0.7,10),lam(0x2f6e8f));body.position.y=1.24;
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.07,0.08,8),lam(0x9a6848));neck.position.y=1.62;
+  const head=new THREE.Mesh(new THREE.SphereGeometry(0.14,12,10),lam(0x9a6848));head.position.y=1.76;
+  const beanie=new THREE.Mesh(new THREE.SphereGeometry(0.15,12,6,0,Math.PI*2,0,Math.PI/2),lam(0xf2a93b));beanie.position.y=1.79;
+  limbs.armL=limb(0.66,0.065,0x2f6e8f,-0.3,1.55);limbs.armR=limb(0.66,0.065,0x2f6e8f,0.3,1.55);
+  limbs.armL.rotation.z=-0.08;limbs.armR.rotation.z=0.08;
+  pack=box(0.4,0.6,0.24,0x9a3b2a);pack.position.set(0,1.26,0.25);
+  const roll=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.42,10),lam(0x3c6b45));roll.rotation.z=Math.PI/2;roll.position.set(0,0.92,0.27);
+  avatar.add(body,neck,head,beanie,pack,roll);avatar.visible=false;scene.add(avatar);
+})();
+// local (lx,lz) offset inside a rotated group -> world x,z
+const toWorld=(ox,oz,rot,lx,lz)=>({x:ox+lx*Math.cos(rot)+lz*Math.sin(rot),z:oz-lx*Math.sin(rot)+lz*Math.cos(rot)});
+function stall(st,wall,lines){
+  const rot=Math.atan2(st.tz,-st.tx);   // the counter side (local -x) faces the trail
+  const g=new THREE.Group();g.position.set(st.x,st.h,st.z);g.rotation.y=rot;
+  const walls=box(4.5,5,6,wall);walls.position.y=0.5;g.add(walls);
+  const trim=box(4.6,0.25,6.1,0xf2efe6);trim.position.y=3.05;g.add(trim);
+  const roof=box(5.6,0.12,7.2,0x8b9196);roof.position.set(0.2,3.4,0);roof.rotation.z=-0.16;g.add(roof);
+  const counter=box(1.0,1.0,3.2,0x6e4b2e);counter.position.set(-2.8,0.5,0);g.add(counter);
+  const kettle=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.2,0.32,10),lam(0xb8b8b4));kettle.position.set(-2.8,1.16,-0.8);g.add(kettle);
+  const bench1=box(0.45,0.45,2.4,0x5b4330);bench1.position.set(-4.6,0.22,-1.6);g.add(bench1);
+  const bench2=bench1.clone();bench2.position.set(-4.6,0.22,1.8);g.add(bench2);
+  const sign=textPlane(lines,3.4,1.6,'#f2c230','#2a1a04');sign.position.set(-2.32,2.3,0);sign.rotation.y=-Math.PI/2;g.add(sign);
+  scene.add(g);
+  const a=toWorld(st.x,st.z,rot,-2.5,-3.2),b=toWorld(st.x,st.z,rot,-1.5,4.5);prayerFlags(a.x,a.z,b.x,b.z,3.4);
+}
+function signFacing(x,z,s,tr){const p=pointAtS(s,tr),d=dirAtS(s,10,tr);const fx=p.x-x-d.dx*4,fz=p.z-z-d.dz*4;return Math.atan2(fx,fz);}
+function board(tr,s,ref,off,lines,w,h){const b=besideTrail(s,ref.x,ref.z,off,tr),sb=textPlane(lines,w||2.6,h||1.5,'#1f3b2e','#f1ead8');
+  const sr=signFacing(b.x,b.z,s+4,tr);sb.position.set(b.x,H(b.x,b.z)+1.9,b.z);sb.rotation.y=sr;scene.add(sb);
+  post(b.x+Math.cos(sr)*1,b.z-Math.sin(sr)*1,2.6);post(b.x-Math.cos(sr)*1,b.z+Math.sin(sr)*1,2.6);}
+function temple(x,h,z,face,cella,spireCol){
+  const tg=new THREE.Group();tg.position.set(x,h,z);
+  const plinth=box(3.4,0.5,3.4,0x8f8b84);plinth.position.y=0.15;tg.add(plinth);
+  const c=box(2.4,2.6,2.4,cella);c.position.y=1.7;tg.add(c);
+  const door=box(0.9,1.5,0.06,0x8a2f1f);door.position.set(0,1.15,1.22);tg.add(door);
+  const spire=new THREE.Mesh(new THREE.ConeGeometry(1.9,2.6,4),lam(spireCol));spire.position.y=4.3;spire.rotation.y=Math.PI/4;tg.add(spire);
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.05,4,6),lam(0x5a4632));pole.position.set(1.4,2.5,1.4);tg.add(pole);
+  const flagG=new THREE.BufferGeometry();flagG.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0,1.1,-0.3,0,0,-0.65,0],3));flagG.computeVertexNormals();
+  const flag=new THREE.Mesh(flagG,new THREE.MeshLambertMaterial({color:lin(0xf08a24),side:THREE.DoubleSide}));flag.position.set(1.4,4.4,1.4);tg.add(flag);
+  tg.rotation.y=face;scene.add(tg);
+}
+const km=m=>(m/1000).toFixed(1)+' km';
+function buildProps(){
+  // Gallu Devi temple + trailhead
+  temple(GALU.x,GALU_H,GALU.z,signFacing(GALU.x,GALU.z,0,GT),0xefe9dc,0xd9773a);
+  board(GT,10,GALU,3.6,[{t:'TRIUND TREK',size:62,font:'Rajdhani, sans-serif',w:700},{t:km(GT.total)+' · +'+Math.round(GT.topAlt-pointAtS(0,GT).h)+' m',size:42},{t:'Triund top '+Math.round(GT.topAlt).toLocaleString('en-IN')+' m',size:38}]);
+  // Bhagsu Naag temple + trailhead of the Shiva Cafe route
+  temple(BHT.x,BHT.h,BHT.z,signFacing(BHT.x,BHT.z,4,ST),0xf1ece2,0xc9563a);
+  board(ST,14,BHAGSU,3.4,[{t:'TRIUND',size:62,font:'Rajdhani, sans-serif',w:700},{t:'via Shiva Cafe · '+km(ST.total),size:40},{t:'+'+Math.round(ST.topAlt-pointAtS(0,ST).h).toLocaleString('en-IN')+' m · steep',size:36}]);
+  // chai stops
+  stall(stopOf('cafeGalu'),0x3f72a8,[{t:'CAFE GALU',size:60,w:700},{t:'chai · maggi',size:40},{t:'last stop with a road view',size:30}]);
+  stall(stopOf('magic'),0xb5523b,[{t:'MAGIC VIEW',size:60,w:700},{t:'CAFE',size:44,w:700},{t:'chai · maggi · lemon tea',size:30}]);
+  stall(stopOf('shivaCafe'),0x3b4f9a,[{t:'SHIVA CAFE',size:58,w:700},{t:'chai · ginger lemon honey',size:34},{t:'above the waterfall',size:30}]);
+  // Bhagsunag waterfall: sign where the path passes the falls (OSM node 513003866)
+  // Karthani: stone shelter (OSM node 673873811)
+  {const k=KARTHANI,rot=Math.atan2(k.tz,-k.tx),g=new THREE.Group();g.position.set(k.x,k.h,k.z);g.rotation.y=rot;
+    const w=box(4,2.6,5,0x8a857c);w.position.y=1.1;g.add(w);
+    const r1=box(2.6,0.14,5.6,0x55595e);r1.position.set(-1.0,2.75,0);r1.rotation.z=0.42;g.add(r1);
+    const r2=r1.clone();r2.position.x=1.0;r2.rotation.z=-0.42;g.add(r2);
+    const door=box(0.06,1.6,1.0,0x3d2c1f);door.position.set(-2.02,0.95,0);g.add(door);
+    scene.add(g);
+    const km0=mk('karthani');board(ST,km0.s,km0,3.2,[{t:'KARTHANI',size:62,font:'Rajdhani, sans-serif',w:700},{t:Math.round(MK.karthani.ele).toLocaleString('en-IN')+' m',size:44},{t:'Triund '+km(ST.total-km0.s),size:38}],2.4,1.3);}
+  // distance stones every kilometre on both trails
+  for(const tr of [GT,ST])for(let s=1000;s<tr.total-300;s+=1000){const b=besideTrail(s,0,0,2.4,tr);
+    const st=textPlane([{t:'TRIUND',size:54,w:700},{t:((tr.total-s)/1000).toFixed(1)+' km',size:84,w:700,font:'Rajdhani, sans-serif'}],0.55,0.7,'#f1ead8','#a3321f');
+    st.position.set(b.x,H(b.x,b.z)+0.5,b.z);st.rotation.y=signFacing(b.x,b.z,s,tr);scene.add(st);}
+  // Triund top: cairn, board, prayer flags, tents on the meadow
+  const end=pointAtS(GT.total,GT),ed=dirAtS(GT.total-6,12,GT);
+  const cairn=new THREE.Group();const cx=end.x+ed.dx*6,cz=end.z+ed.dz*6;cairn.position.set(cx,H(cx,cz),cz);
+  for(let i=0;i<6;i++){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(0.5-i*0.06,0),lam(0x8a8986));r.position.y=0.3+i*0.42;r.rotation.y=i;cairn.add(r);}
+  scene.add(cairn);
+  const tb2=besideTrail(GT.total-8,0,0,3.4,GT);
+  const top=textPlane([{t:'TRIUND',size:72,font:'Rajdhani, sans-serif',w:700},{t:Math.round(GT.topAlt).toLocaleString('en-IN')+' m',size:46}],2.6,1.3,'#1f3b2e','#f1ead8');
+  const tr=signFacing(tb2.x,tb2.z,GT.total-14,GT);top.position.set(tb2.x,H(tb2.x,tb2.z)+1.9,tb2.z);top.rotation.y=tr;scene.add(top);
+  post(tb2.x+Math.cos(tr)*1,tb2.z-Math.sin(tr)*1,2.5);post(tb2.x-Math.cos(tr)*1,tb2.z+Math.sin(tr)*1,2.5);
+  prayerFlags(cx-ed.dz*7,cz+ed.dx*7,cx+ed.dz*7,cz-ed.dx*7,3.6);
+  const R=rng(11),tentCols=[0xf2a93b,0xd83b30,0x2f6fd6,0x2f9a52,0xf2c230];let tents=0;
+  for(let i=0;i<200&&tents<10;i++){const a=R()*Math.PI*2,r=30+R()*130,x=TOP.x+Math.cos(a)*r,z=TOP.z+Math.sin(a)*r;const y=H(x,z);
+    if(TQ.d<5)continue;if(Math.hypot(H(x+1.5,z)-y,H(x,z+1.5)-y)/1.5>0.18)continue;
+    const t=new THREE.Mesh(new THREE.ConeGeometry(1.5,1.4,4),lam(tentCols[tents%5]));t.position.set(x,y+0.6,z);t.rotation.y=R()*3;t.scale.set(1,1,1.4);scene.add(t);tents++;}
+  // "just five more minutes" trekkers
+  makeNPC(GT,1350,1,0xd9773a,'Just five more minutes, friend. The top is right there!');
+  makeNPC(GT,3800,-1,0x6a4fa0,'Only five more minutes! I have been saying that since Magic View.');
+  makeNPC(ST,1650,1,0x3c7d5a,'Most people take the Gallu Devi path. This one is steeper, but you get the forest to yourself.');
+  makeNPC(ST,3700,-1,0xb8432f,'Karthani is behind us. From here it is open ridge all the way to the top.');
+  // props cast and catch the sun shadow
+  scene.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh&&o.material&&o.material.type==='MeshLambertMaterial'){o.castShadow=true;o.receiveShadow=true;}});
+}
+
+/* ================= player state ================= */
+let P,START_S=0,startFrom='galu';
+try{const v=localStorage.getItem('triund-start');if(v==='galu'||v==='magic'||v==='shiva')startFrom=v;}catch(e){}
+function resetPlayer(){
+  ACT=startFrom==='shiva'?ST:GT;
+  START_S=startFrom==='magic'?stopOf('magic').s+4:0;
+  const sp=pointAtS(START_S),sd=dirAtS(START_S+12,24);
+  P={x:sp.x,z:sp.z,y:0,yaw:Math.atan2(-sd.dx,-sd.dz),pitch:-0.04,v:0,dirx:0,dirz:-1,stamina:100,hr:74,hyd:100,temp:36.7,water:4,chai:0,chaiWarm:0,
+     exh:false,exhT:0,still:0,restCounted:false,rest:0,stepPh:0,lastStep:0,brPh:0,crouch:0,breath:false,brT:0,lung:0,G:0,sync:1,
+     syncAcc:0,syncN:0,breathEvents:0,exhCount:0,offTrail:0,offWarnT:0,moveTime:0,time:0,maxHR:0,hrSum:0,hrN:0,s:START_S,maxS:START_S,trailD:0,
+     zone:1,lowHydWarned:false,wantMore:null,firstPerson:true,blockedT:0,effort:0,grade:0,sprinting:false};
+  P.y=H(P.x,P.z);npcs.forEach(n=>n.said=false);STOPS.forEach(st=>{st.taken=false;st.seen=false;});
+}
+resetPlayer();
+// QA hook: jump along the trail (used by automated screenshots; harmless for players)
+window.__triund={setRoute(id){startFrom=id;resetPlayer();enterPlay();},look(x,y,z,tx,ty,tz){state='qa';show('start',false);show('droneHud',false);camera.position.set(x,y,z);camera.lookAt(tx,ty,tz);DR.look.set(tx,ty,tz);},H:(x,z)=>H(x,z),drone(id,s,top,alt){startFrom=id;enterDrone();DR.s=s||0;DR.top=!!top;if(alt)DR.alt=alt;DR.pause=true;DR.snap=true;},teleport(s,third){const p=pointAtS(s),d=dirAtS(s+10,20);P.x=p.x;P.z=p.z;P.y=H(p.x,p.z);P.yaw=Math.atan2(-d.dx,-d.dz);P.pitch=-0.05;P.s=s;P.maxS=Math.max(P.maxS,s);P.firstPerson=!third;},
+  get P(){return P;},get total(){return ACT.total;},get route(){return ACT.id;},stops:STOPS.map(st=>({label:st.label,trail:st.trail,s:st.s})),buildMs:0,get flora(){return FLORA&&FLORA.counts;},get places(){return PLACES&&PLACES.counts;},get satOK(){return !!SAT.px;},get stats(){return {calls:RI.calls,tris:RI.triangles,fps:Math.round(fps),q:QL.get()};},
+  breakdown(){const out={};scene.traverse(o=>{if(!o.isMesh||!o.visible)return;const g=o.geometry,t=(g.index?g.index.count:g.attributes.position.count)/3*(o.isInstancedMesh?o.count:1);
+    const k=(o.isInstancedMesh?'inst:':'mesh:')+(o.material.map?'map':'')+(o.castShadow?'+cast':'')+':'+Math.round(t/(o.isInstancedMesh?Math.max(o.count,1):1));out[k]=(out[k]||0)+Math.round(t);});return out;}};
+
+/* ================= audio ================= */
+let AC=null,master=null,noiseBuf=null,windGain=null,breathGain=null,breathBP=null,muted=false,hbTimer=0;
+function initAudio(){
+  if(AC) {if(AC.state==='suspended')AC.resume();return;}
+  try{
+    AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=muted?0:0.8;master.connect(AC.destination);
+    noiseBuf=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    const w=AC.createBufferSource();w.buffer=noiseBuf;w.loop=true;const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=380;windGain=AC.createGain();windGain.gain.value=0.035;
+    w.connect(lp);lp.connect(windGain);windGain.connect(master);w.start();
+    const b=AC.createBufferSource();b.buffer=noiseBuf;b.loop=true;breathBP=AC.createBiquadFilter();breathBP.type='bandpass';breathBP.frequency.value=1100;breathBP.Q.value=0.9;
+    breathGain=AC.createGain();breathGain.gain.value=0;b.connect(breathBP);breathBP.connect(breathGain);breathGain.connect(master);b.start(0,0.7);
+  }catch(e){AC=null;}
+}
+function env(g,t,peak,att,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(0.0002,peak),t+att);g.gain.exponentialRampToValueAtTime(0.0001,t+att+dec);}
+function footstep(v){if(!AC)return;const t=AC.currentTime;const s=AC.createBufferSource();s.buffer=noiseBuf;const f=AC.createBiquadFilter();f.type='bandpass';f.frequency.value=450+Math.random()*500;f.Q.value=1.3;
+  const g=AC.createGain();env(g,t,0.09+0.05*Math.min(v,2),0.012,0.15);s.connect(f);f.connect(g);g.connect(master);s.start(t,Math.random()*1.5,0.2);}
+function thump(k){if(!AC)return;const t=AC.currentTime;[0,0.17].forEach((o,i)=>{const os=AC.createOscillator();os.type='sine';os.frequency.setValueAtTime(64,t+o);os.frequency.exponentialRampToValueAtTime(38,t+o+0.13);
+  const g=AC.createGain();env(g,t+o,(i?0.16:0.26)*k,0.015,0.17);os.connect(g);g.connect(master);os.start(t+o);os.stop(t+o+0.22);});}
+function buzz(n){n=n||1;const w=$('watch');w.classList.remove('buzz');void w.offsetWidth;w.classList.add('buzz');if(!AC)return;const t=AC.currentTime;
+  for(let i=0;i<n*2;i++){const o=AC.createOscillator();o.type='square';o.frequency.value=170;const g=AC.createGain();g.gain.setValueAtTime(0,t);g.gain.setValueAtTime(0.03,t+i*0.12);g.gain.setValueAtTime(0,t+i*0.12+0.07);
+    o.connect(g);g.connect(master);o.start(t);o.stop(t+i*0.12+0.09);}}
+function audioTick(dt){
+  if(!AC||!breathGain)return;const now=AC.currentTime;
+  if(state!=='play'){breathGain.gain.setTargetAtTime(0,now,0.1);return;}
+  const hrN=clamp((P.hr-80)/100,0,1);let e,inh;
+  if(P.breath){inh=P.lungDelta>0;e=Math.abs(P.lungDelta)>0.0005?0.9:0.15;}
+  else{const f=P.brPh%1;inh=f<0.42;e=inh?Math.sin(Math.PI*f/0.42):Math.sin(Math.PI*(f-0.42)/0.58);e=Math.pow(Math.max(e,0),1.4);}
+  const vol=(0.012+0.17*hrN*hrN)*(P.exh?1.5:1);
+  breathGain.gain.setTargetAtTime(e*vol,now,0.05);breathBP.frequency.setTargetAtTime(inh?1500:850,now,0.06);
+  windGain.gain.setTargetAtTime(0.03+clamp((P.y-2100)/700,0,1)*0.06,now,0.5);
+  if(P.hr>148){hbTimer-=dt;if(hbTimer<=0){hbTimer=60/P.hr;thump(clamp((P.hr-148)/30,0.05,1));}}
+}
+
+/* ================= input ================= */
+const keys={};let state='menu',dragLook=false,dragging=false,holdBreathTouch=false,touchSprint=false;
+const joy={x:0,y:0};
+const isTouch=matchMedia('(pointer: coarse)').matches&&!matchMedia('(pointer: fine)').matches;
+const locked=()=>document.pointerLockElement===canvas;
+function lock(){if(isTouch)return;try{const r=canvas.requestPointerLock&&canvas.requestPointerLock();if(r&&r.catch)r.catch(()=>lockFailed());}catch(e){lockFailed();}}
+function lockFailed(){if(!dragLook){dragLook=true;say('Mouse lock unavailable. Drag on the screen to look around.',5);}}
+document.addEventListener('pointerlockerror',lockFailed);
+document.addEventListener('pointerlockchange',()=>{if(locked())dragLook=false;else if(state==='play')pause();});
+document.addEventListener('mousemove',e=>{if(state!=='play')return;if(locked()||(dragLook&&dragging)){P.yaw-=e.movementX*0.0022;P.pitch=clamp(P.pitch-e.movementY*0.0022,-1.3,1.2);}});
+canvas.addEventListener('mousedown',()=>{if(state==='play'){if(!locked()&&!dragLook)lock();dragging=true;}});
+window.addEventListener('mouseup',()=>{dragging=false;});
+window.addEventListener('keydown',e=>{
+  if(e.target&&e.target.tagName==='TEXTAREA')return;
+  keys[e.code]=true;
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.code)&&state==='play')e.preventDefault();
+  if(state==='drone'&&(e.code==='Space'||e.code.startsWith('Arrow')))e.preventDefault();
+  if(e.repeat)return;
+  if(state==='drone'&&droneKey(e))return;
+  switch(e.code){
+    case 'KeyQ':if(state==='play')toggleWatch();break;
+    case 'KeyF':if(state==='play')cyclePage();break;
+    case 'KeyE':if(state==='play')interact();break;
+    case 'KeyR':if(state==='play')drink();break;
+    case 'KeyV':if(state==='play')P.firstPerson=!P.firstPerson;break;
+    case 'KeyT':if(state==='play'||state==='tune')toggleTune();break;
+    case 'Backquote':$('debug').hidden=!$('debug').hidden;break;
+    case 'KeyM':muted=!muted;if(master)master.gain.value=muted?0:0.8;toast(muted?'Sound off':'Sound on');break;
+    case 'Escape':if(state==='play'&&!locked())pause();else if(state==='tune')toggleTune();break;
+  }
+});
+window.addEventListener('keyup',e=>{keys[e.code]=false;});
+window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
+$('watch').addEventListener('click',()=>{if(state==='play'){if($('watch').classList.contains('up'))cyclePage();else toggleWatch();}});
+
+// touch
+if(isTouch){
+  document.body.classList.add('touchmode');
+  const joyEl=$('joy'),knob=$('knob');let jid=null,lid=null,lx=0,ly=0;
+  joyEl.addEventListener('touchstart',e=>{const t=e.changedTouches[0];jid=t.identifier;e.preventDefault();},{passive:false});
+  const joyMove=t=>{const r=joyEl.getBoundingClientRect();let dx=(t.clientX-(r.left+r.width/2))/(r.width/2),dy=(t.clientY-(r.top+r.height/2))/(r.height/2);const m=Math.hypot(dx,dy);if(m>1){dx/=m;dy/=m;}
+    joy.x=dx;joy.y=-dy;knob.style.transform='translate('+dx*38+'px,'+dy*38+'px)';};
+  window.addEventListener('touchmove',e=>{for(const t of e.changedTouches){if(t.identifier===jid)joyMove(t);else if(t.identifier===lid&&state==='play'){P.yaw-=(t.clientX-lx)*0.005;P.pitch=clamp(P.pitch-(t.clientY-ly)*0.005,-1.3,1.2);lx=t.clientX;ly=t.clientY;}}},{passive:true});
+  canvas.addEventListener('touchstart',e=>{const t=e.changedTouches[0];lid=t.identifier;lx=t.clientX;ly=t.clientY;},{passive:true});
+  window.addEventListener('touchend',e=>{for(const t of e.changedTouches){if(t.identifier===jid){jid=null;joy.x=0;joy.y=0;knob.style.transform='';}if(t.identifier===lid)lid=null;}});
+  const hold=(id,on,off)=>{const b=$(id);b.addEventListener('touchstart',e=>{e.preventDefault();on(b);},{passive:false});b.addEventListener('touchend',e=>{e.preventDefault();off&&off(b);},{passive:false});};
+  hold('tbSprint',b=>{touchSprint=!touchSprint;b.classList.toggle('on',touchSprint);});
+  hold('tbBreath',b=>{holdBreathTouch=true;b.classList.add('on');},b=>{holdBreathTouch=false;b.classList.remove('on');});
+  hold('tbWatch',()=>{if($('watch').classList.contains('up'))cyclePage();else toggleWatch();});
+  hold('tbUse',()=>interact());hold('tbWater',()=>drink());hold('tbMenu',()=>pause());
+}
+
+/* ================= UI helpers ================= */
+let subT=0,toastT=0;
+function say(t,secs){const s=$('subtitle');s.textContent=t;s.hidden=false;s.style.opacity='1';subT=secs||3.2;}
+function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;toastT=2.2;}
+let page=0;
+function toggleWatch(){$('watch').classList.toggle('up');}
+function cyclePage(){page=(page+1)%3;for(let i=0;i<3;i++)$('wp'+i).hidden=i!==page;if(!$('watch').classList.contains('up'))$('watch').classList.add('up');}
+const ZONES=[[110,'Z1 · Rest',tok('--ok')],[130,'Z2 · Easy',tok('--ok')],[150,'Z3 · Steady',tok('--warn')],[165,'Z4 · Hard',tok('--warn')],[999,'Z5 · Breathless',tok('--bad')]];
+const zoneOf=hr=>{for(let i=0;i<ZONES.length;i++)if(hr<ZONES[i][0])return i+1;return 5;};
+function copyText(txt,okMsg){
+  const fail=()=>{const ta=$('copyFallback');ta.hidden=false;ta.value=txt;ta.focus();ta.select();toast('Clipboard blocked. The text is selected; press Ctrl+C.');};
+  try{navigator.clipboard.writeText(txt).then(()=>toast(okMsg),fail);}catch(e){fail();}
+}
+$('copyFallback').addEventListener('blur',()=>{$('copyFallback').hidden=true;});
+
+function interact(){
+  for(const st of STOPS){if(Math.hypot(P.x-st.spot.x,P.z-st.spot.z)<7){
+    if(st.taken){say('You already had chai at '+st.label+'. Time to climb.');return;}
+    st.taken=true;P.chai++;P.stamina=Math.min(100,P.stamina+30);P.hyd=Math.min(100,P.hyd+15);P.chaiWarm=0.3;
+    say('Hot ginger chai at '+st.label+'. Warm hands, energy back. (+energy, +water, +warmth)',4);buzz(1);return;
+  }}
+  for(const n of npcs){if(Math.hypot(P.x-n.x,P.z-n.z)<6){say(n.lines,4);return;}}
+}
+function drink(){
+  if(P.water<=0){say('Your bottle is empty.');return;}
+  P.water--;P.hyd=Math.min(100,P.hyd+12);say('A sip of water. '+P.water+' left.');
+}
+
+/* ================= state transitions ================= */
+function show(id,on){$(id).hidden=!on;}
+function enterPlay(){state='play';show('start',false);show('pause',false);show('end',false);show('tune',false);show('watch',true);show('cross',P.firstPerson);if(isTouch)show('touch',true);initAudio();lock();canvas.focus();}
+function pause(){if(state!=='play')return;state='paused';show('pause',true);show('breath',false);if(isTouch)show('touch',false);}
+const START_LINES={galu:'Gallu Devi temple. Triund top is 5 km up this trail. Press Q to check your watch.',
+  magic:'Magic View Cafe. The last 2.4 km are the steepest: switchbacks all the way to Triund top. Press Q to check your watch.',
+  shiva:'Bhagsu. This path climbs past the waterfall and Shiva Cafe to Karthani, then up the open ridge: 4.8 km and over 1,000 m of climbing. Press Q to check your watch.'};
+$('startBtn').addEventListener('click',()=>{resetPlayer();say(START_LINES[startFrom],6);enterPlay();});
+$('fromSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;startFrom=b.dataset.from;try{localStorage.setItem('triund-start',startFrom);}catch(err){}syncFromSeg();});
+function syncFromSeg(){document.querySelectorAll('#fromSeg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.from===startFrom)));}
+syncFromSeg();
+$('resumeBtn').addEventListener('click',enterPlay);
+$('restartBtn').addEventListener('click',()=>{resetPlayer();enterPlay();});
+$('againBtn').addEventListener('click',()=>{resetPlayer();enterPlay();});
+$('pauseTuneBtn').addEventListener('click',()=>{state='play';toggleTune();});
+$('packSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;T.packKg=+b.dataset.kg;saveTune();syncPackSeg();});
+function syncPackSeg(){document.querySelectorAll('#packSeg button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.kg===T.packKg)));}
+$('assistBox').checked=!!T.assist;$('assistBox').addEventListener('change',e=>{T.assist=e.target.checked;saveTune();});
+syncPackSeg();
+
+function buildTune(){
+  const box=$('tuneRows');box.innerHTML='';
+  const fmt=(v,st)=>st<0.001?v.toFixed(4):st<0.01?v.toFixed(4):st<1?v.toFixed(2):String(Math.round(v));
+  TUNE.forEach(([k,label,min,max,step])=>{
+    const id='t-'+k,row=document.createElement('div');row.className='trow';
+    row.innerHTML='<label for="'+id+'">'+label+'</label><output id="'+id+'-o"></output><input type="range" id="'+id+'" min="'+min+'" max="'+max+'" step="'+step+'">';
+    box.appendChild(row);const inp=row.querySelector('input'),out=row.querySelector('output');inp.value=T[k];out.textContent=fmt(+T[k],step);
+    inp.addEventListener('input',()=>{T[k]=parseFloat(inp.value);out.textContent=fmt(T[k],step);saveTune();if(k==='packKg')syncPackSeg();});
+  });
+  $('tAssist').checked=!!T.assist;$('tBob').checked=!!T.headBob;
+}
+$('tAssist').addEventListener('change',e=>{T.assist=e.target.checked;$('assistBox').checked=T.assist;saveTune();});
+$('tBob').addEventListener('change',e=>{T.headBob=e.target.checked;saveTune();});
+function toggleTune(){
+  if(state==='tune'){show('tune',false);enterPlay();return;}
+  state='tune';buildTune();show('tune',true);show('pause',false);show('breath',false);if(document.exitPointerLock)document.exitPointerLock();
+}
+$('tuneClose').addEventListener('click',toggleTune);
+$('tuneReset').addEventListener('click',()=>{T=Object.assign({},DEFAULTS);saveTune();buildTune();syncPackSeg();$('assistBox').checked=T.assist;toast('Defaults restored');});
+$('tuneCopy').addEventListener('click',()=>{const o={};TUNE.forEach(([k])=>o[k]=T[k]);o.assist=T.assist;o.headBob=T.headBob;
+  copyText(JSON.stringify({table:'DT_Stamina',source:'triund-walk-test-0.2',values:o},null,2),'Tuning JSON copied');});
+
+function results(){
+  const o={};TUNE.forEach(([k])=>o[k]=T[k]);
+  return {build:'triund-walk-test-0.5',startFrom,route:ACT.id,graphics:QL.get(),finishedAt:new Date().toISOString(),packKg:T.packKg,breathAssist:T.assist,durationSec:Math.round(P.time),
+    trailMeters:Math.round(P.maxS-START_S),restStops:P.rest,exhaustions:P.exhCount,breathEvents:P.breathEvents,
+    breathSyncPct:P.syncN>0?Math.round(100*P.syncAcc/P.syncN):null,waterSips:4-P.water,chai:P.chai,
+    offTrailPct:P.moveTime>0?Math.round(100*P.offTrail/P.moveTime):0,avgHR:Math.round(P.hrSum/Math.max(1,P.hrN)),maxHR:Math.round(P.maxHR),
+    endHydrationPct:Math.round(P.hyd),wantMore:P.wantMore,tuning:o};
+}
+function finish(){
+  state='end';if(document.exitPointerLock)document.exitPointerLock();show('breath',false);show('cross',false);if(isTouch)show('touch',false);
+  const r=results();const mm=Math.floor(r.durationSec/60),ss=String(r.durationSec%60).padStart(2,'0');
+  const rows=[['Time',mm+':'+ss],['Rest stops',r.restStops],['Exhaustion',r.exhaustions],['Breath sync',r.breathSyncPct==null?'—':r.breathSyncPct+'%'],
+    ['Avg / max HR',r.avgHR+' / '+r.maxHR],['Bag',r.packKg+' kg'],['Water + chai',r.waterSips+' sip'+(r.chai?' · '+r.chai+' chai':'')],['Off-trail',r.offTrailPct+'%']];
+  $('endStats').innerHTML=rows.map(([k,v])=>'<div><dt>'+k+'</dt><dd>'+v+'</dd></div>').join('');
+  $('endAlt').textContent=Math.round(P.y).toLocaleString('en-IN')+' m';
+  document.querySelectorAll('#wantSeg button').forEach(b=>b.setAttribute('aria-pressed','false'));
+  show('end',true);buzz(2);
+}
+$('wantSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;P.wantMore=b.dataset.v;document.querySelectorAll('#wantSeg button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
+$('copyResults').addEventListener('click',()=>copyText(JSON.stringify(results(),null,2),'Results copied'));
+
+/* ================= simulation ================= */
+function update(dt){
+  P.time+=dt;
+  let ix=0,iz=0;
+  if(keys.KeyW||keys.ArrowUp)iz+=1;if(keys.KeyS||keys.ArrowDown)iz-=1;if(keys.KeyD)ix+=1;if(keys.KeyA)ix-=1;
+  if(keys.ArrowLeft)P.yaw+=1.8*dt;if(keys.ArrowRight)P.yaw-=1.8*dt;
+  ix+=joy.x;iz+=joy.y;let mag=Math.hypot(ix,iz);if(mag>1){ix/=mag;iz/=mag;mag=1;}
+  const sY=Math.sin(P.yaw),cY=Math.cos(P.yaw);
+  let wx=-sY*iz+cY*ix,wz=-cY*iz-sY*ix;
+  const wantSprint=keys.ShiftLeft||keys.ShiftRight||touchSprint;
+  P.sprinting=wantSprint&&!P.breath&&!P.exh&&P.stamina>8;
+  const h0=P.y;let target=0;
+  if(mag>0.05&&!P.exh){
+    const wl=Math.hypot(wx,wz);wx/=wl;wz/=wl;P.dirx=wx;P.dirz=wz;
+    const g=H(P.x+wx,P.z+wz)-h0;
+    if(g>T.maxGrade){target=0;P.blockedT+=dt;if(P.blockedT>0.6){say('Too steep to climb straight up. Stay on the trail.');P.blockedT=-4;}}
+    else{target=tobler(g)*T.speedScale*mag*(P.sprinting?T.sprintMult:1)*(P.stamina<25?0.72:1)*loadSpeed();}
+  }
+  P.v+=(target-P.v)*(1-Math.exp(-dt*5));
+  if(P.v>0.01){P.x=clamp(P.x+P.dirx*P.v*dt,BOX.e0+60,BOX.e1-60);P.z=clamp(P.z+P.dirz*P.v*dt,-(BOX.n1-60),-(BOX.n0+60));}
+  P.y=H(P.x,P.z);
+  const grade=P.v>0.05?(H(P.x+P.dirx,P.z+P.dirz)-P.y):0;P.grade=grade;
+
+  // physiology
+  const L=loadMult(),spdR=P.v/1.4;
+  const effort=spdR*(1+T.gradeCost*Math.max(grade,0)+1.2*Math.max(-grade,0))*(P.sprinting&&P.v>0.5?1.35:1)*Math.sqrt(L);P.effort=effort;
+  let hrT=72+Math.max(0,P.y-2000)*0.02+(P.hyd<40?(40-P.hyd)*0.3:0)+110*(1-Math.exp(-effort/T.effortK));hrT=Math.min(hrT,190);
+  P.hr+=(hrT-P.hr)*(1-Math.exp(-dt/(hrT>P.hr?T.hrRise:T.hrFall)));
+
+  // rhythm-breathing mini-game (D-08)
+  const holding=keys.Space||holdBreathTouch;
+  if(!P.breath&&P.hr>=T.breathHR){P.breath=true;P.brT=0;P.lung=0;P.breathEvents++;buzz(1);say(T.assist?'You are out of breath. Assist is on: stop and recover.':'You are out of breath! Hold Space to breathe with the ring.',4);}
+  P.lungDelta=0;
+  if(P.breath){
+    P.brT+=dt;const G=(1-Math.cos(2*Math.PI*P.brT/T.breathPeriod))/2;P.G=G;const prev=P.lung;
+    if(T.assist)P.lung+=(G-P.lung)*(1-Math.exp(-dt*6));else P.lung=clamp(P.lung+(holding?1:-1)*dt/(T.breathPeriod/2),0,1);
+    P.lungDelta=P.lung-prev;
+    const sync=1-Math.abs(P.lung-G);P.sync=sync;P.syncAcc+=sync*dt;P.syncN+=dt;
+    P.hr+=(0.6-(T.assist?0.8:sync))*6*dt;
+    if(P.hr<T.aerobicHR-5){P.breath=false;say('Breathing steady again. Keep going.');}
+  }
+
+  // stamina
+  const over=P.hr-T.aerobicHR;
+  if(over>0)P.stamina-=T.drainK*Math.pow(over,1.5)*L*dt;
+  else if(P.hr<120)P.stamina+=T.regenK*(120-P.hr)*(P.hyd<40?0.7:1)*dt;
+  P.stamina=clamp(P.stamina,0,100);
+  if(!P.exh&&P.stamina<=0){P.exh=true;P.exhT=0;P.exhCount++;buzz(2);say('Stop. Your body has nothing left. Hands on knees, breathe.',4.5);}
+  if(P.exh){P.exhT+=dt;if(P.exhT>4&&P.stamina>=20){P.exh=false;say('Okay. Take it slow.');}}
+
+  // hydration + temperature
+  const hrN=clamp((P.hr-90)/90,0,1);
+  P.hyd=clamp(P.hyd-(0.022+0.05*hrN)*dt,0,100);
+  if(P.v<0.15){P.still+=dt;if(P.still>=4&&!P.restCounted){P.rest++;P.restCounted=true;}}else{P.still=0;P.restCounted=false;}
+  P.chaiWarm=Math.max(0,P.chaiWarm-dt*0.002);
+  const chill=P.still>20?Math.min((P.still-20)/120,1)*0.6:0;
+  P.temp+=(36.7+0.8*hrN-chill+P.chaiWarm-P.temp)*(1-Math.exp(-dt/30));
+
+  // route tracking
+  const n=nearestTrail(P.x,P.z);P.s=n.s;P.trailD=n.d;if(n.d<12)P.maxS=Math.max(P.maxS,n.s);
+  if(P.v>0.15){P.moveTime+=dt;if(n.d>6)P.offTrail+=dt;}
+  P.offWarnT-=dt;if(n.d>16&&P.v>0.3&&P.offWarnT<=0){P.offWarnT=25;say('You have left the trail. Shortcuts are steep and will wind you fast.');}
+  P.maxHR=Math.max(P.maxHR,P.hr);P.hrSum+=P.hr*dt;P.hrN+=dt;
+  const z=zoneOf(P.hr);if(z!==P.zone){if(z>=4&&z>P.zone)buzz(1);P.zone=z;}
+  if(P.hyd<40&&!P.lowHydWarned){P.lowHydWarned=true;buzz(1);say('Watch: hydration is low. Press R for a sip.',4);}
+  for(const np of npcs){if(!np.said&&Math.hypot(P.x-np.x,P.z-np.z)<7){np.said=true;say(np.lines,4);}}
+  let pr='';
+  for(const st of STOPS){const d=Math.hypot(P.x-st.spot.x,P.z-st.spot.z);
+    if(!st.seen&&d<16){st.seen=true;buzz(1);say(st.label+'. Stop for a cup of chai (E).',4);}
+    if(!st.taken&&d<7)pr='<kbd>E</kbd> Buy chai';}
+  if(!pr&&npcs.some(np=>Math.hypot(P.x-np.x,P.z-np.z)<5))pr='<kbd>E</kbd> Talk';
+  const pe=$('prompt');if(pr){pe.innerHTML=pr;pe.hidden=false;}else pe.hidden=true;
+  if(P.s>ACT.total-20&&P.trailD<25)finish();
+
+  // camera
+  const bob=T.headBob?1:0.2;
+  if(P.v>0.1){P.stepPh+=dt*P.v/0.75;const st=Math.floor(P.stepPh);if(st!==P.lastStep){P.lastStep=st;footstep(P.v);}}
+  const rate=12+30*clamp((P.hr-80)/100,0,1);P.brPh+=dt*rate/60;
+  P.crouch+=((P.exh?1:0)-P.crouch)*(1-Math.exp(-dt*3));
+  const bobY=(Math.abs(Math.sin(P.stepPh*Math.PI))-0.5)*(0.035+0.045*hrN)*Math.min(P.v,1.6)*bob;
+  const sway=Math.sin(P.brPh*Math.PI*2)*(0.004+0.022*hrN)*bob;
+  if(P.firstPerson){
+    avatar.visible=false;
+    camera.position.set(P.x,P.y+1.65-0.6*P.crouch+bobY+sway,P.z);
+    camera.rotation.set(P.pitch-0.55*P.crouch+sway*0.4,P.yaw,Math.sin(P.stepPh*Math.PI)*0.005*bob*Math.min(P.v,1.5));
+  }else{
+    avatar.visible=true;avatar.position.set(P.x,P.y-0.25*P.crouch,P.z);avatar.rotation.y=Math.atan2(-P.dirx,-P.dirz);avatar.rotation.x=0.5*P.crouch;
+    pack.scale.set(1,0.75+T.packKg*0.025,1+T.packKg*0.02);
+    const sw=Math.sin(P.stepPh*Math.PI)*0.55*clamp(P.v/1.6,0,1);
+    limbs.legL.rotation.x=sw;limbs.legR.rotation.x=-sw;limbs.armL.rotation.x=-sw*0.8;limbs.armR.rotation.x=sw*0.8;
+    const dist=4.4,cx=P.x+sY*dist*Math.cos(P.pitch*0.6),cz=P.z+cY*dist*Math.cos(P.pitch*0.6);
+    const cy=Math.max(P.y+2.1-P.pitch*3,H(cx,cz)+0.7);camera.position.set(cx,cy,cz);camera.lookAt(P.x,P.y+1.45,P.z);
+  }
+  show('cross',P.firstPerson);
+}
+let menuT=0;
+function menuCam(dt){menuT+=dt;const a=0.45+Math.sin(menuT*0.03)*0.3;const x=TOP.x-60,z=TOP.z+120;camera.position.set(x,H(x,z)+28,z);camera.lookAt(x+Math.sin(a)*6000,3500,z-Math.cos(a)*6000);}
+
+/* ================= HUD (diegetic) ================= */
+const bctx=$('breathCanvas').getContext('2d');
+const COL={mist:tok('--mist'),ok:tok('--ok'),warn:tok('--warn')};
+function drawBreath(){
+  const c=bctx,W=340,cx=170,cy=170,r0=44,rg=104;c.clearRect(0,0,W,W);
+  c.lineWidth=5;c.setLineDash([10,12]);c.strokeStyle=COL.mist;c.globalAlpha=0.8;c.beginPath();c.arc(cx,cy,r0+P.G*rg,0,Math.PI*2);c.stroke();
+  c.setLineDash([]);c.globalAlpha=0.55;c.fillStyle=P.sync>0.78?COL.ok:COL.warn;c.beginPath();c.arc(cx,cy,r0+P.lung*rg,0,Math.PI*2);c.fill();c.globalAlpha=1;
+  const inh=(P.brT%T.breathPeriod)<T.breathPeriod/2;const cue=$('breathCue');cue.textContent=inh?'IN':'OUT';cue.style.color=P.sync>0.78?COL.ok:COL.mist;
+}
+let uiT=0;
+function hudTick(dt){
+  if(subT>0){subT-=dt;if(subT<=0)$('subtitle').hidden=true;else if(subT<0.4)$('subtitle').style.opacity=String(subT/0.4);}
+  if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
+  if(state!=='play')return;
+  const low=clamp((40-P.stamina)/40,0,1);const beat=P.hr>160?0.08*Math.max(0,Math.sin(P.time*Math.PI*2*P.hr/60)):0;
+  $('vignette').style.opacity=String(Math.min(0.95,low*0.8+P.crouch*0.35+beat));
+  {const f=P.breath?P.lung:(P.brPh%1<0.42?Math.sin(Math.PI*(P.brPh%1)/0.42):1-Math.sin(Math.PI*((P.brPh%1)-0.42)/0.58));$('wLung').style.setProperty('--lung',String(0.55+0.65*clamp(f,0,1)));}
+  const showB=P.breath;if($('breath').hidden===showB)$('breath').hidden=!showB;
+  if(showB){drawBreath();$('breathHelp').hidden=!!T.assist;}
+  uiT-=dt;if(uiT>0)return;uiT=0.1;
+  const z=P.zone,face=$('face');face.style.setProperty('--zone',ZONES[z-1][2]);face.style.setProperty('--hrp',String(clamp((P.hr-60)/130*100,0,100)));
+  const mins=7*60+Math.floor(P.time/60);
+  $('wClock').textContent=String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
+  $('wHr').textContent=Math.round(P.hr);$('wZone').textContent=ZONES[z-1][1];
+  const br=Math.round(12+30*clamp((P.hr-80)/100,0,1));
+  $('wBr').textContent=P.breath?'Out of breath':br+'/min · '+['easy','easy','steady','heavy','gasping'][z-1];
+  $('wTemp').textContent=P.temp.toFixed(1)+'°';$('wHyd').textContent=Math.round(P.hyd)+'%';$('wAlt').textContent=Math.round(P.y);
+  const fd=m=>m<1000?Math.round(m)+' m':(m/1000).toFixed(1)+' km';
+  $('rDone').textContent=fd(Math.max(0,P.maxS-START_S));$('rLeft').textContent=fd(Math.max(0,ACT.total-P.s));
+  $('rClimb').textContent=Math.max(0,Math.round(ACT.topAlt-P.y))+' m';
+  const nx=STOPS.find(st=>st.trail===ACT.id&&st.s>P.s+8);$('rNext').textContent=nx?nx.short+' '+fd(nx.s-P.s):'Top';
+  $('bEnergy').textContent=Math.round(P.stamina)+'%';$('bSpo').textContent=Math.round(97-Math.max(0,P.y-2000)*0.004-(P.hr>160?2:0))+'%';
+  $('bBag').textContent=T.packKg+' kg';$('bAmb').textContent=Math.round(9-(P.y-2100)*0.0065)+'°C';
+  if(!$('debug').hidden){
+    $('debug').textContent='stamina  '+P.stamina.toFixed(1)+'\nHR       '+P.hr.toFixed(1)+'\neffort   '+P.effort.toFixed(2)+'\ngrade    '+(P.grade*100).toFixed(1)+'%\nspeed    '+P.v.toFixed(2)+' m/s'+(P.sprinting?' (sprint)':'')+
+      '\nload×    '+loadMult().toFixed(2)+'\nhydr     '+P.hyd.toFixed(1)+'\ntemp     '+P.temp.toFixed(2)+'\nroute    '+ACT.id+'\ntrail s  '+P.s.toFixed(0)+' / '+ACT.total.toFixed(0)+'\noff-trail '+P.trailD.toFixed(1)+' m\nalt      '+P.y.toFixed(1)+'\nbreath   '+(P.breath?('on sync '+(P.sync*100|0)+'%'):'off')+'\nfps      '+fps.toFixed(0)+'  ('+(1000/Math.max(fps,1)).toFixed(1)+' ms)\ndraws    '+RI.calls+'  tris '+(RI.triangles/1000).toFixed(0)+'k\ngraphics '+QL.get()+(SAT.px?'':'  (imagery missing)');
+  }
+}
+
+/* ================= graphics quality ================= */
+function syncGfx(){document.querySelectorAll('#gfxSeg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.q===QL.get())));
+  $('pauseGfxBtn').textContent='Graphics: '+(QL.get()==='high'?'High':'Low');}
+QL.onChange(p=>{QP=p;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,p.pixelRatio));resize();applyShadowQuality();if(FLORA)FLORA.setQuality(p);syncGfx();});
+$('gfxSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)QL.set(b.dataset.q);});
+$('pauseGfxBtn').addEventListener('click',()=>QL.set(QL.get()==='high'?'low':'high'));
+syncGfx();
+// if the first 10 s of walking run slower than 25 fps (median), drop to Low once
+const AUTO={t:0,ft:[],done:false};
+function autoQuality(raw){if(AUTO.done||state!=='play')return;AUTO.t+=raw;AUTO.ft.push(raw);
+  if(AUTO.t<10)return;AUTO.done=true;const m=AUTO.ft.sort((a,b)=>a-b)[AUTO.ft.length>>1];
+  if(m>0.04&&QL.get()==='high'){QL.set('low');toast('Graphics set to Low for smoother walking');}}
+
+/* ================= drone flyover (route check) ================= */
+// Flies a camera along the chosen route with the trail drawn on the ground and the OSM landmarks labelled.
+const DR={s:0,v:20,alt:60,pause:false,top:false,tr:null,cam:new THREE.Vector3(),look:new THREE.Vector3(),snap:true,done:false,vis:{},hudT:0};
+const ROUTE_NAME={galu:'Gallu Devi → Triund',shiva:'Bhagsu → Shiva Cafe → Triund'};
+function labelSprite(text,sub){
+  const c=document.createElement('canvas'),g=c.getContext('2d'),fs=30;c.width=512;c.height=sub?96:64;
+  g.font='600 '+fs+'px system-ui,sans-serif';const w=Math.min(500,Math.max(g.measureText(text).width,sub?g.measureText(sub).width*0.7:0)+28);
+  g.fillStyle='rgba(8,12,10,0.78)';g.beginPath();g.moveTo(256-w/2+10,4);g.arcTo(256+w/2,4,256+w/2,c.height-4,10);g.arcTo(256+w/2,c.height-4,256-w/2,c.height-4,10);
+  g.arcTo(256-w/2,c.height-4,256-w/2,4,10);g.arcTo(256-w/2,4,256+w/2,4,10);g.fill();
+  g.fillStyle='#ffd23f';g.textAlign='center';g.textBaseline='middle';g.fillText(text,256,sub?34:32);
+  if(sub){g.font='400 21px system-ui,sans-serif';g.fillStyle='#e7ede9';g.fillText(sub,256,70);}
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;
+  const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,depthWrite:false,sizeAttenuation:false,toneMapped:false,fog:false}));
+  s.scale.set(0.34,0.34*c.height/512,1);s.center.set(0.5,0);s.renderOrder=20;return s;
+}
+function droneVisuals(tr){
+  if(DR.vis[tr.id])return DR.vis[tr.id];
+  const grp=new THREE.Group(),pos=[],idx=[],w=0.9;let n=0;
+  for(let s=0;s<=tr.total+2.9;s+=3){const p=pointAtS(s,tr),d=dirAtS(s,12,tr),rx=-d.dz,rz=d.dx,y=Math.max(H(p.x,p.z),p.h)+0.5;
+    pos.push(p.x+rx*w,y,p.z+rz*w,p.x-rx*w,y,p.z-rz*w);if(n)idx.push(2*n-2,2*n-1,2*n,2*n-1,2*n+1,2*n);n++;}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setIndex(idx);
+  const mk2=(op,dt)=>{const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:op,depthTest:dt,depthWrite:false,side:THREE.DoubleSide,fog:false,toneMapped:false}));
+    m.frustumCulled=false;m.renderOrder=dt?10:9;return m;};
+  grp.add(mk2(0.8,true));grp.add(mk2(0.2,false));       // bright where visible, faint where a ridge hides it
+  const items=[];
+  for(const k in MK){const m=MK[k];if(m.trail!==tr.id||m.off>120||m.s>tr.total-40)continue;
+    const x=m.e,z=-m.n,sp=labelSprite(m.name,(m.s/1000).toFixed(1)+' km · '+Math.round(m.ele)+' m');sp.position.set(x,H(x,z)+6,z);grp.add(sp);items.push({name:m.name,s:m.s});}
+  // real places from OSM along this route (smaller labels, shown near the drone only)
+  const small=[];
+  if(TD.places)for(const q of TD.places.pois){if(q.trail!==tr.id||q.off>80||!q.name)continue;
+    if(!['temple','monastery','waterfall','camp','cafe','shelter','lodge','viewpoint'].includes(q.kind))continue;
+    if(items.some(it=>Math.abs(it.s-q.s)<30&&it.name.slice(0,5).toLowerCase()===q.name.slice(0,5).toLowerCase()))continue;
+    const x=q.e,z=-q.n,sp=labelSprite(q.name);sp.scale.multiplyScalar(0.62);sp.position.set(x,H(x,z)+4,z);grp.add(sp);small.push(sp);
+    if(['temple','waterfall','camp'].includes(q.kind))items.push({name:q.name,s:q.s});}
+  // km markers on the ribbon
+  for(let km=1;km*1000<tr.total;km++){const p=pointAtS(km*1000,tr),sp=labelSprite(km+' km');sp.scale.multiplyScalar(0.6);sp.position.set(p.x,H(p.x,p.z)+3,p.z);grp.add(sp);}
+  items.push({name:'Triund top',s:tr.total});items.sort((a,b)=>a.s-b.s);grp.visible=false;scene.add(grp);
+  return DR.vis[tr.id]={grp,items,small};
+}
+function enterDrone(){
+  DR.tr=startFrom==='shiva'?ST:GT;ACT=DR.tr;
+  DR.s=startFrom==='magic'?stopOf('magic').s:0;DR.snap=true;DR.done=false;DR.pause=false;
+  for(const k in DR.vis)DR.vis[k].grp.visible=false;droneVisuals(DR.tr).grp.visible=true;
+  state='drone';show('start',false);show('pause',false);show('end',false);show('watch',false);show('cross',false);show('droneHud',true);
+  if(isTouch)show('touch',false);avatar.visible=false;$('dRoute').textContent='Drone · '+ROUTE_NAME[DR.tr.id];
+}
+function exitDrone(){state='menu';for(const k in DR.vis)DR.vis[k].grp.visible=false;show('droneHud',false);show('start',true);}
+const _dv=new THREE.Vector3();
+function droneTick(dt){
+  const tr=DR.tr;
+  if(!DR.pause)DR.s=Math.min(tr.total,DR.s+DR.v*dt);
+  if(DR.s>=tr.total&&!DR.done){DR.done=true;toast('Route complete. R to fly again, Esc for the menu.');}
+  const t=pointAtS(DR.s,tr),ty=Math.max(H(t.x,t.z),t.h);let cx,cy,cz,lx,lz;
+  if(DR.top){cx=t.x;cz=t.z+DR.alt*1.2;cy=ty+DR.alt*3.2;lx=t.x;lz=t.z;}           // north-up map view
+  else{const d=dirAtS(DR.s+20,140,tr),back=DR.alt*1.25;cx=t.x-d.dx*back;cz=t.z-d.dz*back;cy=Math.max(ty,H(cx,cz))+DR.alt;
+    const a=pointAtS(DR.s+45,tr);lx=(t.x+a.x)/2;lz=(t.z+a.z)/2;}
+  // stay clear of ridges between the drone and the trail
+  for(let i=1;i<=4;i++){const f=i/5,gx=cx+(t.x-cx)*f,gz=cz+(t.z-cz)*f;cy=Math.max(cy,H(gx,gz)+18*(1-f)+8);}
+  const k=DR.snap?1:1-Math.exp(-dt*1.6);DR.snap=false;
+  DR.cam.lerp(_dv.set(cx,cy,cz),k);DR.look.lerp(_dv.set(lx,ty,lz),k);
+  camera.position.copy(DR.cam);camera.lookAt(DR.look);
+  DR.hudT-=dt;if(DR.hudT>0)return;DR.hudT=0.15;
+  {const lim=DR.top?(DR.alt*5)**2:450*450;for(const sp of droneVisuals(tr).small){const dx=sp.position.x-DR.look.x,dz=sp.position.z-DR.look.z;sp.visible=dx*dx+dz*dz<lim;}}
+  const fd=m=>m<1000?Math.round(m)+' m':(m/1000).toFixed(2)+' km';
+  $('dProg').textContent=fd(DR.s)+' / '+fd(tr.total)+' · '+Math.round(ty)+' m · '+Math.round(DR.v*3.6)+' km/h'+(DR.pause?' · paused':'')+(DR.top?' · map view':'');
+  const nx=droneVisuals(tr).items.find(it=>it.s>DR.s+5&&it.s<=tr.total);$('dNext').textContent=nx?'Next: '+nx.name+' in '+fd(nx.s-DR.s):'Triund top reached';
+}
+function droneKey(e){
+  switch(e.code){
+    case 'Space':DR.pause=!DR.pause;break;
+    case 'ArrowRight':DR.v=Math.min(160,DR.v*1.5);break;
+    case 'ArrowLeft':DR.v=Math.max(5,DR.v/1.5);break;
+    case 'ArrowUp':DR.alt=Math.min(260,DR.alt+20);break;
+    case 'ArrowDown':DR.alt=Math.max(20,DR.alt-20);break;
+    case 'KeyV':DR.top=!DR.top;break;
+    case 'KeyL':{const g=droneVisuals(DR.tr).grp.children;g[0].visible=g[1].visible=!g[0].visible;toast(g[0].visible?'Route line on':'Route line off');break;}
+    case 'KeyR':DR.s=startFrom==='magic'&&DR.tr===GT?stopOf('magic').s:0;DR.snap=true;DR.done=false;DR.pause=false;break;
+    case 'Escape':exitDrone();break;
+    default:return false;
+  }
+  e.preventDefault();return true;
+}
+$('droneBtn').addEventListener('click',enterDrone);
+
+/* ================= loop ================= */
+let last=performance.now(),fps=60;const RI={calls:0,triangles:0};
+function frame(now){
+  const raw=(now-last)/1000,dt=Math.min(0.05,raw);last=now;fps+=(1/Math.max(dt,0.001)-fps)*0.05;
+  if(state==='play'){update(dt);autoQuality(raw);}else if(state==='menu')menuCam(dt);else if(state==='drone')droneTick(dt);
+  if(state==='drone'||state==='qa')followSun(DR.look.x,DR.look.y,DR.look.z);
+  else{const fx=state==='menu'?camera.position:P;followSun(fx.x,state==='menu'?H(fx.x,fx.z):P.y,fx.z);}
+  SKY.update(camera);if(FLORA)FLORA.update(dt,camera.position,now/1000);if(PLACES)PLACES.update(dt,camera.position,now/1000);
+  audioTick(dt);hudTick(dt);renderer.render(scene,camera);RI.calls=renderer.info.render.calls;RI.triangles=renderer.info.render.triangles;
+  requestAnimationFrame(frame);
+}
+const fontsReady=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]):Promise.resolve();
+Promise.all([fontsReady,satReady]).then(()=>{
+  buildPlaces();buildFlora();buildProps();
+  window.__triund.buildMs=Math.round(performance.now()-T0);
+  const sb=$('startBtn');sb.disabled=false;sb.textContent='Start the trek';$('droneBtn').disabled=false;
+  if(SAT.failed)toast('Satellite imagery did not load. Using the simple ground colours.');
+  requestAnimationFrame(frame);
+});
+})();
+</script>

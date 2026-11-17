@@ -1,0 +1,8 @@
+Ground textures from Poly Haven (https://polyhaven.com), CC0. Resized to 1024/512 px JPEG.
+grass_d    forrest_ground_01  (Rob Tuytel)
+meadow_d   sparse_grass       (Amal Kumar)
+litter_d/n forest_leaves_04   (Rob Tuytel)
+rock_d/n   rock_face_03       (Dario Barresi, Rico Cilliers)
+trail_d/n  rocky_trail        (Amal Kumar)
+dirt_d     stony_dirt_path    (eye-candy.xyz)
+pave_d     grey_stone_path    (Amal Kumar)
