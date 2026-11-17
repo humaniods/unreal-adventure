@@ -45,6 +45,7 @@ window.TriundFlora = {
       const prev = mat.onBeforeCompile;
       mat.onBeforeCompile = sh => {
         prev(sh);
+        if (window.TriundAtmos) window.TriundAtmos.optIn(sh);   // cloud shadows
         sh.fragmentShader = sh.fragmentShader
           .replace('#include <normal_fragment_begin>', THREE.ShaderChunk.normal_fragment_begin.replace('normal = normal * faceDirection;', ''))
           .replace('#include <aomap_fragment>', '#include <aomap_fragment>\nreflectedLight.directSpecular *= 0.0;\nreflectedLight.indirectSpecular *= 0.0;\nreflectedLight.indirectDiffuse += diffuseColor.rgb * ' + (trans || 0).toFixed(3) + ';');
@@ -265,6 +266,7 @@ window.TriundFlora = {
       const m = new THREE.MeshStandardMaterial({ map: bk.albedo, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 1, metalness: 0 });
       m.onBeforeCompile = sh => {
         Object.assign(sh.uniforms, { uNrm: { value: bk.normal }, uCam: wind.uCam, uTime: wind.uTime, uWind: wind.uWind, uLod: lodTrees });
+        if (window.TriundAtmos) window.TriundAtmos.optIn(sh);
         sh.vertexShader = sh.vertexShader
           .replace('#include <common>', '#include <common>\nuniform vec3 uCam; uniform float uTime; uniform float uWind; uniform vec2 uLod; varying vec2 vRot; varying float vLodF;')
           .replace('#include <begin_vertex>', `

@@ -230,7 +230,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <!-- start -->
 <section class="screen" id="start">
   <div class="card">
-    <div class="eyebrow">ECP feel test · build 0.5</div>
+    <div class="eyebrow">ECP feel test · build 0.6</div>
     <h1>Triund Walk Test</h1>
     <p class="lede">The real Triund trails above McLeod Ganj, up to the meadow at 2,838 m facing the Dhauladhar range. Take the classic 5 km path from Gallu Devi temple through oak and deodar forest, past Magic View Cafe and up the switchbacks, or the steeper, quieter climb from Bhagsu past the waterfall, Shiva Cafe and Karthani. There is no health bar. Your breathing, your heartbeat and the smartwatch on your wrist tell you how your body is holding up.</p>
     <div class="field">
@@ -266,11 +266,11 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
       <dt><kbd>Shift</kbd></dt><dd>walk fast (drains stamina quicker)</dd>
       <dt><kbd>Space</kbd></dt><dd>hold to breathe in (during the mini-game)</dd>
       <dt><kbd>Q</kbd> <kbd>F</kbd></dt><dd>raise watch · next watch screen</dd>
-      <dt><kbd>E</kbd> <kbd>R</kbd></dt><dd>buy chai or talk · sip water</dd>
+      <dt><kbd>E</kbd> <kbd>R</kbd></dt><dd>buy chai, talk or pat a dog · sip water</dd>
       <dt><kbd>V</kbd> <kbd>T</kbd> <kbd>Esc</kbd></dt><dd>camera · tuning panel · pause</dd>
       <dt>Drone flyover</dt><dd>fly over the whole chosen route from above</dd>
     </dl>
-    <p class="fine">Prototype. Trails: OpenStreetMap route "Galu Devi – Triund" and the OpenStreetMap paths from Bhagsu via Shiva Cafe and Karthani (map data © OpenStreetMap contributors, ODbL). Temples, cafes, camps, streams and building outlines also come from OpenStreetMap; buildings OSM has not traced come from Microsoft Global ML Building Footprints (ODbL); building heights and colours are estimates. Terrain: SRTM elevation via AWS Terrain Tiles at about 30 m detail, so the shape of the mountain is real but small steps and rocks are not. Imagery: Sentinel-2 cloudless 2016 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0. Ground textures: Poly Haven (CC0). Values from the tuning panel (<kbd>T</kbd>) will move into the UE5 DT_Stamina table.</p>
+    <p class="fine">Prototype. Trails: OpenStreetMap route "Galu Devi – Triund" and the OpenStreetMap paths from Bhagsu via Shiva Cafe and Karthani (map data © OpenStreetMap contributors, ODbL). Temples, cafes, camps, streams and building outlines also come from OpenStreetMap; buildings OSM has not traced come from Microsoft Global ML Building Footprints (ODbL); building heights and colours are estimates. Terrain: SRTM elevation via AWS Terrain Tiles at about 30 m detail, so the shape of the mountain is real but small steps and rocks are not. Imagery: Sentinel-2 cloudless 2016 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0. Ground textures: Poly Haven (CC0). Clouds, animals and sounds are generated in the game; their placement and behaviour follow trekkers' trip reports (October–November morning). Values from the tuning panel (<kbd>T</kbd>) will move into the UE5 DT_Stamina table.</p>
   </div>
 </section>
 
@@ -341,6 +341,9 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <script src="terrain-material.js"></script>
 <script src="flora.js"></script>
 <script src="places.js"></script>
+<script src="atmos.js"></script>
+<script src="fauna.js"></script>
+<script src="sound.js"></script>
 <script>
 (function(){
 'use strict';
@@ -517,6 +520,7 @@ renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   SC.shadowmap_pars_fragment=SC.shadowmap_pars_fragment.replace('uniform DirectionalLightShadow directionalLightShadows[ NUM_DIR_LIGHT_SHADOWS ];',
     'uniform DirectionalLightShadow directionalLightShadows[ NUM_DIR_LIGHT_SHADOWS ];\n\t\tfloat shFade( vec4 c ) { vec2 e = min( c.xy, 1.0 - c.xy ); return smoothstep( 0.0, 0.14, min( e.x, e.y ) ); }');
   if(n1!==1||n2!==1)console.warn('shadow fade patch: unexpected chunk text',n1,n2);})();
+if(window.TriundAtmos)window.TriundAtmos.patchChunks(THREE);
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(70,1,0.15,60000);camera.rotation.order='YXZ';
 const SKY=window.TriundSky.init({THREE,scene,renderer,sunAz:TD.sun.az,sunEl:TD.sun.el});
@@ -660,7 +664,7 @@ const inBox=(x,z)=>x>BOX.e0+20&&x<BOX.e1-20&&-z>BOX.n0+20&&-z<BOX.n1-20;
 })();
 
 /* ---- trees, bushes, grass, flowers, trail stones (flora.js); built once the imagery is in ---- */
-let FLORA=null,PLACES=null;
+let FLORA=null,PLACES=null,ATMOS=null,FAUNA=null;
 function buildFlora(){
   FLORA=window.TriundFlora.build({THREE,scene,H,rng,renderer,quality:QP,isMeadow,forest,groundTint,sunAt,aoAt,trails:[GT,ST],
     trailD:(x,z)=>{trailQ(x,z);return TQ.d;},
@@ -819,12 +823,12 @@ function resetPlayer(){
 resetPlayer();
 // QA hook: jump along the trail (used by automated screenshots; harmless for players)
 window.__triund={setRoute(id){startFrom=id;resetPlayer();enterPlay();},look(x,y,z,tx,ty,tz){state='qa';show('start',false);show('droneHud',false);camera.position.set(x,y,z);camera.lookAt(tx,ty,tz);DR.look.set(tx,ty,tz);},H:(x,z)=>H(x,z),drone(id,s,top,alt){startFrom=id;enterDrone();DR.s=s||0;DR.top=!!top;if(alt)DR.alt=alt;DR.pause=true;DR.snap=true;},teleport(s,third){const p=pointAtS(s),d=dirAtS(s+10,20);P.x=p.x;P.z=p.z;P.y=H(p.x,p.z);P.yaw=Math.atan2(-d.dx,-d.dz);P.pitch=-0.05;P.s=s;P.maxS=Math.max(P.maxS,s);P.firstPerson=!third;},
-  get P(){return P;},get total(){return ACT.total;},get route(){return ACT.id;},stops:STOPS.map(st=>({label:st.label,trail:st.trail,s:st.s})),buildMs:0,get flora(){return FLORA&&FLORA.counts;},get places(){return PLACES&&PLACES.counts;},get satOK(){return !!SAT.px;},get stats(){return {calls:RI.calls,tris:RI.triangles,fps:Math.round(fps),q:QL.get()};},
+  get P(){return P;},get total(){return ACT.total;},get route(){return ACT.id;},stops:STOPS.map(st=>({label:st.label,trail:st.trail,s:st.s})),buildMs:0,get flora(){return FLORA&&FLORA.counts;},get places(){return PLACES&&PLACES.counts;},get atmos(){return ATMOS&&ATMOS.counts;},get fauna(){return FAUNA&&FAUNA.counts;},get dogStates(){return FAUNA&&FAUNA.dogs.map(d=>d.state);},animals(){if(!FAUNA)return null;const p=g=>[+g.position.x.toFixed(1),+g.position.y.toFixed(1),+g.position.z.toFixed(1)];return {dog:p(FAUNA.dogs[0].a.g),mule:p(FAUNA.mules[0].members[0].g),langur:p(FAUNA.troops[0].members[0].l.g),bird:p(FAUNA.birds[0].m)};},get satOK(){return !!SAT.px;},get stats(){return {calls:RI.calls,tris:RI.triangles,fps:Math.round(fps),q:QL.get()};},
   breakdown(){const out={};scene.traverse(o=>{if(!o.isMesh||!o.visible)return;const g=o.geometry,t=(g.index?g.index.count:g.attributes.position.count)/3*(o.isInstancedMesh?o.count:1);
     const k=(o.isInstancedMesh?'inst:':'mesh:')+(o.material.map?'map':'')+(o.castShadow?'+cast':'')+':'+Math.round(t/(o.isInstancedMesh?Math.max(o.count,1):1));out[k]=(out[k]||0)+Math.round(t);});return out;}};
 
 /* ================= audio ================= */
-let AC=null,master=null,noiseBuf=null,windGain=null,breathGain=null,breathBP=null,muted=false,hbTimer=0;
+let SOUND=null,AC=null,master=null,noiseBuf=null,windGain=null,breathGain=null,breathBP=null,muted=false,hbTimer=0;
 function initAudio(){
   if(AC) {if(AC.state==='suspended')AC.resume();return;}
   try{
@@ -834,6 +838,8 @@ function initAudio(){
     w.connect(lp);lp.connect(windGain);windGain.connect(master);w.start();
     const b=AC.createBufferSource();b.buffer=noiseBuf;b.loop=true;breathBP=AC.createBiquadFilter();breathBP.type='bandpass';breathBP.frequency.value=1100;breathBP.Q.value=0.9;
     breathGain=AC.createGain();breathGain.gain.value=0;b.connect(breathBP);breathBP.connect(breathGain);breathGain.connect(master);b.start(0,0.7);
+    if(window.TriundSound){const pl=TD.places||{pois:[],streams:[]};
+      SOUND=window.TriundSound.init({AC,master,noise:noiseBuf,streams:pl.streams,falls:pl.pois.filter(q=>q.kind==='waterfall').map(q=>[q.e,-q.n]),temples:[[BHT.x,BHT.z]]});}
   }catch(e){AC=null;}
 }
 function env(g,t,peak,att,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(0.0002,peak),t+att);g.gain.exponentialRampToValueAtTime(0.0001,t+att+dec);}
@@ -846,6 +852,7 @@ function buzz(n){n=n||1;const w=$('watch');w.classList.remove('buzz');void w.off
     o.connect(g);g.connect(master);o.start(t);o.stop(t+i*0.12+0.09);}}
 function audioTick(dt){
   if(!AC||!breathGain)return;const now=AC.currentTime;
+  if(SOUND&&P){try{SOUND.update(dt,{x:camera.position.x,y:P.y,z:camera.position.z,yaw:P.yaw},{mules:FAUNA&&FAUNA.mules,events:FAUNA&&FAUNA.events,nearStall:STOPS.some(st=>Math.hypot(st.x-P.x,st.z-P.z)<30)},state==='play');}catch(e){console.error('sound',e);SOUND=null;}}
   if(state!=='play'){breathGain.gain.setTargetAtTime(0,now,0.1);return;}
   const hrN=clamp((P.hr-80)/100,0,1);let e,inh;
   if(P.breath){inh=P.lungDelta>0;e=Math.abs(P.lungDelta)>0.0005?0.9:0.15;}
@@ -930,6 +937,7 @@ function interact(){
     say('Hot ginger chai at '+st.label+'. Warm hands, energy back. (+energy, +water, +warmth)',4);buzz(1);return;
   }}
   for(const n of npcs){if(Math.hypot(P.x-n.x,P.z-n.z)<6){say(n.lines,4);return;}}
+  if(FAUNA&&FAUNA.pat(P)){say('The dog leans into your hand and thumps its tail. It will walk with you a while.',3.5);return;}
 }
 function drink(){
   if(P.water<=0){say('Your bottle is empty.');return;}
@@ -980,7 +988,7 @@ $('tuneCopy').addEventListener('click',()=>{const o={};TUNE.forEach(([k])=>o[k]=
 
 function results(){
   const o={};TUNE.forEach(([k])=>o[k]=T[k]);
-  return {build:'triund-walk-test-0.5',startFrom,route:ACT.id,graphics:QL.get(),finishedAt:new Date().toISOString(),packKg:T.packKg,breathAssist:T.assist,durationSec:Math.round(P.time),
+  return {build:'triund-walk-test-0.6',startFrom,route:ACT.id,graphics:QL.get(),finishedAt:new Date().toISOString(),packKg:T.packKg,breathAssist:T.assist,durationSec:Math.round(P.time),
     trailMeters:Math.round(P.maxS-START_S),restStops:P.rest,exhaustions:P.exhCount,breathEvents:P.breathEvents,
     breathSyncPct:P.syncN>0?Math.round(100*P.syncAcc/P.syncN):null,waterSips:4-P.water,chai:P.chai,
     offTrailPct:P.moveTime>0?Math.round(100*P.offTrail/P.moveTime):0,avgHR:Math.round(P.hrSum/Math.max(1,P.hrN)),maxHR:Math.round(P.maxHR),
@@ -1070,6 +1078,7 @@ function update(dt){
     if(!st.seen&&d<16){st.seen=true;buzz(1);say(st.label+'. Stop for a cup of chai (E).',4);}
     if(!st.taken&&d<7)pr='<kbd>E</kbd> Buy chai';}
   if(!pr&&npcs.some(np=>Math.hypot(P.x-np.x,P.z-np.z)<5))pr='<kbd>E</kbd> Talk';
+  if(!pr&&FAUNA&&FAUNA.nearDog(P))pr='<kbd>E</kbd> Pat the dog';
   const pe=$('prompt');if(pr){pe.innerHTML=pr;pe.hidden=false;}else pe.hidden=true;
   if(P.s>ACT.total-20&&P.trailD<25)finish();
 
@@ -1240,13 +1249,15 @@ function frame(now){
   if(state==='play'){update(dt);autoQuality(raw);}else if(state==='menu')menuCam(dt);else if(state==='drone')droneTick(dt);
   if(state==='drone'||state==='qa')followSun(DR.look.x,DR.look.y,DR.look.z);
   else{const fx=state==='menu'?camera.position:P;followSun(fx.x,state==='menu'?H(fx.x,fx.z):P.y,fx.z);}
-  SKY.update(camera);if(FLORA)FLORA.update(dt,camera.position,now/1000);if(PLACES)PLACES.update(dt,camera.position,now/1000);
+  SKY.update(camera);if(FLORA)FLORA.update(dt,camera.position,now/1000);if(PLACES)PLACES.update(dt,camera.position,now/1000);if(ATMOS)ATMOS.update(dt,camera.position,now/1000);if(FAUNA)FAUNA.update(dt,camera.position,now/1000,P,ACT);
   audioTick(dt);hudTick(dt);renderer.render(scene,camera);RI.calls=renderer.info.render.calls;RI.triangles=renderer.info.render.triangles;
   requestAnimationFrame(frame);
 }
 const fontsReady=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]):Promise.resolve();
 Promise.all([fontsReady,satReady]).then(()=>{
+  if(window.TriundAtmos){try{ATMOS=window.TriundAtmos.build({THREE,scene,H,sunDir:SKY.sunDir,rng,quality:QP,streams:TD.places&&TD.places.streams,box:TD.near});}catch(e){console.error('atmos failed',e);}}
   buildPlaces();buildFlora();buildProps();
+  if(window.TriundFauna){try{FAUNA=window.TriundFauna.build({THREE,scene,H,trails:{galu:GT,shiva:ST},top:TOP,rng,blocked:PLACES?PLACES.blocked:null});}catch(e){console.error('fauna failed',e);}}
   window.__triund.buildMs=Math.round(performance.now()-T0);
   const sb=$('startBtn');sb.disabled=false;sb.textContent='Start the trek';$('droneBtn').disabled=false;
   if(SAT.failed)toast('Satellite imagery did not load. Using the simple ground colours.');

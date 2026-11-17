@@ -30,6 +30,7 @@ window.TriundTerrain = {
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0 });
     mat.onBeforeCompile = sh => {
       Object.assign(sh.uniforms, uniforms);
+      if (window.TriundAtmos) window.TriundAtmos.optIn(sh);   // cloud shadows
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nattribute vec4 tdat;\nvarying vec4 vT;\nvarying vec3 vW;\nvarying vec3 vWN;')
         .replace('#include <begin_vertex>', '#include <begin_vertex>\nvT = tdat;\nvW = (modelMatrix * vec4(transformed, 1.0)).xyz;\nvWN = normalize(mat3(modelMatrix) * objectNormal);');
