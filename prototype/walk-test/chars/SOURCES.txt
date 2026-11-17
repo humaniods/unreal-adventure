@@ -1,0 +1,3 @@
+Characters, hairstyles and animations: Quaternius (quaternius.com), CC0.
+Universal Base Characters [Standard] + Universal Animation Library [Standard], rebuilt by prototype/geo/build_chars.py
+Animals (husky, shiba, donkey, horse, cow, bull): Quaternius Animated Animal Pack via poly.pizza, CC0; trimmed by prototype/geo/build_animals.py
