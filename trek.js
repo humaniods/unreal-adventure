@@ -45,6 +45,9 @@ window.TriundTrek = {
     const bagP = div(`<div class="box" role="dialog" aria-labelledby="bagTitle"><h3 id="bagTitle">Your bag</h3><div class="sub" id="bagSub"></div><div id="bagRows"></div>
       <div class="foot"><span class="coins">🪙 <span id="bagCoins">0</span> coins</span><button type="button" class="btn primary" id="bagClose">Close</button></div></div>`, 'bagPanel', 'tpanel');
     bagP.hidden = true;
+    const topP = div(`<div class="box" role="dialog" aria-labelledby="topTitle"><h3 id="topTitle">Add coins</h3><div class="sub">Coins pay for food, water and a tent at the top. Test mode: the checkout is a mock and no real money is charged.</div><div id="topRows"></div>
+      <div class="sub" id="topHist"></div><div class="foot"><span class="coins">🪙 <span id="topCoins">0</span> coins</span><button type="button" class="btn primary" id="topClose">Close</button></div></div>`, 'topPanel', 'tpanel');
+    topP.hidden = true;
 
     let P = null, bag = null, sit = null, eating = null, panelOpen = null, warn = {}, lastStop = null;
     const I = ECON.ITEMS;
@@ -154,7 +157,7 @@ window.TriundTrek = {
       if (document.pointerLockElement) document.exitPointerLock();
     }
     function closePanels() {
-      if (!panelOpen) return; shop.hidden = true; bagP.hidden = true; panelOpen = null;
+      if (!panelOpen) return; shop.hidden = true; bagP.hidden = true; topP.hidden = true; panelOpen = null;
       if (ctx.getState() === 'panel') ctx.setState('play');
     }
     function openShop(st) {
@@ -175,7 +178,7 @@ window.TriundTrek = {
     }
     function buy(st, it, btn) {
       if (!ECON.wallet.spend(it.price, `${it.name} at ${st.label}`)) {
-        ctx.toast(`Not enough coins for ${it.name}.`); if (ctx.onTopUp) ctx.onTopUp(); return;
+        ctx.toast(`Not enough coins for ${it.name}.`); openTopUp(); return;
       }
       if (ctx.crowd && ctx.crowd.serve) ctx.crowd.serve(st);
       if (it.id === 'water') { P.water += it.sips; ctx.toast('The shopkeeper hands you a 1 L bottle. Into the bag.'); }
@@ -211,10 +214,55 @@ window.TriundTrek = {
       for (const g of bag.rented) add(ECON.GEAR[g].icon, ECON.GEAR[g].name + ' (rented)', 'for tonight', '', null);
       syncCoins(); openPanel(bagP);
     }
-    function syncCoins() { const c = ECON.wallet.coins; $('shopCoins').textContent = c; $('bagCoins').textContent = c; $('resCoins').textContent = c; }
+    function syncCoins() { const c = ECON.wallet.coins; $('shopCoins').textContent = c; $('bagCoins').textContent = c; $('resCoins').textContent = c; $('topCoins').textContent = c; }
+
+    /* ---------- coin top-up through the (mock) payment gateway, payments.js ---------- */
+    let topFrom = null;
+    function openTopUp() {
+      const Pay = window.TriundPay;
+      topFrom = panelOpen === shop ? lastStop : null;
+      shop.hidden = true; bagP.hidden = true;
+      const rows = $('topRows'); rows.innerHTML = '';
+      for (const pk of ECON.PACKS) {
+        const r = document.createElement('div'); r.className = 'row';
+        r.innerHTML = `<span class="ic">🪙</span><span><div class="nm">${pk.coins} coins${pk.tag ? ' · ' + pk.tag : ''}</div><div class="fx">₹${pk.inr}</div></span><button type="button" class="buy">Pay ₹${pk.inr}</button>`;
+        const btn = r.querySelector('button');
+        btn.addEventListener('click', async () => {
+          if (!Pay) { ctx.toast('The payment module did not load.'); return; }
+          btn.disabled = true; btn.textContent = 'Opening…';
+          try {
+            const order = await Pay.server.createOrder({ amount: pk.inr * 100, currency: 'INR', receipt: 'coins_' + pk.id + '_' + Date.now(), notes: { pack: pk.id, coins: pk.coins } });
+            const co = new Pay.Checkout({
+              key: Pay.key, amount: order.amount, currency: order.currency, order_id: order.id,
+              name: 'Triund Walk Test', description: `${pk.coins} coins`, theme: { color: '#2f6f5a' },
+              prefill: { name: '', email: '', contact: '' },
+              handler: async resp => {
+                const ok = await Pay.server.verify(resp);
+                if (!ok) { ctx.toast('Payment could not be verified. No coins were added.'); return; }
+                ECON.wallet.add(pk.coins, `Top-up ₹${pk.inr}`, resp.razorpay_payment_id);
+                ctx.buzz(1); ctx.toast(`Payment received: +${pk.coins} coins (${resp.razorpay_payment_id}).`);
+                syncCoins(); renderHist();
+                if (topFrom) { const st = topFrom; topFrom = null; closePanels(); openShop(st); }
+              },
+              modal: { ondismiss: () => ctx.toast('Payment cancelled.') }
+            });
+            co.on('payment.failed', r => ctx.toast('Payment failed: ' + r.error.description));
+            co.open();
+          } finally { btn.disabled = false; btn.textContent = `Pay ₹${pk.inr}`; }
+        });
+        rows.appendChild(r);
+      }
+      renderHist(); syncCoins(); openPanel(topP);
+    }
+    function renderHist() {
+      const h = ECON.wallet.history.slice(0, 5);
+      $('topHist').innerHTML = h.length ? 'Recent: ' + h.map(x => `${x.n > 0 ? '+' : ''}${x.n} ${x.why}`).join(' · ') : '';
+    }
+    $('topClose').addEventListener('click', () => { const st = topFrom; topFrom = null; closePanels(); if (st) openShop(st); else ctx.lock(); });
+    topP.addEventListener('click', e => { if (e.target === topP) closePanels(); });
     $('shopClose').addEventListener('click', () => { closePanels(); ctx.lock(); });
     $('bagClose').addEventListener('click', () => { closePanels(); ctx.lock(); });
-    $('shopTop').addEventListener('click', () => { if (ctx.onTopUp) ctx.onTopUp(); });
+    $('shopTop').addEventListener('click', () => openTopUp());
     for (const el of [shop, bagP]) el.addEventListener('click', e => { if (e.target === el) closePanels(); });
     window.addEventListener('keydown', e => { if (panelOpen && (e.code === 'Escape' || (e.code === 'KeyI' && panelOpen === bagP))) { closePanels(); e.stopImmediatePropagation(); } }, true);
 
@@ -225,7 +273,7 @@ window.TriundTrek = {
       $('resCoins').textContent = ECON.wallet.coins;
     }
     return {
-      TIME, reset, update, speedFactor, sitting, toggleSit, eyeHeight, prompt, hud, renderKit, syncCoins,
+      TIME, reset, update, openTopUp, speedFactor, sitting, toggleSit, eyeHeight, prompt, hud, renderKit, syncCoins,
       interact(p) { const st = nearStop(p, 3.6); if (st) { openShop(st); return true; } return false; },
       toggleBag() { if (panelOpen === bagP) closePanels(); else openBag(); },
       closePanels, get panelOpen() { return !!panelOpen; }, get bag() { return bag; }, get lastStop() { return lastStop; }
