@@ -92,7 +92,10 @@ window.TriundCrowd = {
       let body = null, head = null, spine = null;
       root.traverse(n => {
         if (n.isSkinnedMesh) {
-          n.frustumCulled = false; n.castShadow = true; n.receiveShadow = true;
+          // animations play in place, so the bind-pose bounds (padded for swinging arms) are safe to cull with
+          if (!n.geometry.boundingSphere) n.geometry.computeBoundingSphere();
+          if (!n.geometry.userData.padded) { n.geometry.boundingSphere.radius *= 1.35; n.geometry.userData.padded = true; }
+          n.frustumCulled = true; n.castShadow = true; n.receiveShadow = true;
           if (/Superhero/i.test(n.material.name)) { clothAttr(n); n.material = clothMaterial(n.material, U); body = n; }
         }
         if (n.isBone && n.name === 'Head') head = n;
@@ -116,7 +119,8 @@ window.TriundCrowd = {
       const mixer = new THREE.AnimationMixer(root), actions = {};
       for (const c of g.animations) actions[c.name] = mixer.clipAction(c);
       root.visible = false; scene.add(root);
-      return { root, U, acc, mixer, actions, cur: null, sex, agent: null };
+      const casters = []; root.traverse(n => { if (n.isMesh && n.castShadow) casters.push(n); });
+      return { root, U, acc, mixer, actions, cur: null, sex, agent: null, casters, shadow: true, animAcc: 0 };
     }
     function dress(ch, lk) {
       ch.U.uTop.value.copy(lin(lk.top)); ch.U.uBottom.value.copy(lin(lk.bottom)); ch.U.uShoe.value.copy(lin(lk.shoe));
@@ -276,12 +280,18 @@ window.TriundCrowd = {
         if (ch.sex !== p.look.sex) p.look.sex = ch.sex;
         ch.agent = p; p.ch = ch; dress(ch, p.look); ch.cur = null; ch.root.visible = true;
       }
+      // only the nearest few cast shadows: every caster is drawn again into the sun's shadow map
+      const byDist = pool.filter(c => c.agent).sort((a, b) => a.agent.d2 - b.agent.d2);
+      byDist.forEach((c, i) => { const on = i < SHADOW_CASTERS; if (on !== c.shadow) { c.shadow = on; c.casters.forEach(m => { m.castShadow = on; }); } });
     }
+    const SHADOW_CASTERS = 4;
+    const FR = new THREE.Frustum(), PM = new THREE.Matrix4(), SPH = new THREE.Sphere();
 
     let simT = 0;
     return {
       agents, keepers, counts: { bots: agents.length, keepers: keepers.length, pool: POOL },
-      update(dt, cam, P) {
+      update(dt, cam, P, camera) {
+        if (camera) FR.setFromProjectionMatrix(PM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
         for (const a of agents) think(a, dt, P);
         for (const k of keepers) { const dp = Math.hypot(P.x - k.x, P.z - k.z); k.anim = dp < 7 ? 'Idle_Talking' : (k.t = (k.t || 0) - dt) < 0 ? (k.t = 8 + R() * 10, R() < 0.3 ? 'Interact' : 'Idle') : k.anim; if (dp < 7) k.yaw = Math.atan2(P.x - k.x, P.z - k.z); }
         assignT -= dt; if (assignT <= 0) { assignT = 0.4; assign(cam); }
@@ -289,7 +299,12 @@ window.TriundCrowd = {
         for (const p of everyone) {
           if (p.ch) {
             const ch = p.ch; ch.root.position.set(p.x, p.y, p.z); ch.root.rotation.y = p.yaw;
-            play(ch, p.anim, p.animSpeed); ch.mixer.update(dt);
+            play(ch, p.anim, p.animSpeed);
+            // skin animation is CPU work per bone: skip people out of view, and step distant ones at a lower rate
+            ch.animAcc += dt;
+            const seen = !camera || FR.intersectsSphere(SPH.set(ch.root.position, 1.6));
+            const step = !seen ? 0.25 : p.d2 > 35 * 35 ? 1 / 20 : 0;
+            if (ch.animAcc >= step) { ch.mixer.update(ch.animAcc); ch.animAcc = 0; }
             continue;
           }
           const d2 = (p.x - cam.x) ** 2 + (p.z - cam.z) ** 2; if (d2 > 700 * 700) continue;

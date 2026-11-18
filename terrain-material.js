@@ -27,6 +27,10 @@ window.TriundTerrain = {
         t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = Math.min(8, maxAniso); uniforms[k].value = t; res(true);
       }, undefined, () => res(false))))).then(ok => { if (ok.every(Boolean)) uniforms.uTexOK.value = 1; });
     }
+    // Pre-baked tileable noise (256 px = 32 lattice cells): R = 4-octave fbm, G = one octave, B/A = shifted copies.
+    // One mipmapped fetch replaces ~16 hash evaluations per fbm call (the ground covers most of the screen, so this
+    // is the biggest per-pixel saving), and the mipmaps stop distant ground from shimmering.
+    uniforms.tNoise = { value: noiseTexture(THREE) };
     const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.96, metalness: 0 });
     mat.onBeforeCompile = sh => {
       Object.assign(sh.uniforms, uniforms);
@@ -40,11 +44,10 @@ uniform sampler2D uSatN; uniform sampler2D uSatF; uniform vec4 uBoxN; uniform ve
 uniform float uSatOK; uniform float uSatGain; uniform float uSatSat; uniform float uTexOK;
 uniform sampler2D tGrass; uniform sampler2D tMeadow; uniform sampler2D tLitter; uniform sampler2D tRock; uniform sampler2D tTrail;
 uniform sampler2D tDirt; uniform sampler2D tPave; uniform sampler2D nLitter; uniform sampler2D nRock; uniform sampler2D nTrail;
+uniform sampler2D tNoise;
 varying vec4 vT; varying vec3 vW; varying vec3 vWN;
-float th(vec2 p){ p = fract(p * vec2(0.1031, 0.1030)); p += dot(p, p.yx + 33.33); return fract((p.x + p.y) * p.x); }
-float tn(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(th(i), th(i + vec2(1.0, 0.0)), u.x), mix(th(i + vec2(0.0, 1.0)), th(i + vec2(1.0, 1.0)), u.x), u.y); }
-float tf(vec2 p){ float s = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { s += a * tn(p); p = p * 2.03 + 17.1; a *= 0.5; } return s / 0.9375; }
+float tn(vec2 p){ return texture2D(tNoise, p * 0.03125).g; }        // one octave, lattice cell = 1 unit
+float tf(vec2 p){ return texture2D(tNoise, p * 0.03125).r; }        // 4-octave fbm
 // photo texture in linear colour; two samplings (different scale + rotation) blended by noise hide the tiling
 vec3 ptex(sampler2D t, vec2 q, float m, float n){
   vec3 a = texture2D(t, q / m).rgb, b = texture2D(t, vec2(q.y, -q.x) / (m * 2.37) + 0.31).rgb;
@@ -163,3 +166,34 @@ if (uTexOK > 0.5 && near > 0.01) {
     return mat;
   }
 };
+
+// Tileable value noise, period 256 px. Octave k has 32 * 2^k lattice cells across the tile.
+function noiseTexture(THREE) {
+  const N = 256, out = new Uint8Array(N * N * 4);
+  function lattice(cells, seed) {
+    const L = new Float32Array(cells * cells);
+    let h = seed >>> 0;
+    for (let i = 0; i < L.length; i++) { h = Math.imul(h ^ (h >>> 15), 2246822519) + 0x9e3779b9 >>> 0; h ^= h >>> 13; L[i] = (h >>> 8) / 16777216; }
+    return L;
+  }
+  function octave(cells, seed) {
+    const L = lattice(cells, seed), o = new Float32Array(N * N), k = cells / N;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const fx = x * k, fy = y * k, ix = Math.floor(fx), iy = Math.floor(fy), tx = fx - ix, ty = fy - iy;
+      const ux = tx * tx * (3 - 2 * tx), uy = ty * ty * (3 - 2 * ty);
+      const a = L[(iy % cells) * cells + ix % cells], b = L[(iy % cells) * cells + (ix + 1) % cells];
+      const c = L[((iy + 1) % cells) * cells + ix % cells], d = L[((iy + 1) % cells) * cells + (ix + 1) % cells];
+      o[y * N + x] = (a + (b - a) * ux) * (1 - uy) + (c + (d - c) * ux) * uy;
+    }
+    return o;
+  }
+  const o1 = octave(32, 11), o2 = octave(64, 23), o3 = octave(128, 37), o4 = octave(256, 53), o5 = octave(32, 71);
+  for (let i = 0; i < N * N; i++) {
+    const f = (o1[i] * 0.5 + o2[i] * 0.25 + o3[i] * 0.125 + o4[i] * 0.0625) / 0.9375;
+    out[i * 4] = f * 255; out[i * 4 + 1] = o1[i] * 255; out[i * 4 + 2] = o5[i] * 255; out[i * 4 + 3] = 255;
+  }
+  const t = new THREE.DataTexture(out, N, N, THREE.RGBAFormat);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.generateMipmaps = true; t.anisotropy = 4; t.needsUpdate = true;
+  return t;
+}
