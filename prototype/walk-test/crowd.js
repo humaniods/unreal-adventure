@@ -8,7 +8,7 @@
    World axes: x = east, y = up, z = south. */
 window.TriundCrowd = {
   async build(o) {
-    const { THREE, scene, H, trails, stops, top, rng, blocked, base, talkers, quality, ground } = o;
+    const { THREE, scene, H, trails, stops, top, rng, blocked, base, talkers, quality, ground, collide } = o;
     const R = rng(2468);
     const lin = c => new THREE.Color(c).convertSRGBToLinear();
     const loader = new THREE.GLTFLoader();
@@ -307,7 +307,14 @@ window.TriundCrowd = {
       const carry = () => { if (!T.mesh || !T.mesh.visible) return; const fx = Math.sin(k.yaw), fz = Math.cos(k.yaw); T.mesh.position.set(k.x + fx * 0.38, (k.y || H(k.x, k.z)) + 1.02, k.z + fz * 0.38); };
       const stepTo = (x, z, v) => {
         const dx = x - k.x, dz = z - k.z, d = Math.hypot(dx, dz); if (d < 1e-3) return 0;
-        const m = Math.min(d, v * dt); k.x += dx / d * m; k.z += dz / d * m; k.y = H(k.x, k.z); k.yaw = Math.atan2(dx, dz);
+        const m = Math.min(d, v * dt); k.x += dx / d * m; k.z += dz / d * m;
+        // walk round benches, tables and walls instead of through them (the stall itself is left by its side)
+        // (not near the counter: the shopkeeper's own place is inside the stall footprint)
+        const ox = k.x - dx / d * m, oz = k.z - dz / d * m;
+        if (collide && Math.hypot(k.x - T.home.x, k.z - T.home.z) > 3.5) { const r = collide.resolve(k.x, k.z, 0.3); k.x = r.x; k.z = r.z; }
+        // stuck against something: count it, so the caller can skip ahead
+        T.stuck = Math.hypot(k.x - ox, k.z - oz) < m * 0.25 ? (T.stuck || 0) + dt : 0;
+        k.y = H(k.x, k.z); k.yaw = Math.atan2(dx, dz);
         k.anim = 'Walk'; k.animSpeed = v; return d - m;
       };
       if (T.phase === 'cook') {
@@ -321,10 +328,10 @@ window.TriundCrowd = {
       } else if (T.phase === 'walk') {
         const tg = T.target();
         if (!tg || Math.hypot(tg.x - T.home.x, tg.z - T.home.z) > 28) { if (T.mesh) T.mesh.visible = false; T.mesh = null; T.onGive('counter'); T.phase = 'back'; T.path.reverse(); return; }
-        if (T.path.length) { if (stepTo(T.path[0].x, T.path[0].z, 1.25) < 0.2) T.path.shift(); }
+        if (T.path.length) { if (stepTo(T.path[0].x, T.path[0].z, 1.25) < 0.2 || T.stuck > 1.2) { T.path.shift(); T.stuck = 0; } }
         else {
           const dx = tg.x - k.x, dz = tg.z - k.z, d = Math.hypot(dx, dz);
-          if (d > 0.95) stepTo(tg.x - dx / d * 0.9, tg.z - dz / d * 0.9, 1.25);
+          if (d > 0.95 && !(T.stuck > 1.5 && d < 2.2)) stepTo(tg.x - dx / d * 0.9, tg.z - dz / d * 0.9, 1.25);
           else { T.phase = 'give'; T.t = 1.4; T.done = [T.path[1] || T.home]; }
         }
         carry();
@@ -335,8 +342,8 @@ window.TriundCrowd = {
         if (T.t <= 0) { T.phase = 'back'; const px = -st.tz, pz = st.tx, sd = ((k.x - T.home.x) * px + (k.z - T.home.z) * pz) < 0 ? -1 : 1;
           const w1 = { x: T.home.x + px * 3.3 * sd, z: T.home.z + pz * 3.3 * sd }; T.path = [{ x: w1.x + st.tx * 3.2, z: w1.z + st.tz * 3.2 }, w1]; }
       } else {   // back to the counter
-        if (T.path.length) { if (stepTo(T.path[0].x, T.path[0].z, 1.15) < 0.2) T.path.shift(); }
-        else if (stepTo(T.home.x, T.home.z, 1.0) < 0.05) { k.x = T.home.x; k.z = T.home.z; k.y = H(k.x, k.z); k.yaw = T.home.yaw; k.anim = 'Idle'; k.animSpeed = 1; k.task = null; }
+        if (T.path.length) { if (stepTo(T.path[0].x, T.path[0].z, 1.15) < 0.2 || T.stuck > 1.2) { T.path.shift(); T.stuck = 0; } }
+        else if (stepTo(T.home.x, T.home.z, 1.0) < 0.05 || T.stuck > 3) { k.x = T.home.x; k.z = T.home.z; k.y = H(k.x, k.z); k.yaw = T.home.yaw; k.anim = 'Idle'; k.animSpeed = 1; k.task = null; }
       }
     }
 
