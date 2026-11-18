@@ -1,128 +1,186 @@
 'use strict';
-/* First-person hands for eating and drinking.
-   The hands are a small rig parented to the camera (jacket sleeve, palm, thumb, curled fingers). Nothing gets eaten
-   without them: a served plate is picked up and held in the left hand while the right hand takes a forkful to the
-   mouth; a glass of tea is lifted for a sip; a snack comes out of the bag in the right hand; a bottle is tipped up.
-   Food only goes down when a bite or sip reaches the mouth (onBite), so the plate empties bite by bite.
-   Camera near plane is 0.4 m, so the rig keeps everything at least 0.42 m in front of the eye. */
+/* Eating and drinking with the hiker's own arms.
+   The player's character (the rigged hiker from crowd.js) is shown while eating, seen by a close camera in front
+   of them, and its real arms do the work through two-bone IK on top of the sitting or idle clip:
+   the left hand takes the plate from where the shopkeeper set it down and holds it at the chest, the right hand
+   takes a forkful to the mouth; a glass of tea or a bottle is lifted to the lips and tipped; a snack comes up to
+   the mouth. Food and water count only when a bite reaches the mouth (onBite). Afterwards the empty dish is put
+   down and the view goes back to the player.
+   Interface: start(kind, opts), update(dt, speed), pose(), frame(camera, dt), finish(abort), busy. */
 window.TriundHands = {
-  create({ THREE, camera, scene }) {
-    if (!camera.parent) scene.add(camera);
-    const rig = new THREE.Group(); rig.visible = false; camera.add(rig);
-    const mat = (c, r) => new THREE.MeshStandardMaterial({ color: new THREE.Color(c).convertSRGBToLinear(), roughness: r == null ? 0.7 : r });
-    const skin = mat(0xb07a56, 0.6), sleeve = mat(0x2f6e8f, 0.85), steel = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, roughness: 0.3, metalness: 0.85 });
-    // one hand: sleeve along +z (toward the elbow), palm at the origin, fingers curled around the grip point
-    function hand(left) {
-      const g = new THREE.Group(), s = left ? -1 : 1;
-      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.34, 10), sleeve); arm.rotation.x = Math.PI / 2; arm.position.z = 0.2; g.add(arm);
-      const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.036, 0.06, 10), skin); wrist.rotation.x = Math.PI / 2; wrist.position.z = 0.04; g.add(wrist);
-      const palm = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.03, 0.085), skin); palm.position.set(0, 0, -0.02); g.add(palm);
-      for (let i = 0; i < 4; i++) {               // fingers, curled under
-        const f = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.05, 6), skin);
-        f.position.set(-0.027 + i * 0.018, -0.018, -0.07); f.rotation.x = 1.0; g.add(f);
-      }
-      const th = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.012, 0.05, 6), skin); th.position.set(s * 0.04, 0.0, -0.035); th.rotation.set(0.4, 0, s * 1.1); g.add(th);
-      return g;
-    }
-    const L = hand(true), R = hand(false); rig.add(L, R);
+  create({ THREE, scene, getChar, H }) {
+    const v3 = () => new THREE.Vector3(), q4 = () => new THREE.Quaternion();
+    const A = v3(), Qa = q4(), Qb = q4(), Qp = q4();
+    let job = null, bones = null, boneChar = null;
+    const steel = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, roughness: 0.3, metalness: 0.85 });
     const fork = new THREE.Group();
-    { const h = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.004, 0.13), steel); h.position.z = 0.02; fork.add(h);
-      for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.003, 0.04), steel); t.position.set(-0.008 + i * 0.008, 0, -0.065); fork.add(t); }
-      const bite = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), mat(0xe8c04a)); bite.position.set(0, 0.008, -0.07); bite.scale.set(1.3, 0.6, 1.2); fork.add(bite); fork.userData.bite = bite; }
-    fork.position.set(0, -0.005, -0.06); fork.rotation.set(0.2, 0, 0); fork.visible = false; R.add(fork);
+    { const h = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.004, 0.15), steel); fork.add(h);
+      for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.003, 0.04), steel); t.position.set(-0.008 + i * 0.008, 0, 0.09); fork.add(t); }
+      const bite = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), new THREE.MeshStandardMaterial({ color: 0xe8c04a, roughness: 0.7 })); bite.position.set(0, 0.01, 0.1); bite.scale.set(1.3, 0.6, 1.2); fork.add(bite); fork.userData.bite = bite; }
+    fork.scale.setScalar(1.5); fork.visible = false; scene.add(fork);   // a touch larger than life so it reads from the camera
 
-    // poses in camera space (x right, y up, -z forward)
-    const POSE = {
-      rest:     { L: [-0.32, -0.42, -0.3], R: [0.32, -0.42, -0.3] },
-      holdL:    [-0.08, -0.17, -0.52],    // plate held in front, low in the view
-      forkDown: [0.02, -0.135, -0.52],    // fork in the plate
-      mouth:    [0.0, -0.045, -0.44],     // fork / glass at the mouth
-      holdR:    [0.13, -0.15, -0.5]       // glass, snack or bottle held
-    };
-    const V = (a) => new THREE.Vector3(a[0], a[1], a[2]);
-    L.position.copy(V(POSE.rest.L)); R.position.copy(V(POSE.rest.R));
-    L.rotation.set(-0.15, 0.25, 0.2); R.rotation.set(-0.15, -0.25, -0.2);
+    function findBones(ch) {
+      if (boneChar === ch) return bones;
+      const b = {}; ch.root.traverse(n => { if (n.isBone) b[n.name] = n; });
+      bones = b.upperarm_l && b.lowerarm_l && b.hand_l && b.upperarm_r && b.lowerarm_r && b.hand_r && b.Head && b.spine_03 ? b : null; boneChar = ch; return bones;
+    }
+    const wpos = (o, out) => out.setFromMatrixPosition(o.matrixWorld);
+    // rotate `bone` (in world space) so that the direction from it to `childPos` turns onto `targetDir`
+    function aim(bone, from, childPos, targetDir) {
+      const cur = A.copy(childPos).sub(from).normalize();
+      Qa.setFromUnitVectors(cur, targetDir);
+      bone.getWorldQuaternion(Qb); Qb.premultiply(Qa);
+      bone.parent.getWorldQuaternion(Qp); bone.quaternion.copy(Qp.invert().multiply(Qb));
+      bone.updateMatrixWorld(true);
+    }
+    // two-bone IK: shoulder S, elbow E, wrist W -> target T, elbow bent toward the pole
+    function twoBone(up, low, hand, T, pole) {
+      const S = wpos(up, v3()), E = wpos(low, v3()), W = wpos(hand, v3());
+      const a = S.distanceTo(E), b = E.distanceTo(W), toT = v3().copy(T).sub(S);
+      const c = Math.min(Math.max(toT.length(), 0.05), a + b - 0.002), d = toT.normalize();
+      const m = v3().copy(pole).sub(S); m.sub(v3().copy(d).multiplyScalar(m.dot(d))).normalize();
+      const cosA = Math.min(1, Math.max(-1, (a * a + c * c - b * b) / (2 * a * c))), sinA = Math.sqrt(1 - cosA * cosA);
+      const Ed = v3().copy(S).addScaledVector(d, a * cosA).addScaledVector(m, a * sinA);
+      aim(up, S, E, v3().copy(Ed).sub(S).normalize());
+      const E2 = wpos(low, v3()), W2 = wpos(hand, v3());
+      aim(low, E2, W2, v3().copy(T).sub(E2).normalize());
+    }
 
-    let job = null;   // { kind, item, cycle, t, phase, onBite, onDone, bites, held }
-    const lerpV = (o, a, b, k) => o.copy(a).lerp(b, k);
+    // a closed grip: point the fingers along `dir`, turn the thumb toward `thumbTo`, then curl every finger joint
+    function grip(b, side, dir, thumbTo, curl) {
+      const hand = b['hand_' + side], mid = b['middle_01_' + side], th = b['thumb_01_' + side]; if (!mid || !th) return;
+      const H0 = wpos(hand, v3());
+      aim(hand, H0, wpos(mid, v3()), dir);
+      // twist about the finger direction so the thumb side faces thumbTo
+      const tcur = wpos(th, v3()).sub(H0); tcur.sub(v3().copy(dir).multiplyScalar(tcur.dot(dir))).normalize();
+      const twant = v3().copy(thumbTo); twant.sub(v3().copy(dir).multiplyScalar(twant.dot(dir))).normalize();
+      Qa.setFromUnitVectors(tcur, twant); hand.getWorldQuaternion(Qb); Qb.premultiply(Qa);
+      hand.parent.getWorldQuaternion(Qp); hand.quaternion.copy(Qp.invert().multiply(Qb)); hand.updateMatrixWorld(true);
+      if (!curl) return;
+      // curl about the knuckle axis; which way closes the hand is found once per hand by trying both and keeping
+      // the one that brings the fingertip toward the thumb tip
+      const fdir = wpos(mid, v3()).sub(wpos(hand, v3())).normalize(), tdir = wpos(th, v3()).sub(wpos(hand, v3())).normalize();
+      const axis = v3().crossVectors(fdir, tdir).normalize();
+      const rot = (bone, ang) => { Qa.setFromAxisAngle(axis, ang); bone.getWorldQuaternion(Qb); Qb.premultiply(Qa); bone.parent.getWorldQuaternion(Qp); bone.quaternion.copy(Qp.invert().multiply(Qb)); bone.updateMatrixWorld(true); };
+      const key = 'curlSign_' + side;
+      if (b[key] === undefined) {
+        const i1 = b['index_01_' + side], tip = b['index_04_leaf_' + side] || b['index_03_' + side], ttip = b['thumb_04_leaf_' + side] || b['thumb_03_' + side];
+        if (i1 && tip && ttip) {
+          const q0 = i1.quaternion.clone(), d0 = wpos(tip, v3()).distanceTo(wpos(ttip, v3()));
+          rot(i1, 0.5); const d1 = wpos(tip, v3()).distanceTo(wpos(ttip, v3())); i1.quaternion.copy(q0); i1.updateMatrixWorld(true);
+          b[key] = d1 < d0 ? 1 : -1;
+        } else b[key] = 1;
+      }
+      for (const f of ['index', 'middle', 'ring', 'pinky']) for (let k = 1; k <= 3; k++) {
+        const bone = b[`${f}_0${k}_${side}`]; if (bone) rot(bone, b[key] * curl * (k === 1 ? 0.9 : 1.2));
+      }
+      for (let k = 2; k <= 3; k++) { const bone = b[`thumb_0${k}_${side}`]; if (bone) rot(bone, b[key] * curl * 0.4); }   // thumb folds over a little
+    }
+    const T = { chest: v3(), head: v3(), fwd: v3(), left: v3(), up: new THREE.Vector3(0, 1, 0) };
+    const curL = v3(), curR = v3(); let haveCur = false;
     const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-    const tmp = new THREE.Vector3();
 
-    // take a world object (a served plate or glass) into the hand
-    function takeInto(obj, parent, local) {
-      if (!obj) return;
-      obj.updateMatrixWorld(true); const wp = obj.getWorldPosition(new THREE.Vector3());
-      parent.updateMatrixWorld(true); parent.worldToLocal(wp);
-      parent.add(obj); obj.position.copy(wp); obj.rotation.set(0, 0, 0); obj.scale.setScalar(0.9); obj.visible = true;
-      obj.userData.from = wp.clone(); obj.userData.to = local.clone(); obj.userData.k = 0;
-    }
-    function smallItem(icon) {   // a packet, a fruit or a bottle for the right hand
+    function smallItem(icon) {
       let m;
-      if (icon === '💧') { m = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.2, 12), new THREE.MeshStandardMaterial({ color: 0x9fc9e0, roughness: 0.15, transparent: true, opacity: 0.75 })); m.rotation.x = Math.PI / 2; }
-      else if (icon === '🍌') { m = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.15, 8), mat(0xf2d34a)); m.rotation.set(Math.PI / 2, 0, 0.5); }
-      else { const c = { '🍪': 0xf2c230, '🍫': 0x5a3020, '🧃': 0xf28a1a, '🫓': 0xc8904a, '🥜': 0x9a6a3a }[icon] || 0xc0392b; m = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.012, 0.11), mat(c, 0.5)); }
-      m.position.set(0, -0.01, -0.07); return m;
+      if (icon === '💧') m = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.22, 12), new THREE.MeshStandardMaterial({ color: 0x9fc9e0, roughness: 0.15, transparent: true, opacity: 0.8 }));
+      else if (icon === '🍌') m = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.024, 0.17, 8), new THREE.MeshStandardMaterial({ color: 0xf2d34a, roughness: 0.6 }));
+      else { const c = { '🍪': 0xf2c230, '🍫': 0x5a3020, '🧃': 0xf28a1a, '🫓': 0xc8904a, '🥜': 0x9a6a3a }[icon] || 0xc0392b; m = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.015, 0.12), new THREE.MeshStandardMaterial({ color: c, roughness: 0.5 })); }
+      return m;
     }
-
-    /* jobs
-       eat:   plate in the left hand, forkfuls with the right (bites over `total` seconds of real time)
-       sip:   glass of tea in the right hand, sips
-       snack: something from the bag, two or three bites
-       drink: water bottle tipped up once */
     function start(kind, opts) {
       if (job) finish(true);
-      job = { kind, t: 0, k: 0, bites: 0, phase: 'reach', ...opts };
-      rig.visible = true; fork.visible = kind === 'eat'; if (fork.userData.bite) fork.userData.bite.visible = false;
-      if (kind === 'eat') takeInto(opts.dish, L, new THREE.Vector3(0.02, 0.0, -0.13));
-      else if (kind === 'sip') takeInto(opts.dish, R, new THREE.Vector3(0.0, -0.02, -0.06));
-      else { job.small = smallItem(opts.icon); R.add(job.small); }
+      job = { kind, t: 0, bites: 0, phase: 'reach', ...opts }; haveCur = false;
+      if (job.dish) { job.dish.updateMatrixWorld(true); job.from = job.dish.getWorldPosition(v3()); job.dish.visible = true; }
+      if (!job.dish && kind !== 'eat') { job.small = smallItem(opts.icon); scene.add(job.small); }
+      fork.visible = kind === 'eat';
     }
     function finish(abort) {
-      const j = job; if (!j) return; job = null;
-      if (j.small) { R.remove(j.small); }
-      fork.visible = false;
-      if (j.dish && j.onPutDown) {            // the empty plate or glass goes back down
-        j.dish.updateMatrixWorld(true); const wp = j.dish.getWorldPosition(new THREE.Vector3());
-        scene.add(j.dish); j.dish.position.copy(wp); j.onPutDown(j.dish);
-      }
+      const j = job; if (!j) return; job = null; fork.visible = false;
+      if (j.small) scene.remove(j.small);
+      if (j.dish && j.onPutDown) j.onPutDown(j.dish);
       if (!abort && j.onDone) j.onDone();
     }
-    // speed: 1 normal, higher when the player lets time pass faster
     function update(dt, speed) {
-      const pace = Math.min(speed || 1, 4);
-      // move a picked-up object into its place in the hand
-      for (const h of [L, R]) for (const c of h.children) if (c.userData.to && c.userData.k < 1) { c.userData.k = Math.min(1, c.userData.k + dt * 2.2); lerpV(c.position, c.userData.from, c.userData.to, ease(c.userData.k)); }
-      const restL = V(POSE.rest.L), restR = V(POSE.rest.R);
-      if (!job) {
-        L.position.lerp(restL, Math.min(1, dt * 5)); R.position.lerp(restR, Math.min(1, dt * 5));
-        if (L.position.distanceTo(restL) < 0.01 && R.position.distanceTo(restR) < 0.01) rig.visible = false;
-        return;
-      }
-      const j = job; j.t += dt * pace;
-      if (j.kind === 'eat') {
-        lerpV(tmp, L.position, V(POSE.holdL), Math.min(1, dt * 6)); L.position.copy(tmp); L.rotation.set(-0.35, 0.1, 0.1);
-        if (j.phase === 'reach') { lerpV(tmp, R.position, V(POSE.forkDown), Math.min(1, dt * 5)); R.position.copy(tmp); if (j.t > 0.7) { j.phase = 'loop'; j.t = 0; } return; }
-        // one forkful: down to the plate (scoop), up to the mouth (bite), back
-        const cyc = 2.2, p = (j.t % cyc) / cyc;
-        const down = V(POSE.forkDown), mouth = V(POSE.mouth);
-        if (p < 0.25) { R.position.copy(down); R.rotation.set(-0.5 + p * 1.2, -0.2, -0.2); fork.userData.bite.visible = p > 0.15; }
-        else if (p < 0.55) { lerpV(R.position, down, mouth, ease((p - 0.25) / 0.3)); R.rotation.set(-0.2, -0.3, -0.3); fork.userData.bite.visible = true; }
-        else if (p < 0.65) { R.position.copy(mouth); if (!j.bit) { j.bit = true; j.bites++; fork.userData.bite.visible = false; if (j.onBite) j.onBite(j.bites); } }
-        else { lerpV(R.position, mouth, down, ease((p - 0.65) / 0.35)); fork.userData.bite.visible = false; }
-        if (p < 0.6) j.bit = false;
-        if (j.bites >= j.need) finish(false);
-      } else {
-        // sip / snack / drink: hold low, lift to the mouth (tilt), hold a moment, lower; repeat `need` times
-        const cyc = j.kind === 'drink' ? 2.4 : 2.6, p = (j.t % cyc) / cyc, hold = V(POSE.holdR), mouth = V(POSE.mouth);
-        if (j.phase === 'reach') { R.position.lerp(hold, Math.min(1, dt * 5)); if (j.t > 0.6) { j.phase = 'loop'; j.t = 0; } return; }
-        const tilt = j.kind === 'snack' ? 0.2 : 0.9;
-        if (p < 0.35) { lerpV(R.position, hold, mouth, ease(p / 0.35)); R.rotation.set(-0.15 + tilt * (p / 0.35), -0.25, -0.2); }
-        else if (p < 0.6) { R.position.copy(mouth); R.rotation.set(-0.15 + tilt, -0.25, -0.2); if (!j.bit) { j.bit = true; j.bites++; if (j.onBite) j.onBite(j.bites); } }
-        else { lerpV(R.position, mouth, hold, ease((p - 0.6) / 0.4)); R.rotation.set(-0.15 + tilt * (1 - (p - 0.6) / 0.4), -0.25, -0.2); }
-        if (p < 0.3) j.bit = false;
-        if (j.bites >= j.need && p > 0.95) finish(false);
-      }
+      if (!job) return; job.t += dt * Math.min(speed || 1, 4);
+      // no character to animate (the crowd did not load): count bites on a timer so eating still completes
+      if (!getChar() && job.t > 1.6) { job.t = 0; job.bites++; if (job.onBite) job.onBite(job.bites); if (job.bites >= job.need) finish(false); }
     }
-    return { start, update, finish, get busy() { return !!job; }, get kind() { return job && job.kind; } };
+
+    // after the character's clip has been applied: move the arms, the dish and the fork
+    function pose() {
+      const ch = getChar(); if (!job || !ch) return;
+      const b = findBones(ch); if (!b) return;
+      ch.root.updateMatrixWorld(true);
+      wpos(b.spine_03, T.chest); wpos(b.Head, T.head);
+      const ry = ch.root.rotation.y; T.fwd.set(Math.sin(ry), 0, Math.cos(ry)); T.left.set(Math.cos(ry), 0, -Math.sin(ry));   // the character's own left is its +x
+      const j = job;
+      const plate = v3().copy(T.chest).addScaledVector(T.fwd, 0.32).addScaledVector(T.up, -0.16).addScaledVector(T.left, 0.04);
+      const mouth = v3().copy(T.head).addScaledVector(T.fwd, 0.1).addScaledVector(T.up, -0.07).addScaledVector(T.left, -0.03);
+      const restR = v3().copy(T.chest).addScaledVector(T.fwd, 0.28).addScaledVector(T.up, -0.2).addScaledVector(T.left, -0.18);
+      const restL = v3().copy(T.chest).addScaledVector(T.fwd, 0.25).addScaledVector(T.up, -0.25).addScaledVector(T.left, 0.2);
+      let gl = restL, gr = restR, biteAt = false;
+      if (j.kind === 'eat') {
+        // reach for the plate, lift it to the chest, then forkfuls
+        if (j.phase === 'reach') { gl = j.from || plate; if (j.t > 0.8) { j.phase = 'lift'; j.t = 0; } }
+        else if (j.phase === 'lift') { gl = v3().copy(j.from || plate).lerp(plate, ease(Math.min(1, j.t / 0.8))); if (j.t > 0.8) { j.phase = 'loop'; j.t = 0; } }
+        else gl = plate;
+        const scoop = v3().copy(plate).addScaledVector(T.up, 0.05).addScaledVector(T.left, -0.07);
+        gr = scoop;
+        if (j.phase === 'loop') {
+          const cyc = 2.2, p = (j.t % cyc) / cyc;
+          if (p < 0.25) gr = scoop; else if (p < 0.55) gr = v3().copy(scoop).lerp(mouth, ease((p - 0.25) / 0.3));
+          else if (p < 0.65) { gr = mouth; biteAt = true; } else gr = v3().copy(mouth).lerp(scoop, ease((p - 0.65) / 0.35));
+          fork.userData.bite.visible = p > 0.15 && p < 0.6;
+          if (!biteAt) j.bit = false;
+        }
+      } else {
+        // sip / drink / snack: the right hand picks it up (from where it was served) and lifts it to the mouth
+        const hold = v3().copy(T.chest).addScaledVector(T.fwd, 0.3).addScaledVector(T.up, -0.12).addScaledVector(T.left, -0.1);
+        if (j.phase === 'reach') { gr = j.from || hold; if (j.t > (j.from ? 0.8 : 0.3)) { j.phase = 'loop'; j.t = 0; } }
+        else {
+          const cyc = 2.6, p = (j.t % cyc) / cyc;
+          if (p < 0.35) gr = v3().copy(hold).lerp(mouth, ease(p / 0.35)); else if (p < 0.6) { gr = mouth; biteAt = true; } else gr = v3().copy(mouth).lerp(hold, ease((p - 0.6) / 0.4));
+          if (!biteAt) j.bit = false;
+          j.tilt = p < 0.35 ? p / 0.35 : p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
+        }
+      }
+      // smooth the hand targets so nothing snaps, then solve both arms (elbows down and out)
+      if (!haveCur) { wpos(b.hand_l, curL); wpos(b.hand_r, curR); haveCur = true; }
+      curL.lerp(gl, 0.25); curR.lerp(gr, 0.3);
+      twoBone(b.upperarm_l, b.lowerarm_l, b.hand_l, curL, v3().copy(T.chest).addScaledVector(T.up, -0.6).addScaledVector(T.left, 0.5));
+      twoBone(b.upperarm_r, b.lowerarm_r, b.hand_r, curR, v3().copy(T.chest).addScaledVector(T.up, -0.6).addScaledVector(T.left, -0.5));
+      // right hand closes round the fork / glass / snack: fingers forward and up, thumb on top; the left hand under
+      // the plate stays open, palm up
+      const holdDir = v3().copy(T.fwd).multiplyScalar(0.75).addScaledVector(T.up, 0.45).addScaledVector(T.left, 0.35).normalize();
+      grip(b, 'r', holdDir, T.up, j.kind === 'eat' ? 0.9 : 1.0);
+      if (j.kind === 'eat' && j.phase !== 'reach') grip(b, 'l', v3().copy(T.fwd).addScaledVector(T.left, -0.4).normalize(), T.left, 0);
+      const HL = wpos(b.hand_l, v3()), HR = wpos(b.hand_r, v3());
+      const palmR = b.middle_01_r ? wpos(b.middle_01_r, v3()).lerp(HR, 0.35) : HR.clone();
+      // the plate rides in the left hand, a glass in the right; the fork or snack in the right
+      if (j.dish && j.phase !== 'reach') {
+        j.dish.scale.setScalar(1.0); j.dish.rotation.set(0, ry, 0);
+        if (j.kind === 'eat') j.dish.position.copy(HL).addScaledVector(T.fwd, 0.08).addScaledVector(T.left, -0.04).addScaledVector(T.up, 0.035);   // resting on the open palm
+        else { j.dish.position.copy(palmR).addScaledVector(T.up, -0.05); j.dish.rotateX(-(j.tilt || 0) * 1.0); }
+      }
+      if (j.small) { j.small.position.copy(palmR); j.small.rotation.set(-(j.tilt || 0) * 1.2, ry, 0); }
+      // the fork sits in the closed fist and points where the fingers point, tines toward the food or the mouth
+      if (fork.visible) { fork.position.copy(palmR).addScaledVector(holdDir, -0.02); fork.lookAt(v3().copy(palmR).addScaledVector(holdDir, 1)); }
+      // a bite or sip lands
+      if (biteAt && !j.bit) { j.bit = true; j.bites++; if (fork.userData.bite) fork.userData.bite.visible = false; if (j.onBite) j.onBite(j.bites); }
+      if (j.bites >= j.need && !biteAt && j.phase === 'loop') finish(false);
+    }
+    // the close camera: in front of the hiker and to one side, looking at the hands and the plate
+    let orbit = 0;
+    function frame(camera, dt) {
+      const ch = getChar(); if (!ch || !bones) return false;
+      orbit += (dt || 0.016) * 0.25;
+      const ry = ch.root.rotation.y + 0.6 + Math.sin(orbit) * 0.2, f = v3().set(Math.sin(ry), 0, Math.cos(ry));
+      const look = v3().copy(T.chest).addScaledVector(T.up, 0.02);
+      const eye = v3().copy(look).addScaledVector(f, 1.5).addScaledVector(T.up, 0.15);
+      if (H) eye.y = Math.max(eye.y, H(eye.x, eye.z) + 0.5);
+      camera.position.copy(eye); camera.lookAt(look);
+      return true;
+    }
+    return { start, update, pose, frame, finish, get busy() { return !!job; }, get kind() { return job && job.kind; } };
   }
 };

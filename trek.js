@@ -183,7 +183,6 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       if (dish && !sit) sitDown(nearSeat(P, 2.4));
       const need = kind === 'eat' ? Math.min(16, Math.max(6, Math.round(it.eat * 2))) : kind === 'sip' ? Math.max(4, Math.round(it.eat * 2)) : kind === 'snack' ? (it.eat > 2 ? 4 : 2) : 1;   // Maggi: 12 forkfuls, chai: 6 sips
       const e = eating = { it, src, dish, need, done: 0, kind };
-      P.firstPerson = true; P.pitch = -0.12;
       HN.start(kind, {
         dish, icon: it.icon, need,
         onBite: n => {
@@ -388,7 +387,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     }
     $('resBag').addEventListener('click', () => { if (ctx.getState() === 'play' || panelOpen === bagP) { if (panelOpen === bagP) closePanels(); else openBag(); } });
     return {
-      TIME, reset, update, openTopUp,
+      TIME, reset, update, openTopUp, onBench: () => !!(sit && sit.bench),
       drinkAnim() { if (ctx.hands && !ctx.hands.busy) ctx.hands.start('drink', { icon: '💧', need: 1 }); }, speedFactor, sitting, toggleSit, eyeHeight, prompt, hud, renderKit, syncCoins,
       interact(p) { const st = nearStop(p, 3.6); if (st) { openShop(st); return true; } return false; },
       toggleBag() { if (panelOpen === bagP) closePanels(); else openBag(); },
