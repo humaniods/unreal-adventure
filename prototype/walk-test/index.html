@@ -297,6 +297,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
       <button type="button" class="btn ghost" id="restartBtn">Restart</button>
       <button type="button" class="btn ghost" id="pauseGfxBtn">Graphics: High</button>
       <button type="button" class="btn ghost" id="pauseResBtn">Resolution: Auto</button>
+      <button type="button" class="btn ghost" id="pauseCoinsBtn">Add coins</button>
     </div>
     <p class="fine">If the mouse cannot be locked, drag on the screen to look around. <kbd>M</kbd> mutes or unmutes sound.</p>
   </div>
@@ -366,6 +367,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <script src="crowd.js"></script>
 <script src="economy.js"></script>
 <script src="collide.js"></script>
+<script src="payments.js"></script>
 <script src="trek.js"></script>
 <script>
 (function(){
@@ -899,7 +901,7 @@ const COLLIDE=window.TriundCollide?window.TriundCollide.create():null;
 const TREK=window.TriundTrek&&window.TriundEconomy?window.TriundTrek.create({ECON:window.TriundEconomy,stops:STOPS,
   get crowd(){return CROWD;},get places(){return PLACES;},getState:()=>state,setState:s=>{state=s;},
   say:(t,d)=>say(t,d),toast:t=>toast(t),buzz:n=>buzz(n),lock:()=>lock(),drink:()=>drink(),onTopUp:()=>openTopUp()}):null;
-function openTopUp(){toast('Coin top-up opens here (payments arrive in the next build).');}
+function openTopUp(){if(TREK)TREK.openTopUp();}
 function resetPlayer(){
   ACT=startFrom==='shiva'?ST:GT;
   START_S=startFrom==='magic'?stopOf('magic').s+4:0;
@@ -1273,6 +1275,7 @@ function setFullRes(v){FULLRES=!!v;try{localStorage.setItem('triund-fullres',FUL
   if(POST&&FULLRES)POST.setScale(1);$('fullResBox').checked=FULLRES;$('pauseResBtn').textContent='Resolution: '+(FULLRES?'Full':'Auto');}
 $('fullResBox').addEventListener('change',e=>setFullRes(e.target.checked));
 $('pauseResBtn').addEventListener('click',()=>setFullRes(!FULLRES));
+$('pauseCoinsBtn').addEventListener('click',()=>{show('pause',false);state='play';openTopUp();});
 setFullRes(FULLRES);
 syncGfx();
 // if the first 10 s of walking run slower than 25 fps (median), drop to Low once
