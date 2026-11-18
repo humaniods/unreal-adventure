@@ -34,7 +34,7 @@ window.TriundSteps = {
           list.push({ s0: s, s1: e, top });
           // the slab(s): across the trail, centred on the tread
           const sm = (s + e) / 2, p = tr.pointAtS(sm), d = tr.dirAtS(sm, 3), rot = Math.atan2(d.dx, d.dz);
-          const depth = e - s + 0.12, width = paved ? 1.7 : 1.35 + R() * 0.4;
+          const depth = e - s + 0.12, width = paved ? 2.1 : 1.85 + R() * 0.3;   // a full trail width: feet never stand half off a tread
           if (paved) slabs.push({ x: p.x, z: p.z, top, rot, w: width, d: depth, t: 0.5, kind: 1 });
           else {
             // one to three rough stones side by side, uneven and worn; now and then one has gone (washed out)
@@ -141,7 +141,8 @@ window.TriundSteps = {
       topAt,
       update(cam) { const dx = cam.x - last.x, dz = cam.z - last.z; if (dx * dx + dz * dz > 64) refresh(cam); },
       // ground under a walker: the tread when on a staircase (within the trail width), else the terrain
-      ground(x, z, id, s, lat) { const h = H(x, z); if (Math.abs(lat || 0) > 0.85) return h; const t = topAt(id, s); return t === null ? h : Math.max(h, t); }
+      ground(x, z, id, s, lat) { const h = H(x, z); if (Math.abs(lat || 0) > 1.05) return h; const t = topAt(id, s); return t === null ? h : Math.max(h, t); },
+      halfWidth: 1.05
     };
   }
 };

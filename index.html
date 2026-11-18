@@ -232,7 +232,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <!-- start -->
 <section class="screen" id="start">
   <div class="card">
-    <div class="eyebrow">ECP feel test · build 1.5</div>
+    <div class="eyebrow">ECP feel test · build 1.6</div>
     <h1>Triund Walk Test</h1>
     <p class="lede">The real Triund trails above McLeod Ganj, up to the meadow at 2,838 m facing the Dhauladhar range. Take the classic 5 km path from Gallu Devi temple through oak and deodar forest, past Magic View Cafe and up the switchbacks, or the steeper, quieter climb from Bhagsu past the waterfall, Shiva Cafe and Karthani. There is no health bar. Your breathing, your heartbeat and the smartwatch on your wrist tell you how your body is holding up.</p>
     <div class="field">
@@ -1141,11 +1141,12 @@ function update(dt){
   if(P.v>0.02){P.dirx=P.vx/P.v;P.dirz=P.vz/P.v;}
   if(TREK&&TREK.sitting()){P.vx=P.vz=P.v=0;}
   if(P.v>0.01){P.x=clamp(P.x+P.vx*dt,BOX.e0+60,BOX.e1-60);P.z=clamp(P.z+P.vz*dt,-(BOX.n1-60),-(BOX.n0+60));
+    if(CROWD&&CROWD.pushOut){const r=CROWD.pushOut(P.x,P.z,0.3);P.x=r.x;P.z=r.z;}   // people are solid too
     if(COLLIDE){const r=COLLIDE.resolve(P.x,P.z,0.55);P.x=r.x;P.z=r.z;}}   // 0.55 m: the eye (near plane 0.4 m) never reaches into a wall
   P.y=H(P.x,P.z);
   const grade=P.v>0.05?(H(P.x+P.dirx,P.z+P.dirz)-P.y):0;P.grade=grade;
   // on a staircase the feet are on the treads (the eye spring turns each riser into a step up)
-  if(STEPS){const nq=nearestTrail(P.x,P.z);if(nq.d<0.85){const t=STEPS.topAt(ACT.id,nq.s);if(t!==null)P.y=Math.max(P.y,t);}}
+  if(STEPS){const nq=nearestTrail(P.x,P.z);if(nq.d<1.05){const t=STEPS.topAt(ACT.id,nq.s);if(t!==null)P.y=Math.max(P.y,t);}}   // the whole tread width
   // the eye follows the ground through a critically damped spring: steps up and down read as steps, and the
   // small bumps of the height field no longer jolt the camera
   if(P.eyeY===undefined||Math.abs(P.eyeY-P.y)>3){P.eyeY=P.y;P.eyeV=0;}
@@ -1445,7 +1446,7 @@ Promise.all([fontsReady,satReady]).then(()=>{
   if(window.TriundCamp&&TREK){try{CAMP=window.TriundCamp.create({THREE,scene,H,SKY,ECON:window.TriundEconomy,top:TOP,get atmos(){return ATMOS;},textPlane,collide:COLLIDE,blocked:PLACES?PLACES.blocked:null,trek:TREK,
     get P(){return P;},getState:()=>state,setState:s=>{state=s;},say:(t,d)=>say(t,d),toast:t=>toast(t),buzz:n=>buzz(n),lock:()=>lock(),openTopUp:()=>openTopUp(),camped:()=>{P.camped=true;}});}catch(e){console.error('camp failed',e);}}
   if(window.TriundCrowd&&!QS.has('nocrowd')&&THREE.GLTFLoader&&THREE.SkeletonUtils){
-    window.TriundCrowd.build({THREE,scene,H,trails:{galu:GT,shiva:ST},stops:STOPS,top:TOP,rng,collide:COLLIDE,blocked:PLACES?PLACES.blocked:null,base:'chars/',quality:QP,ground:STEPS?STEPS.ground:null,
+    window.TriundCrowd.build({THREE,scene,H,trails:{galu:GT,shiva:ST},stops:STOPS,top:TOP,rng,collide:COLLIDE,blocked:PLACES?PLACES.blocked:null,base:'chars/',quality:QP,ground:STEPS?STEPS.ground:null,onSteps:STEPS?(id,s)=>STEPS.topAt(id,s)!==null:null,
       talkers:npcs.map(n=>({x:n.x,z:n.z,yaw:n.yaw}))}).then(c=>{CROWD=c;npcs.forEach(n=>{if(n.g)n.g.visible=false;});PCH=c.playerChar();avatar.visible=false;prewarm('crowd');})
       .catch(e=>{console.error('crowd failed',e);});}
   if(window.TriundFauna&&!QS.has('nofauna')){try{FAUNA=window.TriundFauna.build({THREE,scene,H,trails:{galu:GT,shiva:ST},top:TOP,rng,blocked:PLACES?PLACES.blocked:null});}catch(e){console.error('fauna failed',e);}}

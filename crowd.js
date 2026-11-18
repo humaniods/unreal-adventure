@@ -205,6 +205,7 @@ window.TriundCrowd = {
       if (a.state === 'walk') {
         // keep left (Indian trails) relative to the walking direction; step aside around the hiker
         let latT = -a.dir * a.latT;
+        if (o.onSteps && o.onSteps(a.tr.id, a.s)) latT *= 0.45;   // on a staircase everyone keeps to the treads
         const dpx = P.x - a.x, dpz = P.z - a.z, dp = Math.hypot(dpx, dpz);
         if (dp < 2.5) latT += (latT >= 0 ? 1 : -1) * (2.5 - dp);
         a.lat += (latT - a.lat) * Math.min(1, dt * 1.5);
@@ -244,6 +245,11 @@ window.TriundCrowd = {
         a.s = Math.max(0, Math.min(a.tr.total, a.s));
         const p = trailAt(a.tr, a.s, a.lat); a.x = p.x; a.z = p.z;
         if (a.state === 'walk') a.yaw = yawOf(p.dx * a.dir, p.dz * a.dir);
+      }
+      // solid world: hikers slide round stalls, benches, tables, tents and houses like the player does
+      // (the last metre to a seat is free, the seat itself sits inside its bench's footprint)
+      if (collide && a.state !== 'sit' && !(a.state === 'toSeat' && a.seat && Math.hypot(a.seat.x - a.x, a.seat.z - a.z) < 1.2)) {
+        const r = collide.resolve(a.x, a.z, 0.3); a.x = r.x; a.z = r.z;
       }
       a.y = ground && (a.state === 'walk' || a.state === 'rest') ? ground(a.x, a.z, a.tr.id, a.s, a.lat) : H(a.x, a.z);   // on the steps where there are steps
     }
@@ -349,9 +355,33 @@ window.TriundCrowd = {
       }
     }
 
+    // hikers near the camera keep a body's width apart: trail walkers step aside (their lateral offset),
+    // everyone else is nudged apart directly
+    const near = [];
+    function separate(cam, dt) {
+      near.length = 0;
+      for (const a of agents) if ((a.x - cam.x) ** 2 + (a.z - cam.z) ** 2 < 70 * 70 && a.state !== 'sit') near.push(a);
+      for (let i = 0; i < near.length; i++) for (let j = i + 1; j < near.length; j++) {
+        const a = near[i], b = near[j], dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
+        if (d > 0.7 || d < 1e-4) continue;
+        const push = (0.7 - d) * 0.5;
+        if (a.state === 'walk' && b.state === 'walk' && a.tr === b.tr) {
+          const sgn = a.lat >= b.lat ? 1 : -1; a.lat = Math.max(-1.6, Math.min(1.6, a.lat + sgn * push)); b.lat = Math.max(-1.6, Math.min(1.6, b.lat - sgn * push));
+        } else { a.x -= dx / d * push; a.z -= dz / d * push; b.x += dx / d * push; b.z += dz / d * push; }
+      }
+    }
+    // the player cannot walk through people either: push a circle out of every hiker and shopkeeper nearby
+    function pushOut(x, z, r) {
+      for (const list of [agents, keepers]) for (const a of list) {
+        const dx = x - a.x, dz = z - a.z, d = Math.hypot(dx, dz), m = r + 0.28;
+        if (d < m && d > 1e-4) { x = a.x + dx / d * m; z = a.z + dz / d * m; }
+      }
+      return { x, z };
+    }
+
     let simT = 0;
     return {
-      agents, keepers, seatSpots, counts: { bots: agents.length, keepers: keepers.length, pool: POOL },
+      agents, keepers, seatSpots, pushOut, counts: { bots: agents.length, keepers: keepers.length, pool: POOL },
       // the shopkeeper of this stop turns to the player and hands the order over (Interact clip)
       serve(stop) { const i = stops.indexOf(stop); if (i >= 0 && !keepers[i].task) keepers[i].serveT = 2.2; },
       // cook an order for cookSec seconds, then carry `mesh` to target() and call onGive('hand' | 'counter').
@@ -367,6 +397,7 @@ window.TriundCrowd = {
       update(dt, cam, P, camera) {
         if (camera) FR.setFromProjectionMatrix(PM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
         for (const a of agents) think(a, dt, P);
+        separate(cam, dt);
         for (const k of keepers) { if (k.task) { keeperTask(k, dt); continue; }
           const dp = Math.hypot(P.x - k.x, P.z - k.z);
           if (k.serveT > 0) { k.serveT -= dt; k.anim = 'Interact'; k.yaw = Math.atan2(P.x - k.x, P.z - k.z); continue; }   // handing over an order
