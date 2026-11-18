@@ -10,6 +10,7 @@
 window.TriundSteps = {
   build({ THREE, scene, H, trails, rng, tex, sunAt }) {
     const R = rng(9137);
+    const gAt = (tr, s) => { const p = tr.pointAtS(s); return H(p.x, p.z); };
     const runsOut = {};          // trail id -> sorted [{s0, s1, top}]
     const slabs = [];            // instances: {x, y, z, rot, w, d, t, kind}
     for (const tr of trails) {
@@ -20,14 +21,16 @@ window.TriundSteps = {
         const minGrade = paved ? 0.11 : 0.16;
         let s = run.s0 + 0.5;
         while (s < run.s1 - 0.5) {
-          const a = tr.pointAtS(s - 2), b = tr.pointAtS(s + 2), grade = (b.h - a.h) / 4;
+          // heights from the terrain the player walks on (H), not the trail's own profile: near the temples the
+          // ground is levelled and elsewhere the two differ by metres, which left treads floating in the air
+          const a = gAt(tr, s - 2), b = gAt(tr, s + 2), grade = (b - a) / 4;
           if (Math.abs(grade) < minGrade) { s += 0.5; continue; }
           // one step: rise 0.15-0.21 m (concrete: a steady 0.17), the tread runs until the ground has climbed that much
-          const rise = paved ? 0.17 : 0.15 + R() * 0.06, h0 = tr.pointAtS(s).h;
+          const rise = paved ? 0.17 : 0.15 + R() * 0.06, h0 = gAt(tr, s);
           let e = s + 0.25;
-          while (e < run.s1 - 0.25 && Math.abs(tr.pointAtS(e).h - h0) < rise && e - s < 1.6) e += 0.05;
-          const up = tr.pointAtS(e).h > h0;              // trail climbing along +s
-          const top = up ? tr.pointAtS(e).h : h0;          // level tread at the higher end
+          while (e < run.s1 - 0.25 && Math.abs(gAt(tr, e) - h0) < rise && e - s < 1.6) e += 0.05;
+          const he = gAt(tr, e), up = he > h0;            // trail climbing along +s
+          const top = up ? he : h0;                        // level tread at the higher end
           list.push({ s0: s, s1: e, top });
           // the slab(s): across the trail, centred on the tread
           const sm = (s + e) / 2, p = tr.pointAtS(sm), d = tr.dirAtS(sm, 3), rot = Math.atan2(d.dx, d.dz);
