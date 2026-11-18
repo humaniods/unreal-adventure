@@ -231,7 +231,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <!-- start -->
 <section class="screen" id="start">
   <div class="card">
-    <div class="eyebrow">ECP feel test · build 0.9</div>
+    <div class="eyebrow">ECP feel test · build 0.9.1</div>
     <h1>Triund Walk Test</h1>
     <p class="lede">The real Triund trails above McLeod Ganj, up to the meadow at 2,838 m facing the Dhauladhar range. Take the classic 5 km path from Gallu Devi temple through oak and deodar forest, past Magic View Cafe and up the switchbacks, or the steeper, quieter climb from Bhagsu past the waterfall, Shiva Cafe and Karthani. There is no health bar. Your breathing, your heartbeat and the smartwatch on your wrist tell you how your body is holding up.</p>
     <div class="field">
@@ -265,6 +265,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
       </div>
       <p class="ghint">Resolution adjusts itself to hold 60 fps. On a laptop, plug in and set the power mode to Balanced or Performance: power-saver mode holds the graphics chip at a fraction of its speed.</p>
     </div>
+    <label class="check"><input type="checkbox" id="fullResBox"> Always full resolution: sharpest picture, but slower laptops may stutter</label>
     <label class="check"><input type="checkbox" id="assistBox"> Breathing assist: the breathing mini-game plays itself (accessibility)</label>
     <div class="row">
       <button type="button" class="btn primary" id="startBtn" disabled>Loading the mountain…</button>
@@ -293,6 +294,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
       <button type="button" class="btn ghost" id="pauseTuneBtn">Tuning</button>
       <button type="button" class="btn ghost" id="restartBtn">Restart</button>
       <button type="button" class="btn ghost" id="pauseGfxBtn">Graphics: High</button>
+      <button type="button" class="btn ghost" id="pauseResBtn">Resolution: Auto</button>
     </div>
     <p class="fine">If the mouse cannot be locked, drag on the screen to look around. <kbd>M</kbd> mutes or unmutes sound.</p>
   </div>
@@ -1250,10 +1252,17 @@ function syncGfx(){document.querySelectorAll('#gfxSeg button').forEach(b=>b.setA
 QL.onChange(p=>{QP=p;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,p.pixelRatio));resize();applyShadowQuality();if(FLORA)FLORA.setQuality(p);syncGfx();});
 $('gfxSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)QL.set(b.dataset.q);});
 $('pauseGfxBtn').addEventListener('click',()=>QL.set(QL.get()==='high'?'low':'high'));
+// resolution: Auto (dynamic, 75-100 %) or Full (always 100 %), remembered per viewer
+let FULLRES=false;try{FULLRES=localStorage.getItem('triund-fullres')==='1';}catch(e){}
+function setFullRes(v){FULLRES=!!v;try{localStorage.setItem('triund-fullres',FULLRES?'1':'0');}catch(e){}
+  if(POST&&FULLRES)POST.setScale(1);$('fullResBox').checked=FULLRES;$('pauseResBtn').textContent='Resolution: '+(FULLRES?'Full':'Auto');}
+$('fullResBox').addEventListener('change',e=>setFullRes(e.target.checked));
+$('pauseResBtn').addEventListener('click',()=>setFullRes(!FULLRES));
+setFullRes(FULLRES);
 syncGfx();
 // if the first 10 s of walking run slower than 25 fps (median), drop to Low once
 const AUTO={t:0,ft:[],done:false};
-function autoQuality(raw){if(AUTO.done||state!=='play')return;if(POST&&POST.scale>0.56){AUTO.t=0;AUTO.ft.length=0;return;}   // dynamic resolution still has room
+function autoQuality(raw){if(AUTO.done||state!=='play')return;if(POST&&!FULLRES&&POST.scale>POST.minScale+0.01){AUTO.t=0;AUTO.ft.length=0;return;}   // dynamic resolution still has room
   AUTO.t+=raw;AUTO.ft.push(raw);
   if(AUTO.t<10)return;AUTO.done=true;const m=AUTO.ft.sort((a,b)=>a-b)[AUTO.ft.length>>1];
   if(m>0.04&&QL.get()==='high'){QL.set('low');toast('Graphics set to Low for smoother walking');}}
@@ -1367,14 +1376,14 @@ function prewarm(tag){if(QS.has('nowarm'))return;
 // settled before the walk starts. Goal: 60 fps; a frame that misses vsync shows up as ~33 ms.
 const DYN={acc:0,n:0,t:0,slow:0};
 function dynRes(raw){
-  if(!POST||QS.has('nodyn')||(state!=='play'&&state!=='menu'))return;
+  if(!POST||QS.has('nodyn')||FULLRES||(state!=='play'&&state!=='menu'))return;
   DYN.n++;DYN.t+=raw;if(raw>0.0215)DYN.slow++;if(DYN.t<1)return;
   const missed=DYN.slow/DYN.n;DYN.n=DYN.t=DYN.slow=0;
   let s=POST.scale;if(missed>0.3)s-=0.08;else if(missed>0.12)s-=0.03;else if(missed<0.03)s+=0.02;
   POST.setScale(s);
 }
 window.__dyn=()=>POST?POST.scale:1;
-if(POST&&QS.get('scale'))POST.setScale(+QS.get('scale'));
+if(POST&&QS.get('scale')){POST.minScale=0.3;POST.setScale(+QS.get('scale'));}
 function frame(now){
   const raw=(now-last)/1000,dt=Math.min(0.05,raw);last=now;fps+=(1/Math.max(dt,0.001)-fps)*0.05;
   PERF.ft[PERF.fi]=raw*1000;PERF.fi=(PERF.fi+1)%PERF.ft.length;let t0=performance.now();
