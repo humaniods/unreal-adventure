@@ -176,6 +176,7 @@ window.TriundFlora = {
       return m;
     };
     const depthMat = (map, bend) => windify(new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map, alphaTest: 0.42 }), bend, false);
+    const tintMats = [];   // foliage and grass: the season tints them (lush and darker in the monsoon)
     const barkMat = windify(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 }), 0, false, 0.1, lodTrees);
     const SPECIES = {
       deodar: { geo: deodarGeo(), trunk: trunkGeo(0.022, 0.005, 0.96, 0), map: deodarTex, imp: 'deodar', bark: 0x5c4a3b, bend: 0.018 },
@@ -304,7 +305,7 @@ window.TriundFlora = {
     for (const sp of Object.keys(SPECIES)) {
       const S = SPECIES[sp], list = trees[sp]; if (!list.length) continue;
       const lodU = sp === 'bush' ? lodBush : lodTrees;
-      const near = new THREE.InstancedMesh(S.geo, foliageMat(S.map, S.bend, lodU), list.length);
+      const near = new THREE.InstancedMesh(S.geo, foliageMat(S.map, S.bend, lodU), list.length); tintMats.push(near.material);
       near.customDepthMaterial = depthMat(S.map, S.bend); near.castShadow = true; near.receiveShadow = true; near.frustumCulled = false;
       const trunk = S.trunk ? new THREE.InstancedMesh(S.trunk, barkMat, list.length) : null;
       if (trunk) { trunk.castShadow = true; trunk.receiveShadow = true; trunk.frustumCulled = false; }
@@ -324,7 +325,7 @@ window.TriundFlora = {
           treeColor(sp, t, 1).toArray(impC, i * 3);
         });
         const bk = bakeImpostor(sp, S);
-        imp = new THREE.InstancedMesh(bk.geo, impostorMat(bk, S.bend * 0.6), list.length);
+        imp = new THREE.InstancedMesh(bk.geo, impostorMat(bk, S.bend * 0.6), list.length); tintMats.push(imp.material);
         imp.frustumCulled = false;
         // bushes have no impostor: they simply end at the LOD radius
       }
@@ -387,7 +388,7 @@ window.TriundFlora = {
     }
     const CELL = 6, MAXG = 70, MAXF = 8;
     const maxCells = Math.ceil(Math.PI * Math.pow(36 / CELL + 1.5, 2)) + 8;
-    const grassMat = windify(new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 1 }), 0.32, true, 0.35);
+    const grassMat = windify(new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 1 }), 0.32, true, 0.35); tintMats.push(grassMat);
     const grass = new THREE.InstancedMesh(grassGeo(), grassMat, maxCells * MAXG);
     grass.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(maxCells * MAXG * 3), 3);
     grass.frustumCulled = false; grass.receiveShadow = true; grass.count = 0; scene.add(grass);
@@ -503,6 +504,7 @@ window.TriundFlora = {
     let gust = 0;
     return {
       counts: { deodar: trees.deodar.length, oak: trees.oak.length, rhodo: trees.rhodo.length, bush: trees.bush.length, stones: stones.length },
+      tint(c) { for (const m of tintMats) if (m && m.color) m.color.copy(c); },
       update(dt, cam, time) {
         gust += dt;
         wind.uTime.value = time; wind.uCam.value.copy(cam); wind.uR.value = Q.grassR;

@@ -14,7 +14,8 @@ window.TriundTerrain = {
       uSatN: { value: satNear }, uSatF: { value: satFar },
       uBoxN: { value: new THREE.Vector4(nearBox.e0, nearBox.e1, nearBox.n0, nearBox.n1) },
       uBoxF: { value: new THREE.Vector4(farBox.e0, farBox.e1, farBox.n0, farBox.n1) },
-      uSatOK: { value: 0 }, uSatGain: { value: 1.25 }, uSatSat: { value: 1.18 }, uTexOK: { value: 0 }
+      uSatOK: { value: 0 }, uSatGain: { value: 1.25 }, uSatSat: { value: 1.18 }, uTexOK: { value: 0 },
+      uWet: { value: 0 }    // monsoon: wet, darker, greener ground and puddles on the trail (season.js)
     };
     // ground photo textures (CC0, polyhaven.com): uniform -> file
     const TEX = { tGrass: 'grass_d', tMeadow: 'meadow_d', tLitter: 'litter_d', tRock: 'rock_d', tTrail: 'trail_d', tDirt: 'dirt_d', tPave: 'pave_d',
@@ -41,7 +42,7 @@ window.TriundTerrain = {
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>
 uniform sampler2D uSatN; uniform sampler2D uSatF; uniform vec4 uBoxN; uniform vec4 uBoxF;
-uniform float uSatOK; uniform float uSatGain; uniform float uSatSat; uniform float uTexOK;
+uniform float uSatOK; uniform float uSatGain; uniform float uSatSat; uniform float uTexOK; uniform float uWet;
 uniform sampler2D tGrass; uniform sampler2D tMeadow; uniform sampler2D tLitter; uniform sampler2D tRock; uniform sampler2D tTrail;
 uniform sampler2D tDirt; uniform sampler2D tPave; uniform sampler2D nLitter; uniform sampler2D nRock; uniform sampler2D nTrail;
 uniform sampler2D tNoise;
@@ -142,6 +143,15 @@ if (tw > 0.002) {
   base = mix(base, tc, e);
   wTrail = e;
 }
+// monsoon: soaked soil and rock are darker, the meadows go lush green, the trail holds puddles
+float pud = 0.0;
+if (uWet > 0.001) {
+  float veg = (1.0 - rock) * (1.0 - wTrail);
+  base = mix(base, base * vec3(0.8, 1.12, 0.7) + vec3(0.0, 0.008, 0.0), uWet * 0.55 * veg);
+  base *= 1.0 - 0.3 * uWet * (1.0 - 0.5 * veg);
+  pud = uWet * wTrail * (1.0 - smoothstep(0.33, 0.4, tf(p * 0.35 + 5.1))) * near;
+  base = mix(base, vec3(0.13, 0.14, 0.15), pud * 0.85);           // standing water mirrors the grey sky
+}
 diffuseColor.rgb = base;`)
         // baked mountain shadow cuts direct sun only; AO cuts sky light and a little of the sun
         // (#includes are not expanded yet, so patch the chunk text itself)
@@ -160,7 +170,9 @@ if (uTexOK > 0.5 && near > 0.01) {
   normal = normalize((viewMatrix * vec4(wn, 0.0)).xyz);
 }`)
         // no specular: dry ground and gravel should not mirror the sky at grazing angles
-        .replace('#include <aomap_fragment>', '#include <aomap_fragment>\nreflectedLight.indirectDiffuse *= 1.0 - 0.8 * vT.w;\nreflectedLight.directSpecular *= 0.0;\nreflectedLight.indirectSpecular *= 0.0;');
+        // wet ground shines a little, puddles a lot (they need a low roughness too)
+        .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(mix(roughnessFactor, 0.55, uWet * 0.6), 0.06, pud);')
+        .replace('#include <aomap_fragment>', '#include <aomap_fragment>\nreflectedLight.indirectDiffuse *= 1.0 - 0.8 * vT.w;\nreflectedLight.directSpecular *= uWet * 0.3 + pud * 1.2;\nreflectedLight.indirectSpecular *= uWet * 0.15 + pud * 1.4;');
     };
     mat.userData.uniforms = uniforms;
     return mat;
