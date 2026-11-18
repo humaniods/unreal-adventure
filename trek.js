@@ -18,7 +18,7 @@ window.TriundTrek = {
 #res .bar{width:70px;height:7px;border-radius:4px;background:rgba(255,255,255,.14);overflow:hidden}
 #res .bar i{display:block;height:100%;background:var(--marigold);transition:width .3s}
 #res .bar.low i{background:#e0533d}
-#sitHud{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:7;background:rgba(8,12,10,.7);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:14px;color:var(--mist);text-align:center}
+#sitHud{position:fixed;left:50%;top:calc(56px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:7;background:rgba(8,12,10,.7);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:14px;color:var(--mist);text-align:center}
 .tpanel{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(4,8,6,.55);padding:16px}
 .tpanel .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;max-width:520px;width:100%;max-height:min(86vh,720px);overflow-y:auto;padding:18px 18px 14px;display:grid;gap:12px;color:var(--mist)}
 .tpanel h3{margin:0;font-family:var(--f-display);font-size:26px;text-transform:uppercase;letter-spacing:.03em}
@@ -101,14 +101,14 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       if (sit && sit.ry != null) return { x: P.x + Math.sin(sit.ry) * 0.9, z: P.z + Math.cos(sit.ry) * 0.9 };
       return { x: P.x, z: P.z };
     }
-    function placeDish(dish) {
+    function placeDish(dish, empty) {
       if (!dish) return;
       const H = ctx.H; let x, z, y;
       if (sit && sit.bench) {   // on the bench beside you; turn to it
         const r = sit.ry; x = P.x + Math.cos(r) * 0.45; z = P.z - Math.sin(r) * 0.45; y = H(P.x, P.z) + 0.48;
-        P.yaw = Math.atan2(-(x - P.x), -(z - P.z)) * 0.35 + P.yaw * 0.65; P.pitch = -0.55;
+        if (!empty) { P.yaw = Math.atan2(-(x - P.x), -(z - P.z)) * 0.35 + P.yaw * 0.65; P.pitch = -0.55; }
       } else {                  // on the ground in front of you; look down at it
-        const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); x = P.x + fx * 0.6; z = P.z + fz * 0.6; y = H(x, z) + 0.02; P.pitch = -0.8;
+        const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); x = P.x + fx * 0.6; z = P.z + fz * 0.6; y = H(x, z) + 0.02; if (!empty) P.pitch = -0.7;
       }
       dish.position.set(x, y, z); dish.rotation.y = P.yaw; dish.visible = true;
     }
@@ -155,6 +155,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     /* ---------- energy, time, resting, eating ---------- */
     function reset(p, kg) {
       P = p; bag = ECON.newBag(kg); P.water = (bag.food.water || 0) * 5; delete bag.food.water;
+      if (ctx.hands) ctx.hands.finish(true);
       for (const o of orders.concat(pending, P.tray || [])) doneDish(o.dish); if (eating) doneDish(eating.dish);
       orders.length = 0; pending.length = 0; inflight.length = 0;
       P.energy = 80; P.gt = 0; P.tray = []; sit = null; eating = null; warn = {}; closePanels();
@@ -171,10 +172,29 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       P.hyd = clamp(P.hyd + (it.hyd || 0) * k, 0, 100);
       if (it.warm) P.chaiWarm = Math.max(P.chaiWarm || 0, it.warm);
     }
+    // Nothing is eaten without the hands (hands.js): the plate is picked up and eaten forkful by forkful, tea is
+    // sipped, snacks come out of the bag. Energy and water arrive bite by bite, as each one reaches the mouth.
     function startEating(it, src, dish) {
-      if ((it.eat || 0) <= 2) { applyFood(it, 1); ctx.say(`${it.name}. ${fx(it)}.`, 3); return; }
-      if (!sit) sitDown(null);
-      eating = { it, left: it.eat * 60, total: it.eat * 60, src, dish };
+      const HN = ctx.hands;
+      if (!HN) { applyFood(it, 1); doneDish(dish); return true; }
+      if (HN.busy) { ctx.toast('Finish what you are eating first.'); return false; }
+      const tea = dish && (it === I.chai || it === I.lemontea);
+      const kind = dish ? (tea ? 'sip' : 'eat') : it.icon === '🧃' ? 'drink' : 'snack';
+      if (dish && !sit) sitDown(nearSeat(P, 2.4));
+      const need = kind === 'eat' ? Math.min(16, Math.max(6, Math.round(it.eat * 2))) : kind === 'sip' ? Math.max(4, Math.round(it.eat * 2)) : kind === 'snack' ? (it.eat > 2 ? 4 : 2) : 1;   // Maggi: 12 forkfuls, chai: 6 sips
+      const e = eating = { it, src, dish, need, done: 0, kind };
+      P.firstPerson = true; P.pitch = -0.12;
+      HN.start(kind, {
+        dish, icon: it.icon, need,
+        onBite: n => {
+          applyFood(it, 1 / need); e.done = n;
+          const f = dish && dish.userData.food;
+          if (f) { if (tea) f.position.y = 0.08 - 0.07 * (n / need); else { const k = Math.max(0.06, 1 - n / need); f.scale.x = f.scale.z = k; if (f.scale.y > 0.5) f.scale.y = k; } }
+        },
+        onDone: () => { if (eating === e) eating = null; ctx.say(`Finished the ${it.name.toLowerCase()}. ${fx({ en: it.en, hyd: it.hyd })}.`, 3); },
+        onPutDown: d => { if (d.userData.food) d.userData.food.visible = false; d.scale.setScalar(1.3); placeDish(d, true); setTimeout(() => doneDish(d), 25000); }
+      });
+      return true;
     }
     function doneDish(d) { if (d) { d.visible = false; if (d.parent) d.parent.remove(d); } }
     function update(dt, keys, load) {
@@ -182,15 +202,12 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       // seated, holding Shift lets time pass 5x faster (rest and meals in a few seconds)
       const fast = sit && (keys.ShiftLeft || keys.ShiftRight), gdt = dt * TIME * (fast ? 5 : 1); P.gt += gdt;
       tickOrders(); tickPending();
+      if (ctx.hands) ctx.hands.update(dt, fast ? 4 : 1);
       if (sit && (keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD || keys.ArrowUp || keys.ArrowDown)) { if (!eating) standUp(); }
       if (sit) {
         P.energy = clamp(P.energy + ECON.REST.energyPerMin / 60 * gdt, 0, 100);
         P.stamina = clamp(P.stamina + ECON.REST.staminaPerMin / 60 * gdt, 0, 100);
-        if (eating) {
-          const k = Math.min(gdt, eating.left) / eating.total; applyFood(eating.it, k); eating.left -= gdt;
-          if (eating.dish && eating.dish.userData.food) eating.dish.userData.food.scale.x = eating.dish.userData.food.scale.z = Math.max(0.12, eating.left / eating.total);
-          if (eating.left <= 0) { ctx.say(`Finished the ${eating.it.name.toLowerCase()}. ${fx({ en: eating.it.en, hyd: eating.it.hyd })}.`, 3); doneDish(eating.dish); eating = null; }
-        } else if (P.tray.length) { const o = P.tray.shift(); startEating(o.it, 'tray', o.dish); }
+        if (!eating && P.tray.length && !(ctx.hands && ctx.hands.busy)) { const o = P.tray.shift(); setTimeout(() => startEating(o.it, 'tray', o.dish), 900); eating = { it: o.it, pending: true, need: 1, done: 0 }; }
       } else {
         P.energy = clamp(P.energy - ECON.burnPerHour(P.v, P.grade, load) / 3600 * gdt, 0, 100);
         if (P.energy <= 0.5 && P.v > 0.2) P.stamina = Math.max(0, P.stamina - 1.2 * dt);   // running on empty: the body stops you
@@ -233,7 +250,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       const h = $('sitHud'), show = !!sit;
       if (h.hidden === show) h.hidden = !show;
       if (!show) return;
-      const m = eating ? `Eating ${eating.it.name.toLowerCase()} · ${Math.ceil(eating.left / 60)} min left` : P.tray.length ? 'About to eat' : inflight.length ? `Your ${inflight[0].it.name.toLowerCase()} is ${performance.now() - inflight[0].sent < inflight[0].cook * 1000 ? 'being made' : 'on its way'}` : orders.length ? `Waiting for your ${orders[0].it.name.toLowerCase()}` : 'Resting: energy and stamina coming back';
+      const m = eating ? (eating.pending ? `Picking up the ${eating.it.name.toLowerCase()}` : `${eating.kind === 'sip' ? 'Sipping' : 'Eating'} ${eating.it.name.toLowerCase()} · ${eating.kind === 'sip' ? 'sip' : 'bite'} ${eating.done} of ${eating.need}`) : P.tray.length ? 'About to eat' : inflight.length ? `Your ${inflight[0].it.name.toLowerCase()} is ${performance.now() - inflight[0].sent < inflight[0].cook * 1000 ? 'being made' : 'on its way'}` : orders.length ? `Waiting for your ${orders[0].it.name.toLowerCase()}` : 'Resting: energy and stamina coming back';
       h.textContent = m + ' · hold Shift to let time pass faster' + (eating ? '' : ' · move or C to get up');
     }
 
@@ -303,7 +320,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
         const it = I[id];
         add(it.icon, `${it.name} × ${bag.food[id]}`, fx(it), 'Eat', () => {
           if (eating) { ctx.toast('Finish what you are eating first.'); return; }
-          bag.food[id]--; closePanels(); startEating(it, 'bag');
+          bag.food[id]--; closePanels(); if (!startEating(it, 'bag')) bag.food[id]++;
         });
       }
       for (const g of bag.gear) add(ECON.GEAR[g].icon, ECON.GEAR[g].name, `${ECON.GEAR[g].kg} kg`, '', null);
@@ -371,7 +388,8 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     }
     $('resBag').addEventListener('click', () => { if (ctx.getState() === 'play' || panelOpen === bagP) { if (panelOpen === bagP) closePanels(); else openBag(); } });
     return {
-      TIME, reset, update, openTopUp, speedFactor, sitting, toggleSit, eyeHeight, prompt, hud, renderKit, syncCoins,
+      TIME, reset, update, openTopUp,
+      drinkAnim() { if (ctx.hands && !ctx.hands.busy) ctx.hands.start('drink', { icon: '💧', need: 1 }); }, speedFactor, sitting, toggleSit, eyeHeight, prompt, hud, renderKit, syncCoins,
       interact(p) { const st = nearStop(p, 3.6); if (st) { openShop(st); return true; } return false; },
       toggleBag() { if (panelOpen === bagP) closePanels(); else openBag(); },
       closePanels, get panelOpen() { return !!panelOpen; }, get bag() { return bag; }, get lastStop() { return lastStop; }

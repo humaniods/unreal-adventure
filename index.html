@@ -232,7 +232,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <!-- start -->
 <section class="screen" id="start">
   <div class="card">
-    <div class="eyebrow">ECP feel test · build 1.1</div>
+    <div class="eyebrow">ECP feel test · build 1.2</div>
     <h1>Triund Walk Test</h1>
     <p class="lede">The real Triund trails above McLeod Ganj, up to the meadow at 2,838 m facing the Dhauladhar range. Take the classic 5 km path from Gallu Devi temple through oak and deodar forest, past Magic View Cafe and up the switchbacks, or the steeper, quieter climb from Bhagsu past the waterfall, Shiva Cafe and Karthani. There is no health bar. Your breathing, your heartbeat and the smartwatch on your wrist tell you how your body is holding up.</p>
     <div class="field">
@@ -369,6 +369,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <script src="economy.js"></script>
 <script src="collide.js"></script>
 <script src="payments.js"></script>
+<script src="hands.js"></script>
 <script src="trek.js"></script>
 <script src="camp.js"></script>
 <script>
@@ -825,6 +826,7 @@ function stall(st,wall,lines){
   const kettle=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.2,0.32,10),lam(0xb8b8b4));kettle.position.set(-2.8,1.16,-0.8);g.add(kettle);
   // plank benches on short legs
   for(const bz of [-1.6,1.8]){const seat=mbox(0.42,0.06,2.4,'wood',0x9a7a5a,1);seat.position.set(-4.6,0.45,bz);g.add(seat);
+    if(COLLIDE){const w=toWorld(st.x,st.z,rot,-4.6,bz);COLLIDE.rect(w.x,w.z,rot,0.45,2.4);}
     for(const lz of [-1.05,0,1.05])for(const lx of [-0.16,0.16]){const leg=mbox(0.06,0.42,0.06,'wood',0x7a5a3a,1);leg.position.set(-4.6+lx,0.21,bz+lz);g.add(leg);}}
   const sign=textPlane(lines,3.4,1.6,'#f2c230','#2a1a04');sign.position.set(-2.32,2.3,0);sign.rotation.y=-Math.PI/2;g.add(sign);
   scene.add(g);grounded(g);
@@ -900,7 +902,8 @@ let P,START_S=0,startFrom='galu';
 try{const v=localStorage.getItem('triund-start');if(v==='galu'||v==='magic'||v==='shiva')startFrom=v;}catch(e){}
 // solid buildings and stalls, and the hiker's day (food energy, bag, stalls, benches, game time): collide.js, trek.js
 const COLLIDE=window.TriundCollide?window.TriundCollide.create():null;
-const TREK=window.TriundTrek&&window.TriundEconomy?window.TriundTrek.create({THREE,scene,H,ECON:window.TriundEconomy,stops:STOPS,
+let HANDS=null;try{HANDS=window.TriundHands?window.TriundHands.create({THREE,camera,scene}):null;}catch(e){console.error('hands failed',e);}   // first-person hands for eating and drinking
+const TREK=window.TriundTrek&&window.TriundEconomy?window.TriundTrek.create({THREE,scene,H,hands:HANDS,ECON:window.TriundEconomy,stops:STOPS,
   get crowd(){return CROWD;},get places(){return PLACES;},getState:()=>state,setState:s=>{state=s;},
   say:(t,d)=>say(t,d),toast:t=>toast(t),buzz:n=>buzz(n),lock:()=>lock(),drink:()=>drink(),onTopUp:()=>openTopUp()}):null;
 function openTopUp(){if(TREK)TREK.openTopUp();}
@@ -1036,7 +1039,7 @@ function interact(){
 }
 function drink(){
   if(P.water<=0){say('Your bottle is empty.');return;}
-  P.water--;P.hyd=Math.min(100,P.hyd+12);say('A sip of water. '+P.water+' left.');
+  P.water--;P.hyd=Math.min(100,P.hyd+12);say('A sip of water. '+P.water+' left.');if(TREK)TREK.drinkAnim();
 }
 
 /* ================= state transitions ================= */
@@ -1432,7 +1435,7 @@ Promise.all([fontsReady,satReady]).then(()=>{
   if(window.TriundCamp&&TREK){try{CAMP=window.TriundCamp.create({THREE,scene,H,SKY,ECON:window.TriundEconomy,top:TOP,get atmos(){return ATMOS;},textPlane,collide:COLLIDE,blocked:PLACES?PLACES.blocked:null,trek:TREK,
     get P(){return P;},getState:()=>state,setState:s=>{state=s;},say:(t,d)=>say(t,d),toast:t=>toast(t),buzz:n=>buzz(n),lock:()=>lock(),openTopUp:()=>openTopUp(),camped:()=>{P.camped=true;}});}catch(e){console.error('camp failed',e);}}
   if(window.TriundCrowd&&!QS.has('nocrowd')&&THREE.GLTFLoader&&THREE.SkeletonUtils){
-    window.TriundCrowd.build({THREE,scene,H,trails:{galu:GT,shiva:ST},stops:STOPS,top:TOP,rng,blocked:PLACES?PLACES.blocked:null,base:'chars/',quality:QP,ground:STEPS?STEPS.ground:null,
+    window.TriundCrowd.build({THREE,scene,H,trails:{galu:GT,shiva:ST},stops:STOPS,top:TOP,rng,collide:COLLIDE,blocked:PLACES?PLACES.blocked:null,base:'chars/',quality:QP,ground:STEPS?STEPS.ground:null,
       talkers:npcs.map(n=>({x:n.x,z:n.z,yaw:n.yaw}))}).then(c=>{CROWD=c;npcs.forEach(n=>{if(n.g)n.g.visible=false;});PCH=c.playerChar();avatar.visible=false;prewarm('crowd');})
       .catch(e=>{console.error('crowd failed',e);});}
   if(window.TriundFauna&&!QS.has('nofauna')){try{FAUNA=window.TriundFauna.build({THREE,scene,H,trails:{galu:GT,shiva:ST},top:TOP,rng,blocked:PLACES?PLACES.blocked:null});}catch(e){console.error('fauna failed',e);}}

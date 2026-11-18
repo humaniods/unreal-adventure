@@ -417,7 +417,7 @@ window.TriundPlaces = {
       }
       // plastic table and chairs in front
       if (inside) {
-      const tx = w * 0.15, tz = d / 2 + 1.7, plast = C(r() < 0.5 ? 0xf2f2ee : 0xc0392b);
+      const tx = w * 0.15, tz = d / 2 + 1.7, plast = C(r() < 0.5 ? 0xf2f2ee : 0xc0392b); colRect(x, z, ry, tx, tz, 1.9, 0.9);   // table and chairs
       lbox(props, x, y, z, ry, tx, 0.7, tz, 0.7, 0.04, 0.7, C(0xf2f2ee));
       for (const [ax, az] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) lbox(props, x, y, z, ry, tx + ax, 0.35, tz + az, 0.04, 0.7, 0.04, C(0xe0e0dc));
       for (const [ax, az, back] of [[-0.6, 0, -1], [0.6, 0, 1]]) {
@@ -446,7 +446,7 @@ window.TriundPlaces = {
       roofM.setPosition(x + Math.sin(ry) * 0.3, y + hh + 0.45, z + Math.cos(ry) * 0.3); props.geo(BOX, roofM, tin);
       lbox(props, x, y, z, ry, 0, 0.5, d / 2 - 0.4, w * 0.7, 1.0, 0.6, wood);                          // counter
       lbox(props, x, y, z, ry, -w * 0.15, 1.1, d / 2 - 0.4, 0.35, 0.3, 0.35, C(0xb8b8b4));            // kettle / stove
-      for (const sx of [-1, 1]) { const bx = sx * (w / 2 + 0.9), bz = d / 2 + 0.6; lbox(props, x, y, z, ry, bx, 0.22, bz, 1.8, 0.1, 0.45, wood); lbox(props, x, y, z, ry, bx, 0.1, bz, 1.6, 0.25, 0.3, C(0x5b4330)); }
+      for (const sx of [-1, 1]) { const bx = sx * (w / 2 + 0.9), bz = d / 2 + 0.6; colRect(x, z, ry, bx, bz, 1.8, 0.45); lbox(props, x, y, z, ry, bx, 0.22, bz, 1.8, 0.1, 0.45, wood); lbox(props, x, y, z, ry, bx, 0.1, bz, 1.6, 0.25, 0.3, C(0x5b4330)); }
       if (r() < 0.6) for (let i = 0; i < 4; i++) lbox(props, x, y, z, ry, (i - 1.5) * 0.7, 1.6, -d / 2 + 0.15, 0.5, 0.7, 0.05, C([0xe0402a, 0xf2c230, 0x2f6fd6, 0x2f9a52][i]));   // snack packets on the back wall
       goods(x, y, z, ry, w, d, hh, r, true);
       const c = Math.cos(ry), s = Math.sin(ry), fx = x + (d / 2 + 0.05) * s, fz = z + (d / 2 + 0.05) * c;
@@ -491,7 +491,7 @@ window.TriundPlaces = {
       const wood = C(0x6e4b2e);
       lbox(props, x, y, z, ry, 0, 0.45, 0, 1.8, 0.08, 0.45, wood); lbox(props, x, y, z, ry, 0, 0.8, -0.22, 1.8, 0.3, 0.06, wood);
       for (const sx of [-0.75, 0.75]) lbox(props, x, y, z, ry, sx, 0.15, 0, 0.1, 0.7, 0.4, C(0x55595e));
-      benches.push({ x, z, ry }); bump('bench');
+      benches.push({ x, z, ry }); colRect(x, z, ry, 0, 0, 1.8, 0.45); bump('bench');
     }
     function toilet(x, y, z, ry) {
       lbox(props, x, y, z, ry, 0, 0.9, 0, 2.2, 2.4, 2, C(0xdcd6c8)); lbox(props, x, y, z, ry, 0, 2.2, 0, 2.6, 0.12, 2.4, C(0x3c5f95));
