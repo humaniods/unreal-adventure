@@ -8,7 +8,7 @@
    down and the view goes back to the player.
    Interface: start(kind, opts), update(dt, speed), pose(), frame(camera, dt), finish(abort), busy. */
 window.TriundHands = {
-  create({ THREE, scene, getChar, H }) {
+  create({ THREE, scene, getChar, H, clearView }) {
     const v3 = () => new THREE.Vector3(), q4 = () => new THREE.Quaternion();
     const A = v3(), Qa = q4(), Qb = q4(), Qp = q4();
     let job = null, bones = null, boneChar = null;
@@ -177,6 +177,7 @@ window.TriundHands = {
       const ry = ch.root.rotation.y + 0.6 + Math.sin(orbit) * 0.2, f = v3().set(Math.sin(ry), 0, Math.cos(ry));
       const look = v3().copy(T.chest).addScaledVector(T.up, 0.02);
       const eye = v3().copy(look).addScaledVector(f, 1.5).addScaledVector(T.up, 0.15);
+      if (clearView) { const k = clearView(look.x, look.z, eye.x, eye.z); eye.x = look.x + (eye.x - look.x) * k; eye.z = look.z + (eye.z - look.z) * k; }   // never through a wall
       if (H) eye.y = Math.max(eye.y, H(eye.x, eye.z) + 0.5);
       camera.position.copy(eye); camera.lookAt(look);
       return true;

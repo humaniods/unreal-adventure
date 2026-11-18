@@ -7,21 +7,21 @@ window.TriundCollide = {
   create() {
     const CELL = 16, grid = new Map(), polys = [];
     const key = (i, j) => i * 73856093 ^ j * 19349663;
-    function add(pts) {            // pts: [[x, z], ...], any winding, convex or not
+    function add(pts, low) {       // pts: [[x, z], ...], any winding, convex or not; low: knee-high (benches, tables)
       if (!pts || pts.length < 3) return;
       let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
       for (const p of pts) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); }
-      const poly = { pts, x0, x1, z0, z1 }, id = polys.push(poly) - 1;
+      const poly = { pts, x0, x1, z0, z1, low: !!low }, id = polys.push(poly) - 1;
       for (let i = Math.floor((x0 - 1) / CELL); i <= Math.floor((x1 + 1) / CELL); i++)
         for (let j = Math.floor((z0 - 1) / CELL); j <= Math.floor((z1 + 1) / CELL); j++) {
           const k = key(i, j); let l = grid.get(k); if (!l) grid.set(k, l = []); l.push(id);
         }
     }
     // rectangle centred at (x, z), rotated by ry (three.js Y rotation), w along local x, d along local z
-    function rect(x, z, ry, w, d) {
+    function rect(x, z, ry, w, d, low) {
       const c = Math.cos(ry), s = Math.sin(ry), out = [];
       for (const [lx, lz] of [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]]) out.push([x + lx * c + lz * s, z - lx * s + lz * c]);
-      add(out);
+      add(out, low);
     }
     function inside(pts, x, z) {
       let c = false;
@@ -60,6 +60,7 @@ window.TriundCollide = {
       }
       return { x, z };
     }
-    return { add, rect, resolve, inside: (x, z) => { const l = grid.get(key(Math.floor(x / CELL), Math.floor(z / CELL))) || []; return l.some(id => inside(polys[id].pts, x, z)); }, get count() { return polys.length; } };
+    // inside(x, z, tallOnly): tallOnly skips knee-high things a camera can look over
+    return { add, rect, resolve, inside: (x, z, tallOnly) => { const l = grid.get(key(Math.floor(x / CELL), Math.floor(z / CELL))) || []; return l.some(id => !(tallOnly && polys[id].low) && inside(polys[id].pts, x, z)); }, get count() { return polys.length; } };
   }
 };

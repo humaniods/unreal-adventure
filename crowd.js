@@ -164,6 +164,8 @@ window.TriundCrowd = {
     // centre with benches either side; the three big hand-built stalls have benches 4.6 m out; 'building' cafes have none
     for (const st of stops) {
       const sx = -st.tz, sz = st.tx, kind = st.kind || 'big';
+      // stalls built by places.js list their real benches and chairs
+      if (st.seats) { for (const q of st.seats) seatSpots.push({ x: q.x, z: q.z, ry: q.ry, h: q.h, used: false, stop: st }); continue; }
       if (kind === 'building') continue;
       const out = kind === 'stall' ? -0.1 : 4.6, side = kind === 'stall' ? 2.6 : 1.7;
       for (const sd of [-1, 1]) seatSpots.push({ x: st.x + sx * sd * side + st.tx * out, z: st.z + sz * sd * side + st.tz * out, ry: Math.atan2(st.tx, st.tz), used: false, stop: st });
@@ -359,6 +361,8 @@ window.TriundCrowd = {
         k.serveT = 0; k.task = { stop, mesh, target, onGive, phase: 'cook', t: cookSec, home: { x: k.x, z: k.z, yaw: k.yaw }, path: [] };
         if (mesh) mesh.visible = false; return true;
       },
+      // the player needs this seat: whoever sits there gets up and walks on
+      freeSeat(spot) { for (const a of agents) if (a.seat === spot) { a.seat = null; a.state = 'walk'; a.t = 60 + R() * 120; const p = trailAt(a.tr, a.s, 0); a.x = p.x; a.z = p.z; } spot.used = false; },
       busy(stop) { const i = stops.indexOf(stop); return i >= 0 && !!keepers[i].task; },
       update(dt, cam, P, camera) {
         if (camera) FR.setFromProjectionMatrix(PM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
