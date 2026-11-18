@@ -231,7 +231,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <!-- start -->
 <section class="screen" id="start">
   <div class="card">
-    <div class="eyebrow">ECP feel test · build 0.7</div>
+    <div class="eyebrow">ECP feel test · build 0.8</div>
     <h1>Triund Walk Test</h1>
     <p class="lede">The real Triund trails above McLeod Ganj, up to the meadow at 2,838 m facing the Dhauladhar range. Take the classic 5 km path from Gallu Devi temple through oak and deodar forest, past Magic View Cafe and up the switchbacks, or the steeper, quieter climb from Bhagsu past the waterfall, Shiva Cafe and Karthani. There is no health bar. Your breathing, your heartbeat and the smartwatch on your wrist tell you how your body is holding up.</p>
     <div class="field">
@@ -349,6 +349,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <script src="sound.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
+<script src="anim-util.js"></script>
 <script src="crowd.js"></script>
 <script>
 (function(){
@@ -364,7 +365,7 @@ if(!window.THREE){ $('startBtn').disabled=true; $('startBtn').textContent='3D li
 
 /* ================= tuning ================= */
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const DEFAULTS={speedScale:1.9,sprintMult:1.6,packKg:12,gradeCost:9,effortK:2.8,aerobicHR:135,drainK:0.0047,regenK:0.05,
+const DEFAULTS={tuneV:2,speedScale:1.35,sprintMult:1.6,packKg:12,gradeCost:9,effortK:2.8,aerobicHR:135,drainK:0.0047,regenK:0.05,
   hrRise:6,hrFall:14,breathHR:162,breathPeriod:4,maxGrade:0.75,assist:false,headBob:!reduced};
 const TUNE=[
   ['packKg','Bag weight (kg)',4,20,1],
@@ -382,7 +383,8 @@ const TUNE=[
   ['maxGrade','Max climbable grade',0.5,1.2,0.05]
 ];
 let T=Object.assign({},DEFAULTS);
-try{const s=JSON.parse(localStorage.getItem('triund-tune')||'null'); if(s&&typeof s==='object') Object.assign(T,s);}catch(e){}
+// saved tuning from before build 0.8 carries the old 1.9x walk speed (a jogging pace); drop that one value
+try{const s=JSON.parse(localStorage.getItem('triund-tune')||'null'); if(s&&typeof s==='object'){if(s.tuneV!==2)delete s.speedScale;s.tuneV=2;Object.assign(T,s);}}catch(e){}
 function saveTune(){try{localStorage.setItem('triund-tune',JSON.stringify(T));}catch(e){}}
 const loadMult=()=>T.packKg<=8?1:1+0.1*(T.packKg-8);          // D-11: ×2.0 at 18 kg
 const loadSpeed=()=>1-0.012*Math.max(0,T.packKg-8);
@@ -840,7 +842,7 @@ function resetPlayer(){
   ACT=startFrom==='shiva'?ST:GT;
   START_S=startFrom==='magic'?stopOf('magic').s+4:0;
   const sp=pointAtS(START_S),sd=dirAtS(START_S+12,24);
-  P={x:sp.x,z:sp.z,y:0,yaw:Math.atan2(-sd.dx,-sd.dz),pitch:-0.04,v:0,dirx:0,dirz:-1,stamina:100,hr:74,hyd:100,temp:36.7,water:4,chai:0,chaiWarm:0,
+  P={x:sp.x,z:sp.z,y:0,yaw:Math.atan2(-sd.dx,-sd.dz),pitch:-0.04,v:0,vx:0,vz:0,dirx:0,dirz:-1,stamina:100,hr:74,hyd:100,temp:36.7,water:4,chai:0,chaiWarm:0,
      exh:false,exhT:0,still:0,restCounted:false,rest:0,stepPh:0,lastStep:0,brPh:0,crouch:0,breath:false,brT:0,lung:0,G:0,sync:1,
      syncAcc:0,syncN:0,breathEvents:0,exhCount:0,offTrail:0,offWarnT:0,moveTime:0,time:0,maxHR:0,hrSum:0,hrN:0,s:START_S,maxS:START_S,trailD:0,
      zone:1,lowHydWarned:false,wantMore:null,firstPerson:true,blockedT:0,effort:0,grade:0,sprinting:false};
@@ -1044,17 +1046,27 @@ function update(dt){
   let wx=-sY*iz+cY*ix,wz=-cY*iz-sY*ix;
   const wantSprint=keys.ShiftLeft||keys.ShiftRight||touchSprint;
   P.sprinting=wantSprint&&!P.breath&&!P.exh&&P.stamina>8;
-  const h0=P.y;let target=0;
+  // movement keeps momentum: the velocity vector eases toward the wanted one (a body with a 12 kg pack does not
+  // turn or stop on the spot), quicker when stopping than when setting off
+  const h0=P.y;let target=0,tx=0,tz=0;
   if(mag>0.05&&!P.exh){
-    const wl=Math.hypot(wx,wz);wx/=wl;wz/=wl;P.dirx=wx;P.dirz=wz;
+    const wl=Math.hypot(wx,wz);wx/=wl;wz/=wl;
     const g=H(P.x+wx,P.z+wz)-h0;
     if(g>T.maxGrade){target=0;P.blockedT+=dt;if(P.blockedT>0.6){say('Too steep to climb straight up. Stay on the trail.');P.blockedT=-4;}}
     else{target=tobler(g)*T.speedScale*mag*(P.sprinting?T.sprintMult:1)*(P.stamina<25?0.72:1)*loadSpeed();}
+    tx=wx*target;tz=wz*target;
   }
-  P.v+=(target-P.v)*(1-Math.exp(-dt*5));
-  if(P.v>0.01){P.x=clamp(P.x+P.dirx*P.v*dt,BOX.e0+60,BOX.e1-60);P.z=clamp(P.z+P.dirz*P.v*dt,-(BOX.n1-60),-(BOX.n0+60));}
+  const kAcc=1-Math.exp(-dt*(target>P.v?3.2:6));
+  P.vx=(P.vx||0)+(tx-(P.vx||0))*kAcc;P.vz=(P.vz||0)+(tz-(P.vz||0))*kAcc;
+  P.v=Math.hypot(P.vx,P.vz);
+  if(P.v>0.02){P.dirx=P.vx/P.v;P.dirz=P.vz/P.v;}
+  if(P.v>0.01){P.x=clamp(P.x+P.vx*dt,BOX.e0+60,BOX.e1-60);P.z=clamp(P.z+P.vz*dt,-(BOX.n1-60),-(BOX.n0+60));}
   P.y=H(P.x,P.z);
   const grade=P.v>0.05?(H(P.x+P.dirx,P.z+P.dirz)-P.y):0;P.grade=grade;
+  // the eye follows the ground through a critically damped spring: steps up and down read as steps, and the
+  // small bumps of the height field no longer jolt the camera
+  if(P.eyeY===undefined||Math.abs(P.eyeY-P.y)>3){P.eyeY=P.y;P.eyeV=0;}
+  {const w=13,n=dt>0.02?3:1,h=dt/n;for(let i=0;i<n;i++){P.eyeV+=(w*w*(P.y-P.eyeY)-2*w*P.eyeV)*h;P.eyeY+=P.eyeV*h;}}
 
   // physiology
   const L=loadMult(),spdR=P.v/1.4;
@@ -1110,17 +1122,25 @@ function update(dt){
 
   // camera
   const bob=T.headBob?1:0.2;
-  if(P.v>0.1){P.stepPh+=dt*P.v/0.75;const st=Math.floor(P.stepPh);if(st!==P.lastStep){P.lastStep=st;footstep(P.v);}}
+  // step length grows with speed and shortens on steep climbs (short steps on the switchbacks)
+  const stepL=clamp(0.38+0.3*P.v,0.45,0.95)*(1-Math.min(0.35,Math.max(grade,0)*1.2));
+  if(P.v>0.1){P.stepPh+=dt*P.v/stepL;const st=Math.floor(P.stepPh);if(st!==P.lastStep){P.lastStep=st;footstep(P.v);}}
   const rate=12+30*clamp((P.hr-80)/100,0,1);P.brPh+=dt*rate/60;
   P.crouch+=((P.exh?1:0)-P.crouch)*(1-Math.exp(-dt*3));
-  const bobY=(Math.abs(Math.sin(P.stepPh*Math.PI))-0.5)*(0.035+0.045*hrN)*Math.min(P.v,1.6)*bob;
+  // gait: the head is lowest at heel strike and highest mid-stance (one smooth cycle per step) and sways toward
+  // the standing leg (one cycle per stride); amplitude grows with speed and with how hard the body works
+  const gaitA=clamp(P.v/1.4,0,1.2)*bob;
+  const bobY=-Math.cos(P.stepPh*Math.PI*2)*(0.016+0.02*hrN)*gaitA;
+  const swayX=Math.sin(P.stepPh*Math.PI)*0.022*gaitA;
   const sway=Math.sin(P.brPh*Math.PI*2)*(0.004+0.022*hrN)*bob;
   if(PCH){PCH.ch.root.visible=!P.firstPerson;if(!P.firstPerson){PCH.ch.root.position.set(P.x,P.y,P.z);PCH.ch.root.rotation.y=Math.atan2(P.dirx,P.dirz);
-    PCH.play(P.crouch>0.5?'Idle':P.v>1.9?'Jog_Fwd':P.v>0.12?'Walk':'Idle',P.v>1.9?P.v/3.2:P.v>0.12?Math.max(0.5,P.v/1.15):1);PCH.ch.mixer.update(dt);}}
+    PCH.play(P.crouch>0.5?'Idle':P.sprinting&&P.v>2.4?'Jog_Fwd':P.v>0.12?'Walk':'Idle',P.v>0.12?P.v:1);PCH.ch.mixer.update(dt);}}
   if(P.firstPerson){
     avatar.visible=false;
-    camera.position.set(P.x,P.y+1.65-0.6*P.crouch+bobY+sway,P.z);
-    camera.rotation.set(P.pitch-0.55*P.crouch+sway*0.4,P.yaw,Math.sin(P.stepPh*Math.PI)*0.005*bob*Math.min(P.v,1.5));
+    // lean into a climb: the head sits a little ahead of the feet on steep ground
+    const lean=0.12*clamp(grade*2.5,0,1)*clamp(P.v/1.2,0,1);
+    camera.position.set(P.x+cY*swayX-sY*lean,P.eyeY+1.65-0.6*P.crouch+bobY+sway,P.z-sY*swayX-cY*lean);
+    camera.rotation.set(P.pitch-0.55*P.crouch+sway*0.4,P.yaw,Math.sin(P.stepPh*Math.PI)*0.0035*gaitA);
   }else{
     avatar.visible=!PCH;avatar.position.set(P.x,P.y-0.25*P.crouch,P.z);avatar.rotation.y=Math.atan2(-P.dirx,-P.dirz);avatar.rotation.x=0.5*P.crouch;
     pack.scale.set(1,0.75+T.packKg*0.025,1+T.packKg*0.02);

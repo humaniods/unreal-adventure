@@ -179,11 +179,11 @@ window.TriundFauna = {
       if (m.s < 20) { m.s = 20; m.dir = 1; }
       m.members.forEach((a, i) => {
         const s = m.s - m.dir * (i * 3.0), p = trailAt(m.tr, s, 0.9 * m.dir);
-        a.g.position.set(p.x, H(p.x, p.z), p.z); a.g.rotation.y = yawOf(p.dx * m.dir, p.dz * m.dir);
+        a.g.position.set(p.x, H(p.x, p.z), p.z); a.g.rotation.y = lerpAng(a.g.rotation.y, yawOf(p.dx * m.dir, p.dz * m.dir), Math.min(1, dt * 4));
         animQuad(a, dt, v, { t: time + i, wag: 1.5, look: Math.sin(time * 0.3 + i) * 0.15 });
       });
       const hs = m.s - m.dir * (m.members.length * 3.0 + 1.0), hp = trailAt(m.tr, hs, 0.6 * m.dir);
-      m.herder.g.position.set(hp.x, H(hp.x, hp.z), hp.z); m.herder.g.rotation.y = yawOf(hp.dx * m.dir, hp.dz * m.dir) + Math.PI;
+      m.herder.g.position.set(hp.x, H(hp.x, hp.z), hp.z); m.herder.g.rotation.y = lerpAng(m.herder.g.rotation.y, yawOf(hp.dx * m.dir, hp.dz * m.dir) + Math.PI, Math.min(1, dt * 4));
       animHuman(m.herder, dt, v);
       m.moving = v > 0.1;
     }
@@ -302,14 +302,21 @@ window.TriundFauna = {
       holder.add(spin);
       const mixer = new THREE.AnimationMixer(root), actions = {};
       for (const cl of gltf.animations) actions[cl.name] = mixer.clipAction(cl);
-      return { holder, mixer, actions, cur: null };
+      // measured stride speeds (m/s at this size) so hooves and paws do not slide; cached per model and clip
+      const nat = name => {
+        const c = gltf.animations.find(a => a.name === name); if (!c || !window.TriundAnim) return 0;
+        const C = gltf.userData.nat || (gltf.userData.nat = {});
+        if (C[name] === undefined) C[name] = window.TriundAnim.clipSpeed(THREE, gltf.scene, c);
+        return C[name] * sc;
+      };
+      return { holder, mixer, actions, cur: null, natWalk: nat('Walk'), natRun: nat('Gallop') };
     }
     function animModel(a, dt, speed, opt) {
       const M = a.model, A = M.actions;
       let n = speed > M.runAt ? 'Gallop' : speed > 0.08 ? 'Walk' : opt.graze && A.Eating ? 'Eating' : opt.sit > 0.5 ? (A.Idle_2_HeadLow ? 'Idle_2_HeadLow' : A.Idle_Headlow ? 'Idle_Headlow' : 'Idle_2') : 'Idle';
       const act = A[n] || A.Idle;
       if (M.cur !== act) { act.reset().play(); if (M.cur) act.crossFadeFrom(M.cur, 0.3, false); M.cur = act; }
-      act.timeScale = n === 'Walk' ? Math.max(0.4, speed / M.walkRef) : n === 'Gallop' ? Math.max(0.6, speed / M.runRef) : 1;
+      act.timeScale = n === 'Walk' ? Math.min(2.4, Math.max(0.4, speed / M.walkRef)) : n === 'Gallop' ? Math.min(1.8, Math.max(0.6, speed / M.runRef)) : 1;
       if (a.g.visible) M.mixer.update(dt);
     }
     const tint = (m, map) => { const k = Object.keys(map).find(k => m.name === k || m.name.startsWith(k + '.')); if (k) m.color.copy(lin(map[k])); };
@@ -319,13 +326,13 @@ window.TriundFauna = {
       dogs.forEach((d, i) => {
         const [kind, cols] = DOGMODEL[i % DOGMODEL.length]; if (!G[kind]) return;
         const r = modelRig(G[kind], 0.62, m => tint(m, cols));
-        Object.assign(r, { walkRef: 1.3, runRef: 4.2, runAt: 2.4 });
+        Object.assign(r, { walkRef: r.natWalk || 1.3, runRef: r.natRun || 4.2, runAt: 2.4 });
         d.a.body.visible = false; d.a.g.add(r.holder); d.a.model = r;
       });
       mules.forEach((ms, j) => ms.members.forEach((a, i) => {
         const kind = j === 0 ? 'donkey' : 'horse'; if (!G[kind]) return;
         const r = modelRig(G[kind], kind === 'donkey' ? 1.45 : 1.6, m => { if (kind === 'donkey' && /^Main$/.test(m.name)) m.color.copy(lin([0x4a3b30, 0x5b4636, 0x6e5845][i % 3])); });
-        Object.assign(r, { walkRef: 1.0, runRef: 3.5, runAt: 3 });
+        Object.assign(r, { walkRef: r.natWalk || 1.0, runRef: r.natRun || 3.5, runAt: 3 });
         // loads were placed for the old rig (back at ~1.3 m); the donkey's back is ~0.95 m, the pony's ~1.1 m
         for (const l of a.loads || []) { l.position.y -= kind === 'donkey' ? 0.36 : 0.2; l.scale.multiplyScalar(0.85); r.holder.add(l); }
         a.body.visible = false; a.g.add(r.holder); a.model = r;
@@ -333,7 +340,7 @@ window.TriundFauna = {
       herd.forEach((c, i) => {
         const buffalo = c.a.p.col === 0x262422, kind = buffalo ? 'bull' : 'cow'; if (!G[kind]) return;
         const r = modelRig(G[kind], buffalo ? 1.55 : 1.5, buffalo ? m => tint(m, { Main: 0x1e1d1c, Main_Light: 0x2a2928 }) : m => tint(m, { Main: [0x8a6a4a, 0xd9cfbf, 0x5b4636, 0x6a5a4a][i % 4] }));
-        Object.assign(r, { walkRef: 0.9, runRef: 3, runAt: 3 });
+        Object.assign(r, { walkRef: r.natWalk || 0.9, runRef: r.natRun || 3, runAt: 3 });
         c.a.body.visible = false; c.a.g.add(r.holder); c.a.model = r;
       });
     }

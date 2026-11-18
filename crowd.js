@@ -17,6 +17,17 @@ window.TriundCrowd = {
     const [gm, gf, gh] = await Promise.all([load(base + 'hiker_m.gltf.json'), load(base + 'hiker_f.gltf.json'), load(base + 'hair.gltf.json')]);
     window.__crowdStage = 'loaded';
     const HAIR = {}; gh.scene.traverse(n => { if (n.isMesh) HAIR[n.name.replace(/_\d+$/, '')] = n; });
+    // ground speed each locomotion clip was authored for (m/s at scale 1): playback is scaled to the real speed so
+    // planted feet do not slide. [measured, fallback, min, max playback rate]
+    const LOCO = {};
+    // [clip, fallback, plausible range, playback min, max]. The jog's stance is too short to measure reliably,
+    // so a reading outside a real jogging pace falls back to 3.4 m/s.
+    for (const [name, fb, vmin, vmax, lo, hi] of [['Walk', 1.0, 0.6, 1.8, 0.45, 2.2], ['Jog_Fwd', 3.4, 2.2, 4.5, 0.6, 1.4]]) {
+      const c = gm.animations.find(a => a.name === name);
+      const v = window.TriundAnim && c ? window.TriundAnim.clipSpeed(THREE, gm.scene, c) : 0;
+      LOCO[name] = { v: v >= vmin && v <= vmax ? v : fb, lo, hi };
+    }
+    window.__loco = LOCO;
 
     /* ---------- clothes from bone weights: cloth = (skin, top, bottom, shoes) ---------- */
     function clothAttr(mesh) {
@@ -133,10 +144,12 @@ window.TriundCrowd = {
         (lk.head !== 'hair' && k === 'Hair_Long' && lk.sex === 'f');          // long hair shows under a beanie
       ch.root.scale.setScalar(lk.scale);
     }
+    // speed: ground speed in m/s for locomotion clips (Walk, Jog_Fwd), playback rate for everything else
     function play(ch, name, speed) {
       const a = ch.actions[name] || ch.actions.Idle;
       if (ch.cur !== a) { a.reset().play(); if (ch.cur) a.crossFadeFrom(ch.cur, 0.35, false); ch.cur = a; }
-      a.timeScale = speed || 1;
+      const L = LOCO[name];
+      a.timeScale = L ? Math.min(L.hi, Math.max(L.lo, (speed || 0) / (L.v * ch.root.scale.x))) : (speed || 1);
     }
 
     /* ---------- trail helpers ---------- */
@@ -197,7 +210,7 @@ window.TriundCrowd = {
         const vt = a.vWalk * (a.dir > 0 ? 1 - Math.min(0.5, slope * 0.9) : 1 - Math.min(0.3, slope * 0.4));
         a.v += (vt - a.v) * Math.min(1, dt * 2);
         a.s += a.dir * a.v * dt;
-        a.anim = 'Walk'; a.animSpeed = a.v / 1.15;
+        a.anim = 'Walk'; a.animSpeed = a.v;
         // tea stall on the way?
         if (a.t < 0) {
           const sp = seatSpots.find(q => !q.used && q.stop.trail === a.tr.id && Math.abs(q.stop.s - a.s) < 12);
@@ -210,18 +223,18 @@ window.TriundCrowd = {
         }
         if (a.s <= 3 && a.dir < 0) { a.dir = 1; a.vWalk = 0.55 + R() * 0.45; a.look = look(a.look.sex); }   // a new hiker arrives at the trailhead
       } else if (a.state === 'rest') {
-        a.v = 0; a.anim = 'Idle'; a.animSpeed = 1;
+        a.v = 0; a.anim = 'Idle'; a.animSpeed = 1;    // (the walk crossfade covers the stop)
         if (a.t < 0) { a.state = 'walk'; a.t = 60 + R() * 200; }
       } else if (a.state === 'toSeat') {
         const ex = a.seat.x - a.x, ez = a.seat.z - a.z, el = Math.hypot(ex, ez);
         if (el < 0.25) { a.state = 'sit'; a.yaw = a.seat.ry; }
-        else { a.x += ex / el * 0.9 * dt; a.z += ez / el * 0.9 * dt; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = 0.8; }
+        else { a.x += ex / el * 0.9 * dt; a.z += ez / el * 0.9 * dt; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = 0.9; }
       } else if (a.state === 'sit') {
         a.x = a.seat.x; a.z = a.seat.z; a.yaw = a.seat.ry; a.anim = R() < 0.002 ? (a.anim === 'Sitting_Idle' ? 'Sitting_Talking' : 'Sitting_Idle') : (a.anim.startsWith('Sitting') ? a.anim : 'Sitting_Idle'); a.animSpeed = 1;
         if (a.t < 0) { a.seat.used = false; a.seat = null; a.state = 'walk'; a.t = 80 + R() * 200; const p = trailAt(a.tr, a.s, 0); a.x = p.x; a.z = p.z; }
       } else if (a.state === 'top') {
         const ex = a.tx - a.x, ez = a.tz - a.z, el = Math.hypot(ex, ez);
-        if (el > 0.4) { a.x += ex / el * 0.8 * dt; a.z += ez / el * 0.8 * dt; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = 0.75; }
+        if (el > 0.4) { a.x += ex / el * 0.8 * dt; a.z += ez / el * 0.8 * dt; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = 0.8; }
         else { a.anim = a.idleAnim || (a.idleAnim = R() < 0.4 ? 'Idle_Talking' : 'Idle'); a.animSpeed = 1; if (R() < dt * 0.02) a.yaw += (R() - 0.5) * 2; }
         if (a.t < 0) { a.state = 'walk'; a.dir = -1; a.s = a.tr.total - 6; a.vWalk = 0.85 + R() * 0.45; a.idleAnim = null; const i = topSpots.findIndex(p => p.a === a); if (i >= 0) topSpots.splice(i, 1); }
       }
@@ -296,9 +309,12 @@ window.TriundCrowd = {
         for (const k of keepers) { const dp = Math.hypot(P.x - k.x, P.z - k.z); k.anim = dp < 7 ? 'Idle_Talking' : (k.t = (k.t || 0) - dt) < 0 ? (k.t = 8 + R() * 10, R() < 0.3 ? 'Interact' : 'Idle') : k.anim; if (dp < 7) k.yaw = Math.atan2(P.x - k.x, P.z - k.z); }
         assignT -= dt; if (assignT <= 0) { assignT = 0.4; assign(cam); }
         let n = 0;
+        // people turn through switchbacks instead of snapping to the new heading (about 0.25 s)
+        const turnK = 1 - Math.exp(-dt * 7);
         for (const p of everyone) {
+          if (p.ryaw === undefined) p.ryaw = p.yaw; else p.ryaw += window.TriundAnim.angDiff(p.ryaw, p.yaw) * turnK;
           if (p.ch) {
-            const ch = p.ch; ch.root.position.set(p.x, p.y, p.z); ch.root.rotation.y = p.yaw;
+            const ch = p.ch; ch.root.position.set(p.x, p.y, p.z); ch.root.rotation.y = p.ryaw;
             play(ch, p.anim, p.animSpeed);
             // skin animation is CPU work per bone: skip people out of view, and step distant ones at a lower rate
             ch.animAcc += dt;
@@ -310,7 +326,7 @@ window.TriundCrowd = {
           const d2 = (p.x - cam.x) ** 2 + (p.z - cam.z) ** 2; if (d2 > 700 * 700) continue;
           const bob = p.anim === 'Walk' ? Math.abs(Math.sin((p.s || 0) * 2.6)) * 0.04 : 0;
           const sit = p.anim && p.anim.startsWith('Sitting') ? 0.45 : 1;
-          M4.compose(V.set(p.x, p.y + bob - (1 - sit) * 0.5, p.z), Q.setFromAxisAngle(UP, p.yaw), S1.set(p.look.scale, p.look.scale * sit, p.look.scale));
+          M4.compose(V.set(p.x, p.y + bob - (1 - sit) * 0.5, p.z), Q.setFromAxisAngle(UP, p.ryaw), S1.set(p.look.scale, p.look.scale * sit, p.look.scale));
           proxy.setMatrixAt(n, M4); proxy.setColorAt(n, C.copy(lin(p.look.top))); n++;
         }
         proxy.count = n; proxy.instanceMatrix.needsUpdate = true; if (proxy.instanceColor) proxy.instanceColor.needsUpdate = true;
