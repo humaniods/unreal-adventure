@@ -48,6 +48,12 @@ window.TriundSky = {
 
     return {
       sunDir, sun, hemi, sky,
+      // season.js: overcast sky and grey haze for the monsoon
+      setWeather(w) {
+        if (sky) { const u = sky.material.uniforms; u.turbidity.value = w.turbidity; u.rayleigh.value = w.rayleigh; u.mieCoefficient.value = w.mie; }
+        hazeBase.set(w.haze).convertSRGBToLinear(); hazeSun.set(w.hazeSun).convertSRGBToLinear(); scene.fog.density = w.fog;
+        sun.intensity = w.sun; hemi.intensity = w.hemi; hemi.color.set(w.sky).convertSRGBToLinear(); renderer.toneMappingExposure = w.exposure;
+      },
       update(camera) {
         if (sky) sky.position.copy(camera.position);
         camera.getWorldDirection(v);

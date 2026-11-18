@@ -231,7 +231,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <!-- start -->
 <section class="screen" id="start">
   <div class="card">
-    <div class="eyebrow">ECP feel test · build 0.8</div>
+    <div class="eyebrow">ECP feel test · build 0.9</div>
     <h1>Triund Walk Test</h1>
     <p class="lede">The real Triund trails above McLeod Ganj, up to the meadow at 2,838 m facing the Dhauladhar range. Take the classic 5 km path from Gallu Devi temple through oak and deodar forest, past Magic View Cafe and up the switchbacks, or the steeper, quieter climb from Bhagsu past the waterfall, Shiva Cafe and Karthani. There is no health bar. Your breathing, your heartbeat and the smartwatch on your wrist tell you how your body is holding up.</p>
     <div class="field">
@@ -255,6 +255,13 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
       <div class="seg two" role="group" aria-labelledby="gfxLabel" id="gfxSeg">
         <button type="button" data-q="high" aria-pressed="true"><b>High</b><span>Shadows, dense grass</span></button>
         <button type="button" data-q="low" aria-pressed="false"><b>Low</b><span>For older laptops</span></button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="label" id="seasonLabel">Season</div>
+      <div class="seg two" role="group" aria-labelledby="seasonLabel" id="seasonSeg">
+        <button type="button" data-season="autumn" aria-pressed="true"><b>Autumn</b><span>Clear October morning</span></button>
+        <button type="button" data-season="monsoon" aria-pressed="false"><b>Monsoon</b><span>Rain, low cloud, wet trail</span></button>
       </div>
       <p class="ghint">Resolution adjusts itself to hold 60 fps. On a laptop, plug in and set the power mode to Balanced or Performance: power-saver mode holds the graphics chip at a fraction of its speed.</p>
     </div>
@@ -341,6 +348,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <script src="quality.js"></script>
 <script src="sky.js"></script>
 <script src="post.js"></script>
+<script src="season.js"></script>
 <script src="terrain-material.js"></script>
 <script src="flora.js"></script>
 <script src="steps.js"></script>
@@ -599,6 +607,13 @@ const satReady=Promise.race([
   }),
   new Promise(res=>setTimeout(()=>{SAT.failed=SAT.failed||!SAT.px;res();},20000))]);
 
+// season (autumn / monsoon): sky, haze, wet ground, rain, sound (season.js)
+if(window.TriundSeason&&QS.get('season'))window.TriundSeason.set(QS.get('season'));
+const SEASON=window.TriundSeason?window.TriundSeason.create({THREE,scene,SKY,terrainMat,post:POST}):null;
+function syncSeason(){const v=window.TriundSeason?window.TriundSeason.get():'autumn';document.querySelectorAll('#seasonSeg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.season===v)));}
+$('seasonSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!window.TriundSeason)return;window.TriundSeason.set(b.dataset.season);if(SEASON)SEASON.apply();syncSeason();});
+syncSeason();
+
 /* ---- play-area terrain: 64 m tiles, 2 m mesh along the trails, coarser further away ----
    tiles are grouped into 512 m chunks (one mesh each) so the camera frustum culls what is behind the player */
 const nearPad=(x,z)=>PADS.some(p=>Math.hypot(x-p.x,z-p.z)<p.r1+2);
@@ -699,6 +714,7 @@ function buildFlora(){
     trailD:(x,z)=>{trailQ(x,z);return TQ.d;},
     randomTrailPoint:R=>{const t=R()*(GT.total+ST.total);return t<GT.total?GT.pointAtS(t):ST.pointAtS(t-GT.total);},
     accept:(x,z)=>inBox(x,z)&&!nearPad(x,z)&&!(PLACES&&PLACES.blocked(x,z))});
+  if(SEASON)SEASON.setFlora(FLORA);
 }
 // real buildings, temples, stalls, camps, waterfalls and streams from OSM + Microsoft footprints (build.py)
 function buildPlaces(){
@@ -900,6 +916,7 @@ function initAudio(){
     breathGain=AC.createGain();breathGain.gain.value=0;b.connect(breathBP);breathBP.connect(breathGain);breathGain.connect(master);b.start(0,0.7);
     if(window.TriundSound){const pl=TD.places||{pois:[],streams:[]};
       SOUND=window.TriundSound.init({AC,master,noise:noiseBuf,streams:pl.streams,falls:pl.pois.filter(q=>q.kind==='waterfall').map(q=>[q.e,-q.n]),temples:[[BHT.x,BHT.z]]});}
+    if(SEASON)SEASON.setAudio(AC,master,noiseBuf);
   }catch(e){AC=null;}
 }
 function env(g,t,peak,att,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(0.0002,peak),t+att);g.gain.exponentialRampToValueAtTime(0.0001,t+att+dec);}
@@ -1085,7 +1102,7 @@ function update(dt){
     const wl=Math.hypot(wx,wz);wx/=wl;wz/=wl;
     const g=H(P.x+wx,P.z+wz)-h0;
     if(g>T.maxGrade){target=0;P.blockedT+=dt;if(P.blockedT>0.6){say('Too steep to climb straight up. Stay on the trail.');P.blockedT=-4;}}
-    else{target=tobler(g)*T.speedScale*mag*(P.sprinting?T.sprintMult:1)*(P.stamina<25?0.72:1)*loadSpeed();}
+    else{target=tobler(g)*T.speedScale*mag*(P.sprinting?T.sprintMult:1)*(P.stamina<25?0.72:1)*loadSpeed()*(SEASON?SEASON.speed:1);}   // wet trail: a little slower
     tx=wx*target;tz=wz*target;
   }
   const kAcc=1-Math.exp(-dt*(target>P.v?3.2:6));
@@ -1220,7 +1237,7 @@ function hudTick(dt){
   $('rClimb').textContent=Math.max(0,Math.round(ACT.topAlt-P.y))+' m';
   const nx=STOPS.find(st=>st.trail===ACT.id&&st.s>P.s+8);$('rNext').textContent=nx?nx.short+' '+fd(nx.s-P.s):'Top';
   $('bEnergy').textContent=Math.round(P.stamina)+'%';$('bSpo').textContent=Math.round(97-Math.max(0,P.y-2000)*0.004-(P.hr>160?2:0))+'%';
-  $('bBag').textContent=T.packKg+' kg';$('bAmb').textContent=Math.round(9-(P.y-2100)*0.0065)+'°C';
+  $('bBag').textContent=T.packKg+' kg';$('bAmb').textContent=Math.round((window.TriundSeason&&window.TriundSeason.get()==='monsoon'?17:9)-(P.y-2100)*0.0065)+'°C';
   if(!$('debug').hidden){
     $('debug').textContent='stamina  '+P.stamina.toFixed(1)+'\nHR       '+P.hr.toFixed(1)+'\neffort   '+P.effort.toFixed(2)+'\ngrade    '+(P.grade*100).toFixed(1)+'%\nspeed    '+P.v.toFixed(2)+' m/s'+(P.sprinting?' (sprint)':'')+
       '\nload×    '+loadMult().toFixed(2)+'\nhydr     '+P.hyd.toFixed(1)+'\ntemp     '+P.temp.toFixed(2)+'\nroute    '+ACT.id+'\ntrail s  '+P.s.toFixed(0)+' / '+ACT.total.toFixed(0)+'\noff-trail '+P.trailD.toFixed(1)+' m\nalt      '+P.y.toFixed(1)+'\nbreath   '+(P.breath?('on sync '+(P.sync*100|0)+'%'):'off')+'\nfps      '+fps.toFixed(0)+'  ('+(1000/Math.max(fps,1)).toFixed(1)+' ms)\ndraws    '+RI.calls+'  tris '+(RI.triangles/1000).toFixed(0)+'k\ngraphics '+QL.get()+(SAT.px?'':'  (imagery missing)');
@@ -1367,7 +1384,7 @@ function frame(now){
   else{const fx=state==='menu'?camera.position:P;followSun(fx.x,state==='menu'?H(fx.x,fx.z):P.y,fx.z);}
   pt('player',t0);
   t0=performance.now();SKY.update(camera);if(FLORA)FLORA.update(dt,camera.position,now/1000);if(STEPS)STEPS.update(camera.position);pt('flora',t0);
-  t0=performance.now();if(PLACES)PLACES.update(dt,camera.position,now/1000);if(ATMOS)ATMOS.update(dt,camera.position,now/1000);pt('places+atmos',t0);
+  t0=performance.now();if(PLACES)PLACES.update(dt,camera.position,now/1000);if(ATMOS)ATMOS.update(dt,camera.position,now/1000);if(SEASON)SEASON.update(dt,camera.position,now/1000);pt('places+atmos',t0);
   t0=performance.now();if(FAUNA)FAUNA.update(dt,camera.position,now/1000,P,ACT);pt('fauna',t0);
   t0=performance.now();if(CROWD){camera.updateMatrixWorld();CROWD.update(dt,camera.position,P,camera);}pt('crowd',t0);
   t0=performance.now();audioTick(dt);hudTick(dt);pt('hud+audio',t0);
