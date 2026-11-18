@@ -757,18 +757,48 @@ const avatar=new THREE.Group();let pack;const limbs={};
 })();
 // local (lx,lz) offset inside a rotated group -> world x,z
 const toWorld=(ox,oz,rot,lx,lz)=>({x:ox+lx*Math.cos(rot)+lz*Math.sin(rot),z:oz-lx*Math.sin(rot)+lz*Math.cos(rot)});
+// photo-textured surfaces for the hand-built stalls (textures come from places.js; plain colours if it failed)
+function photoMat(kind,color){const X=PLACES&&PLACES.tex;
+  if(!X)return lam(color);
+  const o={color:lin(color),roughness:0.92,metalness:0,vertexColors:false};
+  if(kind==='plaster'){o.map=X.plaster;o.normalMap=X.plasterN;o.normalScale=new THREE.Vector2(0.7,0.7);}
+  else if(kind==='tin'){o.map=X.tinMap;o.normalMap=X.tinN;o.roughness=0.55;o.metalness=0.35;}
+  else if(kind==='stone'){o.map=X.rock;o.normalMap=X.rockN;}
+  else if(kind==='wood'){o.map=X.wood;o.normalMap=X.woodN;}
+  // the places.js surface shader adds faded paint, grime and contact darkening (needs the gh attribute, see grounded())
+  if(PLACES.surfaceMat){const m=PLACES.surfaceMat('stall-'+kind,o);m.vertexColors=false;return m;}
+  return new THREE.MeshStandardMaterial(o);}
+// per-vertex height above the ground for every photo-material mesh in a placed group (contact darkening)
+function grounded(g){g.updateMatrixWorld(true);const v=new THREE.Vector3();
+  g.traverse(m=>{if(!m.isMesh)return;const P=m.geometry.attributes.position;if(m.geometry.attributes.gh)return;const a=new Float32Array(P.count);
+    for(let i=0;i<P.count;i++){v.fromBufferAttribute(P,i).applyMatrix4(m.matrixWorld);a[i]=v.y-H(v.x,v.z);}m.geometry.setAttribute('gh',new THREE.BufferAttribute(a,1));});}
+// box whose UVs are in metres (BoxGeometry maps every face 0..1), so photo textures keep their real scale
+function mbox(w,h,d,kind,color,tile){const g=new THREE.BoxGeometry(w,h,d),uv=g.attributes.uv,n=g.attributes.normal,t=tile||2;
+  for(let i=0;i<uv.count;i++){const ax=Math.abs(n.getX(i)),ay=Math.abs(n.getY(i));const su=ax>0.5?d:w,sv=ay>0.5?d:h;uv.setXY(i,uv.getX(i)*su/t,uv.getY(i)*sv/t);}
+  const m=new THREE.Mesh(g,photoMat(kind,color));m.castShadow=true;m.receiveShadow=true;return m;}
 function stall(st,wall,lines){
   const rot=Math.atan2(st.tz,-st.tx);   // the counter side (local -x) faces the trail
   const g=new THREE.Group();g.position.set(st.x,st.h,st.z);g.rotation.y=rot;
-  const walls=box(4.5,5,6,wall);walls.position.y=0.5;g.add(walls);
-  const trim=box(4.6,0.25,6.1,0xf2efe6);trim.position.y=3.05;g.add(trim);
-  const roof=box(5.6,0.12,7.2,0x8b9196);roof.position.set(0.2,3.4,0);roof.rotation.z=-0.16;g.add(roof);
-  const counter=box(1.0,1.0,3.2,0x6e4b2e);counter.position.set(-2.8,0.5,0);g.add(counter);
+  // dry-stone plinth (the ground slopes under every stall on the ridge), painted plaster walls, tin roof
+  const plinth=mbox(4.8,1.6,6.3,'stone',0x9a958c,1.6);plinth.position.y=-0.55;g.add(plinth);
+  const walls=mbox(4.5,3.0,6,'plaster',wall,2.4);walls.position.y=1.5;g.add(walls);
+  const trim=mbox(4.6,0.25,6.1,'plaster',0xf2efe6);trim.position.y=3.05;g.add(trim);
+  const door=box(0.06,2.0,1.0,0x2a1f18);door.position.set(2.27,1.0,1.6);g.add(door);
+  for(const z of [-1.8,0.9]){const w=box(0.06,0.9,1.0,0x1c2328);w.position.set(-2.27,1.9,z);g.add(w);}
+  const roof=mbox(5.6,0.12,7.2,'tin',[0x3f8a86,0x9a3b2c,0x56595e][Math.abs(st.x|0)%3],1.2);roof.position.set(0.2,3.4,0);roof.rotation.z=-0.16;g.add(roof);
+  const counter=mbox(1.0,1.0,3.2,'wood',0x9a7a5a,1.2);counter.position.set(-2.8,0.5,0);g.add(counter);
+  // blue tarp over the counter, sagging between its poles (the standard monsoon fix on every Triund stall)
+  {const tg=new THREE.PlaneGeometry(1.7,6.4,5,10),tp=tg.attributes.position;
+    for(let i=0;i<tp.count;i++){const u=tp.getX(i)/0.85,w=tp.getY(i)/3.2;tp.setZ(i,-0.16*(1-u*u)*(1-w*w)-0.04*Math.sin(w*9+u*3));}
+    tg.computeVertexNormals();const tm=new THREE.MeshStandardMaterial({color:lin(0x2a5fae),roughness:0.62,metalness:0,side:THREE.DoubleSide});
+    const tarp=new THREE.Mesh(tg,tm);tarp.rotation.set(-Math.PI/2,0,0.24,'ZXY');tarp.position.set(-3.1,3.12,0);tarp.castShadow=true;tarp.receiveShadow=true;g.add(tarp);
+    for(const z of [-3.1,3.1]){const pl=mbox(0.08,2.92,0.08,'wood',0x7a5a3a,1);pl.position.set(-3.92,1.46,z);g.add(pl);}}
   const kettle=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.2,0.32,10),lam(0xb8b8b4));kettle.position.set(-2.8,1.16,-0.8);g.add(kettle);
-  const bench1=box(0.45,0.45,2.4,0x5b4330);bench1.position.set(-4.6,0.22,-1.6);g.add(bench1);
-  const bench2=bench1.clone();bench2.position.set(-4.6,0.22,1.8);g.add(bench2);
+  // plank benches on short legs
+  for(const bz of [-1.6,1.8]){const seat=mbox(0.42,0.06,2.4,'wood',0x9a7a5a,1);seat.position.set(-4.6,0.45,bz);g.add(seat);
+    for(const lz of [-1.05,0,1.05])for(const lx of [-0.16,0.16]){const leg=mbox(0.06,0.42,0.06,'wood',0x7a5a3a,1);leg.position.set(-4.6+lx,0.21,bz+lz);g.add(leg);}}
   const sign=textPlane(lines,3.4,1.6,'#f2c230','#2a1a04');sign.position.set(-2.32,2.3,0);sign.rotation.y=-Math.PI/2;g.add(sign);
-  scene.add(g);
+  scene.add(g);grounded(g);
   const a=toWorld(st.x,st.z,rot,-2.5,-3.2),b=toWorld(st.x,st.z,rot,-1.5,4.5);prayerFlags(a.x,a.z,b.x,b.z,3.4);
 }
 function signFacing(x,z,s,tr){const p=pointAtS(s,tr),d=dirAtS(s,10,tr);const fx=p.x-x-d.dx*4,fz=p.z-z-d.dz*4;return Math.atan2(fx,fz);}

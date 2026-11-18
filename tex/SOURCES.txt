@@ -6,3 +6,6 @@ rock_d/n   rock_face_03       (Dario Barresi, Rico Cilliers)
 trail_d/n  rocky_trail        (Amal Kumar)
 dirt_d     stony_dirt_path    (eye-candy.xyz)
 pave_d     grey_stone_path    (Amal Kumar)
+plaster_d/n painted_plaster_wall   (Amal Kumar)                          buildings, stall walls
+tin_d/n     corrugated_iron_02     (Jenelle van Heerden, Sergej Majboroda) roofs (greyed, tinted per roof)
+wood_d/n    weathered_brown_planks (Dimitrios Savva, Rico Cilliers)      stall props, benches (triplanar detail)
