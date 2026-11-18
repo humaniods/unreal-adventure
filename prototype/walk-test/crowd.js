@@ -300,15 +300,64 @@ window.TriundCrowd = {
     const SHADOW_CASTERS = 4;
     const FR = new THREE.Frustum(), PM = new THREE.Matrix4(), SPH = new THREE.Sphere();
 
+    /* ---------- a shopkeeper cooks an order and walks it out to the customer ---------- */
+    // phases: cook (at the stove) -> walk (out round the side of the stall, then to the customer) -> give -> back
+    function keeperTask(k, dt) {
+      const T = k.task, st = T.stop;
+      const carry = () => { if (!T.mesh || !T.mesh.visible) return; const fx = Math.sin(k.yaw), fz = Math.cos(k.yaw); T.mesh.position.set(k.x + fx * 0.38, (k.y || H(k.x, k.z)) + 1.02, k.z + fz * 0.38); };
+      const stepTo = (x, z, v) => {
+        const dx = x - k.x, dz = z - k.z, d = Math.hypot(dx, dz); if (d < 1e-3) return 0;
+        const m = Math.min(d, v * dt); k.x += dx / d * m; k.z += dz / d * m; k.y = H(k.x, k.z); k.yaw = Math.atan2(dx, dz);
+        k.anim = 'Walk'; k.animSpeed = v; return d - m;
+      };
+      if (T.phase === 'cook') {
+        k.anim = 'Interact'; k.animSpeed = 1; T.t -= dt;
+        if (T.t <= 0) {
+          // out of the stall round its side (the counter is in front), then into the open toward the customer
+          const px = -st.tz, pz = st.tx, tg = T.target(), side = tg && ((tg.x - k.x) * px + (tg.z - k.z) * pz) < 0 ? -1 : 1;
+          const w1 = { x: T.home.x + px * 3.3 * side, z: T.home.z + pz * 3.3 * side }, w2 = { x: w1.x + st.tx * 3.2, z: w1.z + st.tz * 3.2 };
+          T.path = [w1, w2]; T.phase = 'walk'; if (T.mesh) T.mesh.visible = true;
+        }
+      } else if (T.phase === 'walk') {
+        const tg = T.target();
+        if (!tg || Math.hypot(tg.x - T.home.x, tg.z - T.home.z) > 28) { if (T.mesh) T.mesh.visible = false; T.mesh = null; T.onGive('counter'); T.phase = 'back'; T.path.reverse(); return; }
+        if (T.path.length) { if (stepTo(T.path[0].x, T.path[0].z, 1.25) < 0.2) T.path.shift(); }
+        else {
+          const dx = tg.x - k.x, dz = tg.z - k.z, d = Math.hypot(dx, dz);
+          if (d > 0.95) stepTo(tg.x - dx / d * 0.9, tg.z - dz / d * 0.9, 1.25);
+          else { T.phase = 'give'; T.t = 1.4; T.done = [T.path[1] || T.home]; }
+        }
+        carry();
+      } else if (T.phase === 'give') {
+        const tg = T.target(); if (tg) k.yaw = Math.atan2(tg.x - k.x, tg.z - k.z);
+        k.anim = 'Interact'; k.animSpeed = 1; T.t -= dt; carry();
+        if (T.t < 0.7 && !T.given) { T.given = true; if (T.mesh) T.mesh.visible = false; T.mesh = null; T.onGive('hand'); }   // the dish is the customer's now
+        if (T.t <= 0) { T.phase = 'back'; const px = -st.tz, pz = st.tx, sd = ((k.x - T.home.x) * px + (k.z - T.home.z) * pz) < 0 ? -1 : 1;
+          const w1 = { x: T.home.x + px * 3.3 * sd, z: T.home.z + pz * 3.3 * sd }; T.path = [{ x: w1.x + st.tx * 3.2, z: w1.z + st.tz * 3.2 }, w1]; }
+      } else {   // back to the counter
+        if (T.path.length) { if (stepTo(T.path[0].x, T.path[0].z, 1.15) < 0.2) T.path.shift(); }
+        else if (stepTo(T.home.x, T.home.z, 1.0) < 0.05) { k.x = T.home.x; k.z = T.home.z; k.y = H(k.x, k.z); k.yaw = T.home.yaw; k.anim = 'Idle'; k.animSpeed = 1; k.task = null; }
+      }
+    }
+
     let simT = 0;
     return {
       agents, keepers, seatSpots, counts: { bots: agents.length, keepers: keepers.length, pool: POOL },
       // the shopkeeper of this stop turns to the player and hands the order over (Interact clip)
-      serve(stop) { const i = stops.indexOf(stop); if (i >= 0) keepers[i].serveT = 2.2; },
+      serve(stop) { const i = stops.indexOf(stop); if (i >= 0 && !keepers[i].task) keepers[i].serveT = 2.2; },
+      // cook an order for cookSec seconds, then carry `mesh` to target() and call onGive('hand' | 'counter').
+      // Returns false while this shopkeeper is still busy with an earlier order.
+      deliver(stop, { mesh, cookSec, target, onGive }) {
+        const i = stops.indexOf(stop); if (i < 0) return false; const k = keepers[i]; if (k.task) return false;
+        k.serveT = 0; k.task = { stop, mesh, target, onGive, phase: 'cook', t: cookSec, home: { x: k.x, z: k.z, yaw: k.yaw }, path: [] };
+        if (mesh) mesh.visible = false; return true;
+      },
+      busy(stop) { const i = stops.indexOf(stop); return i >= 0 && !!keepers[i].task; },
       update(dt, cam, P, camera) {
         if (camera) FR.setFromProjectionMatrix(PM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
         for (const a of agents) think(a, dt, P);
-        for (const k of keepers) { const dp = Math.hypot(P.x - k.x, P.z - k.z);
+        for (const k of keepers) { if (k.task) { keeperTask(k, dt); continue; }
+          const dp = Math.hypot(P.x - k.x, P.z - k.z);
           if (k.serveT > 0) { k.serveT -= dt; k.anim = 'Interact'; k.yaw = Math.atan2(P.x - k.x, P.z - k.z); continue; }   // handing over an order
           k.anim = dp < 7 ? 'Idle_Talking' : (k.t = (k.t || 0) - dt) < 0 ? (k.t = 8 + R() * 10, R() < 0.3 ? 'Interact' : 'Idle') : k.anim; if (dp < 7) k.yaw = Math.atan2(P.x - k.x, P.z - k.z); }
         assignT -= dt; if (assignT <= 0) { assignT = 0.4; assign(cam); }
