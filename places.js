@@ -6,7 +6,10 @@
    Everything static is merged into a handful of meshes; only the name boards are separate (and hidden when far). */
 window.TriundPlaces = {
   build(o) {
-    const { THREE, scene, H, data, trails, textPlane, lin, rng, skip, prayerFlags } = o;
+    const { THREE, scene, H, data, trails, textPlane, lin, rng, skip, prayerFlags, collide } = o;
+    // solid footprints (collide.js); a local box inside a rotated frame like lbox()
+    const colRect = (x, z, ry, lx, lz, w, d) => { if (!collide) return; const c = Math.cos(ry), s = Math.sin(ry); collide.rect(x + lx * c + lz * s, z - lx * s + lz * c, ry, w, d); };
+    const benches = [];   // public benches: places to sit
     const R = rng(4242);
     const counts = {};
     const bump = k => { counts[k] = (counts[k] || 0) + 1; };
@@ -265,7 +268,7 @@ window.TriundPlaces = {
       }
       if (kind === 'temple') shikhara(cx, yt, cz, Math.min(box.b, 3.2), Math.atan2(box.ux, box.uz));
       if (kind === 'monastery' && prayerFlags) { const fx = cx + box.vx * (box.b + 3), fz = cz + box.vz * (box.b + 3); flagsLater.push([fx - box.ux * 6, fz - box.uz * 6, fx + box.ux * 6, fz + box.uz * 6]); }
-      occupyPoly(P, 2.5);
+      occupyPoly(P, 2.5); if (collide) collide.add(P);
       bump('building');
     }
     const flagsLater = [];
@@ -448,10 +451,11 @@ window.TriundPlaces = {
       goods(x, y, z, ry, w, d, hh, r, true);
       const c = Math.cos(ry), s = Math.sin(ry), fx = x + (d / 2 + 0.05) * s, fz = z + (d / 2 + 0.05) * c;
       nameBoard(fx, y + hh + 0.1, fz, ry, poi.name || (poi.kind === 'cafe' ? 'Tea Stall' : 'General Store'), poi.kind === 'cafe' ? 'chai · maggi · omelette' : '', '#f2c230', '#2a1a04', Math.min(w, 3.2));
-      occupyDisc(x, z, Math.max(w, d) / 2 + 2.5);
+      occupyDisc(x, z, Math.max(w, d) / 2 + 2.5); colRect(x, z, ry, 0, 0, w + 0.4, d + 0.4);
       bump(poi.kind);
     }
     function shrine(x, y, z, ry, poi) {
+      colRect(x, z, ry, 0, 0, 2.6, 2.6);
       lbox(props, x, y, z, ry, 0, -0.3, 0, 3.2, 1.2, 3.2, C(0x8f8b84));
       lbox(props, x, y, z, ry, 0, 1.2, 0, 2.2, 2.4, 2.2, C(0xf1ece2));
       lbox(props, x, y, z, ry, 0, 0.95, 1.11, 0.8, 1.4, 0.05, C(0x8a2f1f));
@@ -468,7 +472,7 @@ window.TriundPlaces = {
         if (nearestTrail(tx, tz).d < 4) continue;
         if (Math.abs(H(tx + 1.5, tz) - ty) > 0.6 || Math.abs(H(tx, tz + 1.5) - ty) > 0.6) continue;
         props.geo(DOME, mtx(tx, ty - 0.05, tz, r() * 6, 1.3, 1.1, 1.6), C(cols[(r() * cols.length) | 0]));
-        occupyDisc(tx, tz, 2.4); n++;
+        occupyDisc(tx, tz, 2.4); colRect(tx, tz, 0, 0, 0, 2.2, 2.2); n++;
       }
       if (poi.name) nameBoard(x, y + 1.8, z, ry, poi.name, 'camping', '#1f3b2e', '#f1ead8', 2.6);
       bump('camp');
@@ -480,19 +484,20 @@ window.TriundPlaces = {
       const roofM = new THREE.Matrix4().compose(T.set(0, 0, 0), new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.2, ry, 0, 'YXZ')), S.set(5.2, 0.15, 5));
       roofM.setPosition(x, y + 2.4, z); props.geo(BOX, roofM, slate);
       if (poi.name) nameBoard(x + Math.sin(ry) * 2.6, y + 1.9, z + Math.cos(ry) * 2.6, ry, poi.name, 'shelter', '#1f3b2e', '#f1ead8', 2.4);
-      occupyDisc(x, z, 4.5); bump('shelter');
+      occupyDisc(x, z, 4.5); colRect(x, z, ry, 0, -1.8, 4.4, 0.4); colRect(x, z, ry, -2.0, 0, 0.4, 4); colRect(x, z, ry, 2.0, 0, 0.4, 4);
+      benches.push({ x: x - Math.sin(ry) * 1.0, z: z - Math.cos(ry) * 1.0, ry, shelter: true }); bump('shelter');
     }
     function bench(x, y, z, ry) {
       const wood = C(0x6e4b2e);
       lbox(props, x, y, z, ry, 0, 0.45, 0, 1.8, 0.08, 0.45, wood); lbox(props, x, y, z, ry, 0, 0.8, -0.22, 1.8, 0.3, 0.06, wood);
       for (const sx of [-0.75, 0.75]) lbox(props, x, y, z, ry, sx, 0.15, 0, 0.1, 0.7, 0.4, C(0x55595e));
-      bump('bench');
+      benches.push({ x, z, ry }); bump('bench');
     }
     function toilet(x, y, z, ry) {
       lbox(props, x, y, z, ry, 0, 0.9, 0, 2.2, 2.4, 2, C(0xdcd6c8)); lbox(props, x, y, z, ry, 0, 2.2, 0, 2.6, 0.12, 2.4, C(0x3c5f95));
       lbox(props, x, y, z, ry, -0.5, 0.9, 1.01, 0.7, 1.7, 0.04, C(0x3c5f95)); lbox(props, x, y, z, ry, 0.5, 0.9, 1.01, 0.7, 1.7, 0.04, C(0x3c5f95));
       nameBoard(x + Math.sin(ry) * 1.05, y + 1.95, z + Math.cos(ry) * 1.05, ry, 'Toilets', '', '#1f3b2e', '#f1ead8', 1.4);
-      occupyDisc(x, z, 2.5); bump('toilets');
+      occupyDisc(x, z, 2.5); colRect(x, z, ry, 0, 0, 2.2, 2); bump('toilets');
     }
     function tap(x, y, z) { props.geo(CYL, mtx(x, y + 0.5, z, 0, 0.12, 1.2, 0.12), C(0x8f8b84)); props.geo(BOX, mtx(x, y + 0.2, z, 0, 0.8, 0.15, 0.8), C(0x9a958c)); bump('tap'); }
     function infoBoard(x, y, z, ry, poi) {
@@ -613,7 +618,7 @@ window.TriundPlaces = {
       B.mesh(propMat);
     }
     return {
-      counts, stops, update, dress, meshes: { wallMesh, roofMesh, propMesh },
+      counts, stops, update, dress, benches, meshes: { wallMesh, roofMesh, propMesh },
       surfaceMat,
       tex: { tinMap, tinN, plasterN, wood: woodDetail, woodN, plaster: photo('plaster_d', true), rock: photo('rock_d', true), rockN: photo('rock_n', false) },
       blocked: (x, z) => OCC.has(okey(Math.floor(x / OC), Math.floor(z / OC)))

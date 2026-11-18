@@ -302,11 +302,15 @@ window.TriundCrowd = {
 
     let simT = 0;
     return {
-      agents, keepers, counts: { bots: agents.length, keepers: keepers.length, pool: POOL },
+      agents, keepers, seatSpots, counts: { bots: agents.length, keepers: keepers.length, pool: POOL },
+      // the shopkeeper of this stop turns to the player and hands the order over (Interact clip)
+      serve(stop) { const i = stops.indexOf(stop); if (i >= 0) keepers[i].serveT = 2.2; },
       update(dt, cam, P, camera) {
         if (camera) FR.setFromProjectionMatrix(PM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
         for (const a of agents) think(a, dt, P);
-        for (const k of keepers) { const dp = Math.hypot(P.x - k.x, P.z - k.z); k.anim = dp < 7 ? 'Idle_Talking' : (k.t = (k.t || 0) - dt) < 0 ? (k.t = 8 + R() * 10, R() < 0.3 ? 'Interact' : 'Idle') : k.anim; if (dp < 7) k.yaw = Math.atan2(P.x - k.x, P.z - k.z); }
+        for (const k of keepers) { const dp = Math.hypot(P.x - k.x, P.z - k.z);
+          if (k.serveT > 0) { k.serveT -= dt; k.anim = 'Interact'; k.yaw = Math.atan2(P.x - k.x, P.z - k.z); continue; }   // handing over an order
+          k.anim = dp < 7 ? 'Idle_Talking' : (k.t = (k.t || 0) - dt) < 0 ? (k.t = 8 + R() * 10, R() < 0.3 ? 'Interact' : 'Idle') : k.anim; if (dp < 7) k.yaw = Math.atan2(P.x - k.x, P.z - k.z); }
         assignT -= dt; if (assignT <= 0) { assignT = 0.4; assign(cam); }
         let n = 0;
         // people turn through switchbacks instead of snapping to the new heading (about 0.25 s)

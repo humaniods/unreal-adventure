@@ -179,7 +179,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
       <div class="wzone" id="wZone">Z1 · Rest</div>
       <div class="wbr" title="Breathing"><i id="wLung"></i><span id="wBr">14/min · easy</span></div>
       <div class="wgrid">
-        <div><b id="wTemp">36.7°</b><small>body</small></div>
+        <div><b id="wEn">80%</b><small>energy</small></div>
         <div><b id="wHyd">100%</b><small>water</small></div>
         <div><b id="wAlt">2100</b><small>metre</small></div>
       </div>
@@ -198,7 +198,8 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
     <div class="wpage" id="wp2" hidden>
       <div class="wtitle">Body</div>
       <div class="wlist">
-        <div><span>Energy</span><b id="bEnergy">100%</b></div>
+        <div><span>Stamina</span><b id="bEnergy">100%</b></div>
+        <div><span>Body</span><b id="wTemp">36.7°</b></div>
         <div><span>SpO₂</span><b id="bSpo">97%</b></div>
         <div><span>Bag</span><b id="bBag">12 kg</b></div>
         <div><span>Outside</span><b id="bAmb">9°C</b></div>
@@ -276,7 +277,8 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
       <dt><kbd>Shift</kbd></dt><dd>walk fast (drains stamina quicker)</dd>
       <dt><kbd>Space</kbd></dt><dd>hold to breathe in (during the mini-game)</dd>
       <dt><kbd>Q</kbd> <kbd>F</kbd></dt><dd>raise watch · next watch screen</dd>
-      <dt><kbd>E</kbd> <kbd>R</kbd></dt><dd>buy chai, talk or pat a dog · sip water</dd>
+      <dt><kbd>E</kbd> <kbd>R</kbd></dt><dd>stall menu, talk or pat a dog · sip water</dd>
+      <dt><kbd>I</kbd> <kbd>C</kbd></dt><dd>open your bag and eat · sit down and rest (on a bench near a stall to eat a meal)</dd>
       <dt><kbd>V</kbd> <kbd>T</kbd> <kbd>Esc</kbd></dt><dd>camera · tuning panel · pause</dd>
       <dt>Drone flyover</dt><dd>fly over the whole chosen route from above</dd>
     </dl>
@@ -362,6 +364,9 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 <script src="anim-util.js"></script>
 <script src="crowd.js"></script>
+<script src="economy.js"></script>
+<script src="collide.js"></script>
+<script src="trek.js"></script>
 <script>
 (function(){
 'use strict';
@@ -722,7 +727,7 @@ function buildFlora(){
 function buildPlaces(){
   window.__placesErr='started';if(!TD.places||!window.TriundPlaces){window.__placesErr='no data';return;}
   const skip=[{x:GALU.x,z:GALU.z,r:16},{x:BHT.x,z:BHT.z,r:14},{x:KARTHANI.x,z:KARTHANI.z,r:14}].concat(STOPS.map(st=>({x:st.x,z:st.z,r:18})));
-  try{PLACES=window.TriundPlaces.build({THREE,scene,H,data:TD.places,trails:[GT,ST],textPlane,lin,rng,skip,prayerFlags});}
+  try{PLACES=window.TriundPlaces.build({THREE,scene,H,data:TD.places,trails:[GT,ST],textPlane,lin,rng,skip,prayerFlags,collide:COLLIDE});}
   catch(e){console.error('places failed',e);window.__placesErr=String(e&&e.stack||e);PLACES=null;return;}
   for(const st of PLACES.stops)STOPS.push(st);
   STOPS.sort((a,b)=>a.s-b.s);
@@ -819,6 +824,7 @@ function stall(st,wall,lines){
     for(const lz of [-1.05,0,1.05])for(const lx of [-0.16,0.16]){const leg=mbox(0.06,0.42,0.06,'wood',0x7a5a3a,1);leg.position.set(-4.6+lx,0.21,bz+lz);g.add(leg);}}
   const sign=textPlane(lines,3.4,1.6,'#f2c230','#2a1a04');sign.position.set(-2.32,2.3,0);sign.rotation.y=-Math.PI/2;g.add(sign);
   scene.add(g);grounded(g);
+  if(COLLIDE){const w=toWorld(st.x,st.z,rot,0,0);COLLIDE.rect(w.x,w.z,rot,4.6,6.1);const c=toWorld(st.x,st.z,rot,-2.8,0);COLLIDE.rect(c.x,c.z,rot,1.0,3.2);}
   const a=toWorld(st.x,st.z,rot,-2.5,-3.2),b=toWorld(st.x,st.z,rot,-1.5,4.5);prayerFlags(a.x,a.z,b.x,b.z,3.4);
 }
 function signFacing(x,z,s,tr){const p=pointAtS(s,tr),d=dirAtS(s,10,tr);const fx=p.x-x-d.dx*4,fz=p.z-z-d.dz*4;return Math.atan2(fx,fz);}
@@ -834,7 +840,7 @@ function temple(x,h,z,face,cella,spireCol){
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.05,4,6),lam(0x5a4632));pole.position.set(1.4,2.5,1.4);tg.add(pole);
   const flagG=new THREE.BufferGeometry();flagG.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0,1.1,-0.3,0,0,-0.65,0],3));flagG.computeVertexNormals();
   const flag=new THREE.Mesh(flagG,new THREE.MeshLambertMaterial({color:lin(0xf08a24),side:THREE.DoubleSide}));flag.position.set(1.4,4.4,1.4);tg.add(flag);
-  tg.rotation.y=face;scene.add(tg);
+  tg.rotation.y=face;scene.add(tg);if(COLLIDE)COLLIDE.rect(x,z,face,3.4,3.4);
 }
 const km=m=>(m/1000).toFixed(1)+' km';
 function buildProps(){
@@ -888,6 +894,12 @@ function buildProps(){
 /* ================= player state ================= */
 let P,START_S=0,startFrom='galu';
 try{const v=localStorage.getItem('triund-start');if(v==='galu'||v==='magic'||v==='shiva')startFrom=v;}catch(e){}
+// solid buildings and stalls, and the hiker's day (food energy, bag, stalls, benches, game time): collide.js, trek.js
+const COLLIDE=window.TriundCollide?window.TriundCollide.create():null;
+const TREK=window.TriundTrek&&window.TriundEconomy?window.TriundTrek.create({ECON:window.TriundEconomy,stops:STOPS,
+  get crowd(){return CROWD;},get places(){return PLACES;},getState:()=>state,setState:s=>{state=s;},
+  say:(t,d)=>say(t,d),toast:t=>toast(t),buzz:n=>buzz(n),lock:()=>lock(),drink:()=>drink(),onTopUp:()=>openTopUp()}):null;
+function openTopUp(){toast('Coin top-up opens here (payments arrive in the next build).');}
 function resetPlayer(){
   ACT=startFrom==='shiva'?ST:GT;
   START_S=startFrom==='magic'?stopOf('magic').s+4:0;
@@ -897,11 +909,12 @@ function resetPlayer(){
      syncAcc:0,syncN:0,breathEvents:0,exhCount:0,offTrail:0,offWarnT:0,moveTime:0,time:0,maxHR:0,hrSum:0,hrN:0,s:START_S,maxS:START_S,trailD:0,
      zone:1,lowHydWarned:false,wantMore:null,firstPerson:true,blockedT:0,effort:0,grade:0,sprinting:false};
   P.y=H(P.x,P.z);npcs.forEach(n=>n.said=false);STOPS.forEach(st=>{st.taken=false;st.seen=false;});
+  if(TREK)TREK.reset(P,T.packKg);
 }
 resetPlayer();
 // QA hook: jump along the trail (used by automated screenshots; harmless for players)
 window.__triund={setRoute(id){startFrom=id;resetPlayer();enterPlay();},look(x,y,z,tx,ty,tz){state='qa';show('start',false);show('droneHud',false);camera.position.set(x,y,z);camera.lookAt(tx,ty,tz);DR.look.set(tx,ty,tz);},H:(x,z)=>H(x,z),drone(id,s,top,alt){startFrom=id;enterDrone();DR.s=s||0;DR.top=!!top;if(alt)DR.alt=alt;DR.pause=true;DR.snap=true;},teleport(s,third){const p=pointAtS(s),d=dirAtS(s+10,20);P.x=p.x;P.z=p.z;P.y=H(p.x,p.z);P.yaw=Math.atan2(-d.dx,-d.dz);P.pitch=-0.05;P.s=s;P.maxS=Math.max(P.maxS,s);P.firstPerson=!third;},
-  get P(){return P;},get total(){return ACT.total;},get route(){return ACT.id;},stops:STOPS.map(st=>({label:st.label,trail:st.trail,s:st.s})),buildMs:0,get flora(){return FLORA&&FLORA.counts;},get places(){return PLACES&&PLACES.counts;},get atmos(){return ATMOS&&ATMOS.counts;},get fauna(){return FAUNA&&FAUNA.counts;},get crowd(){return CROWD&&CROWD.counts;},get steps(){return STEPS&&STEPS.counts;},stepTop:s=>STEPS?STEPS.topAt(ACT.id,s):null,crowdInfo(){if(!CROWD)return null;const f=p=>p&&{x:+p.x.toFixed(1),y:+p.y.toFixed(1),z:+p.z.toFixed(1),yaw:+p.yaw.toFixed(2),st:p.state,anim:p.anim};const sit=CROWD.agents.find(a=>a.state==='sit');const walk=CROWD.agents.find(a=>a.state==='walk'&&a.tr===GT);const topA=CROWD.agents.find(a=>a.state==='top');return {sit:f(sit),walk:f(walk),top:f(topA),keeper:f(CROWD.keepers.find(k=>Math.hypot(k.x-stopOf('magic').x,k.z-stopOf('magic').z)<6)),keeper2:f(CROWD.keepers[5])};},get dogStates(){return FAUNA&&FAUNA.dogs.map(d=>d.state);},animals(){if(!FAUNA)return null;const p=g=>[+g.position.x.toFixed(1),+g.position.y.toFixed(1),+g.position.z.toFixed(1)];return {dog:p(FAUNA.dogs[0].a.g),mule:p(FAUNA.mules[0].members[0].g),langur:p(FAUNA.troops[0].members[0].l.g),bird:p(FAUNA.birds[0].m)};},get satOK(){return !!SAT.px;},get stats(){return {calls:RI.calls,tris:RI.triangles,fps:Math.round(fps),q:QL.get()};},
+  get P(){return P;},get total(){return ACT.total;},get route(){return ACT.id;},stops:STOPS.map(st=>({label:st.label,trail:st.trail,s:st.s})),buildMs:0,get flora(){return FLORA&&FLORA.counts;},get places(){return PLACES&&PLACES.counts;},get atmos(){return ATMOS&&ATMOS.counts;},get fauna(){return FAUNA&&FAUNA.counts;},get crowd(){return CROWD&&CROWD.counts;},get steps(){return STEPS&&STEPS.counts;},get trek(){return TREK;},get collide(){return COLLIDE;},toStop(label){const st=STOPS.find(x=>x.label.startsWith(label));if(!st)return null;P.x=st.spot.x;P.z=st.spot.z;P.y=H(P.x,P.z);P.yaw=Math.atan2(st.tx,st.tz);P.pitch=-0.15;P.firstPerson=true;return{x:st.x,z:st.z,spot:st.spot,tx:st.tx,tz:st.tz,h:st.h};},stepTop:s=>STEPS?STEPS.topAt(ACT.id,s):null,crowdInfo(){if(!CROWD)return null;const f=p=>p&&{x:+p.x.toFixed(1),y:+p.y.toFixed(1),z:+p.z.toFixed(1),yaw:+p.yaw.toFixed(2),st:p.state,anim:p.anim};const sit=CROWD.agents.find(a=>a.state==='sit');const walk=CROWD.agents.find(a=>a.state==='walk'&&a.tr===GT);const topA=CROWD.agents.find(a=>a.state==='top');return {sit:f(sit),walk:f(walk),top:f(topA),keeper:f(CROWD.keepers.find(k=>Math.hypot(k.x-stopOf('magic').x,k.z-stopOf('magic').z)<6)),keeper2:f(CROWD.keepers[5])};},get dogStates(){return FAUNA&&FAUNA.dogs.map(d=>d.state);},animals(){if(!FAUNA)return null;const p=g=>[+g.position.x.toFixed(1),+g.position.y.toFixed(1),+g.position.z.toFixed(1)];return {dog:p(FAUNA.dogs[0].a.g),mule:p(FAUNA.mules[0].members[0].g),langur:p(FAUNA.troops[0].members[0].l.g),bird:p(FAUNA.birds[0].m)};},get satOK(){return !!SAT.px;},get stats(){return {calls:RI.calls,tris:RI.triangles,fps:Math.round(fps),q:QL.get()};},
   breakdown(){const out={};scene.traverse(o=>{if(!o.isMesh||!o.visible)return;const g=o.geometry,t=(g.index?g.index.count:g.attributes.position.count)/3*(o.isInstancedMesh?o.count:1);
     const k=(o.isInstancedMesh?'inst:':'mesh:')+(o.material.map?'map':'')+(o.castShadow?'+cast':'')+':'+Math.round(t/(o.isInstancedMesh?Math.max(o.count,1):1));out[k]=(out[k]||0)+Math.round(t);});return out;}};
 
@@ -966,6 +979,8 @@ window.addEventListener('keydown',e=>{
     case 'KeyF':if(state==='play')cyclePage();break;
     case 'KeyE':if(state==='play')interact();break;
     case 'KeyR':if(state==='play')drink();break;
+    case 'KeyI':if(state==='play'&&TREK)TREK.toggleBag();break;
+    case 'KeyC':if(state==='play'&&TREK)TREK.toggleSit();break;
     case 'KeyV':if(state==='play')P.firstPerson=!P.firstPerson;break;
     case 'KeyT':if(state==='play'||state==='tune')toggleTune();break;
     case 'Backquote':$('debug').hidden=!$('debug').hidden;break;
@@ -1010,11 +1025,7 @@ function copyText(txt,okMsg){
 $('copyFallback').addEventListener('blur',()=>{$('copyFallback').hidden=true;});
 
 function interact(){
-  for(const st of STOPS){if(Math.hypot(P.x-st.spot.x,P.z-st.spot.z)<7){
-    if(st.taken){say('You already had chai at '+st.label+'. Time to climb.');return;}
-    st.taken=true;P.chai++;P.stamina=Math.min(100,P.stamina+30);P.hyd=Math.min(100,P.hyd+15);P.chaiWarm=0.3;
-    say('Hot ginger chai at '+st.label+'. Warm hands, energy back. (+energy, +water, +warmth)',4);buzz(1);return;
-  }}
+  if(TREK&&TREK.interact(P))return;
   for(const n of npcs){if(Math.hypot(P.x-n.x,P.z-n.z)<6){say(n.lines,4);return;}}
   if(FAUNA&&FAUNA.pat(P)){say('The dog leans into your hand and thumps its tail. It will walk with you a while.',3.5);return;}
 }
@@ -1039,7 +1050,7 @@ $('restartBtn').addEventListener('click',()=>{resetPlayer();enterPlay();});
 $('againBtn').addEventListener('click',()=>{resetPlayer();enterPlay();});
 $('pauseTuneBtn').addEventListener('click',()=>{state='play';toggleTune();});
 $('packSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;T.packKg=+b.dataset.kg;saveTune();syncPackSeg();});
-function syncPackSeg(){document.querySelectorAll('#packSeg button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.kg===T.packKg)));}
+function syncPackSeg(){document.querySelectorAll('#packSeg button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.kg===T.packKg)));if(TREK)TREK.renderKit(T.packKg);}
 $('assistBox').checked=!!T.assist;$('assistBox').addEventListener('change',e=>{T.assist=e.target.checked;saveTune();});
 syncPackSeg();
 
@@ -1100,18 +1111,20 @@ function update(dt){
   // movement keeps momentum: the velocity vector eases toward the wanted one (a body with a 12 kg pack does not
   // turn or stop on the spot), quicker when stopping than when setting off
   const h0=P.y;let target=0,tx=0,tz=0;
-  if(mag>0.05&&!P.exh){
+  if(mag>0.05&&!P.exh&&!(TREK&&TREK.sitting())){
     const wl=Math.hypot(wx,wz);wx/=wl;wz/=wl;
     const g=H(P.x+wx,P.z+wz)-h0;
     if(g>T.maxGrade){target=0;P.blockedT+=dt;if(P.blockedT>0.6){say('Too steep to climb straight up. Stay on the trail.');P.blockedT=-4;}}
-    else{target=tobler(g)*T.speedScale*mag*(P.sprinting?T.sprintMult:1)*(P.stamina<25?0.72:1)*loadSpeed()*(SEASON?SEASON.speed:1);}   // wet trail: a little slower
+    else{target=tobler(g)*T.speedScale*mag*(P.sprinting?T.sprintMult:1)*(P.stamina<25?0.72:1)*loadSpeed()*(SEASON?SEASON.speed:1)*(TREK?TREK.speedFactor():1);}   // wet trail: a little slower; low food energy: slower still
     tx=wx*target;tz=wz*target;
   }
   const kAcc=1-Math.exp(-dt*(target>P.v?3.2:6));
   P.vx=(P.vx||0)+(tx-(P.vx||0))*kAcc;P.vz=(P.vz||0)+(tz-(P.vz||0))*kAcc;
   P.v=Math.hypot(P.vx,P.vz);
   if(P.v>0.02){P.dirx=P.vx/P.v;P.dirz=P.vz/P.v;}
-  if(P.v>0.01){P.x=clamp(P.x+P.vx*dt,BOX.e0+60,BOX.e1-60);P.z=clamp(P.z+P.vz*dt,-(BOX.n1-60),-(BOX.n0+60));}
+  if(TREK&&TREK.sitting()){P.vx=P.vz=P.v=0;}
+  if(P.v>0.01){P.x=clamp(P.x+P.vx*dt,BOX.e0+60,BOX.e1-60);P.z=clamp(P.z+P.vz*dt,-(BOX.n1-60),-(BOX.n0+60));
+    if(COLLIDE){const r=COLLIDE.resolve(P.x,P.z,0.35);P.x=r.x;P.z=r.z;}}
   P.y=H(P.x,P.z);
   const grade=P.v>0.05?(H(P.x+P.dirx,P.z+P.dirz)-P.y):0;P.grade=grade;
   // on a staircase the feet are on the treads (the eye spring turns each riser into a step up)
@@ -1148,6 +1161,8 @@ function update(dt){
   if(!P.exh&&P.stamina<=0){P.exh=true;P.exhT=0;P.exhCount++;buzz(2);say('Stop. Your body has nothing left. Hands on knees, breathe.',4.5);}
   if(P.exh){P.exhT+=dt;if(P.exhT>4&&P.stamina>=20){P.exh=false;say('Okay. Take it slow.');}}
 
+  if(TREK)TREK.update(dt,keys,loadMult());
+
   // hydration + temperature
   const hrN=clamp((P.hr-90)/90,0,1);
   P.hyd=clamp(P.hyd-(0.022+0.05*hrN)*dt,0,100);
@@ -1166,8 +1181,8 @@ function update(dt){
   for(const np of npcs){if(!np.said&&Math.hypot(P.x-np.x,P.z-np.z)<7){np.said=true;say(np.lines,4);}}
   let pr='';
   for(const st of STOPS){const d=Math.hypot(P.x-st.spot.x,P.z-st.spot.z);
-    if(!st.seen&&d<16){st.seen=true;buzz(1);say(st.label+'. Stop for a cup of chai (E).',4);}
-    if(!st.taken&&d<7)pr='<kbd>E</kbd> Buy chai';}
+    if(!st.seen&&d<16){st.seen=true;buzz(1);say(st.label+'. Walk up to the counter and press E for the menu.',4);}}
+  if(TREK)pr=TREK.prompt(P);
   if(!pr&&npcs.some(np=>Math.hypot(P.x-np.x,P.z-np.z)<5))pr='<kbd>E</kbd> Talk';
   if(!pr&&FAUNA&&FAUNA.nearDog(P))pr='<kbd>E</kbd> Pat the dog';
   const pe=$('prompt');if(pr){pe.innerHTML=pr;pe.hidden=false;}else pe.hidden=true;
@@ -1187,12 +1202,12 @@ function update(dt){
   const swayX=Math.sin(P.stepPh*Math.PI)*0.022*gaitA;
   const sway=Math.sin(P.brPh*Math.PI*2)*(0.004+0.022*hrN)*bob;
   if(PCH){PCH.ch.root.visible=!P.firstPerson;if(!P.firstPerson){PCH.ch.root.position.set(P.x,P.y,P.z);PCH.ch.root.rotation.y=Math.atan2(P.dirx,P.dirz);
-    PCH.play(P.crouch>0.5?'Idle':P.sprinting&&P.v>2.4?'Jog_Fwd':P.v>0.12?'Walk':'Idle',P.v>0.12?P.v:1);PCH.ch.mixer.update(dt);}}
+    PCH.play(TREK&&TREK.sitting()?'Sitting_Idle':P.crouch>0.5?'Idle':P.sprinting&&P.v>2.4?'Jog_Fwd':P.v>0.12?'Walk':'Idle',P.v>0.12?P.v:1);PCH.ch.mixer.update(dt);}}
   if(P.firstPerson){
     avatar.visible=false;
     // lean into a climb: the head sits a little ahead of the feet on steep ground
     const lean=0.12*clamp(grade*2.5,0,1)*clamp(P.v/1.2,0,1);
-    camera.position.set(P.x+cY*swayX-sY*lean,P.eyeY+1.65-0.6*P.crouch+bobY+sway,P.z-sY*swayX-cY*lean);
+    camera.position.set(P.x+cY*swayX-sY*lean,P.eyeY+(TREK?TREK.eyeHeight():1.65)-0.6*P.crouch+bobY+sway,P.z-sY*swayX-cY*lean);
     camera.rotation.set(P.pitch-0.55*P.crouch+sway*0.4,P.yaw,Math.sin(P.stepPh*Math.PI)*0.0035*gaitA);
   }else{
     avatar.visible=!PCH;avatar.position.set(P.x,P.y-0.25*P.crouch,P.z);avatar.rotation.y=Math.atan2(-P.dirx,-P.dirz);avatar.rotation.x=0.5*P.crouch;
@@ -1228,7 +1243,7 @@ function hudTick(dt){
   if(showB){drawBreath();$('breathHelp').hidden=!!T.assist;}
   uiT-=dt;if(uiT>0)return;uiT=0.1;
   const z=P.zone,face=$('face');face.style.setProperty('--zone',ZONES[z-1][2]);face.style.setProperty('--hrp',String(clamp((P.hr-60)/130*100,0,100)));
-  const mins=7*60+Math.floor(P.time/60);
+  const mins=(7*60+Math.floor((P.gt||0)/60))%(24*60);
   $('wClock').textContent=String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
   $('wHr').textContent=Math.round(P.hr);$('wZone').textContent=ZONES[z-1][1];
   const br=Math.round(12+30*clamp((P.hr-80)/100,0,1));
@@ -1239,7 +1254,7 @@ function hudTick(dt){
   $('rClimb').textContent=Math.max(0,Math.round(ACT.topAlt-P.y))+' m';
   const nx=STOPS.find(st=>st.trail===ACT.id&&st.s>P.s+8);$('rNext').textContent=nx?nx.short+' '+fd(nx.s-P.s):'Top';
   $('bEnergy').textContent=Math.round(P.stamina)+'%';$('bSpo').textContent=Math.round(97-Math.max(0,P.y-2000)*0.004-(P.hr>160?2:0))+'%';
-  $('bBag').textContent=T.packKg+' kg';$('bAmb').textContent=Math.round((window.TriundSeason&&window.TriundSeason.get()==='monsoon'?17:9)-(P.y-2100)*0.0065)+'°C';
+  $('bBag').textContent=T.packKg+' kg';if($('wEn'))$('wEn').textContent=Math.round(P.energy||0)+'%';if(TREK)TREK.hud();$('bAmb').textContent=Math.round((window.TriundSeason&&window.TriundSeason.get()==='monsoon'?17:9)-(P.y-2100)*0.0065)+'°C';
   if(!$('debug').hidden){
     $('debug').textContent='stamina  '+P.stamina.toFixed(1)+'\nHR       '+P.hr.toFixed(1)+'\neffort   '+P.effort.toFixed(2)+'\ngrade    '+(P.grade*100).toFixed(1)+'%\nspeed    '+P.v.toFixed(2)+' m/s'+(P.sprinting?' (sprint)':'')+
       '\nload×    '+loadMult().toFixed(2)+'\nhydr     '+P.hyd.toFixed(1)+'\ntemp     '+P.temp.toFixed(2)+'\nroute    '+ACT.id+'\ntrail s  '+P.s.toFixed(0)+' / '+ACT.total.toFixed(0)+'\noff-trail '+P.trailD.toFixed(1)+' m\nalt      '+P.y.toFixed(1)+'\nbreath   '+(P.breath?('on sync '+(P.sync*100|0)+'%'):'off')+'\nfps      '+fps.toFixed(0)+'  ('+(1000/Math.max(fps,1)).toFixed(1)+' ms)\ndraws    '+RI.calls+'  tris '+(RI.triangles/1000).toFixed(0)+'k\ngraphics '+QL.get()+(SAT.px?'':'  (imagery missing)');
