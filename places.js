@@ -63,6 +63,7 @@ window.TriundPlaces = {
     }
     // one wall module = 3 m wide x 2.9 m tall (one floor): plaster with a window. Vertex colour tints the plaster.
     let wallTex = null;
+    const plasterImg = { img: null };          // the plaster photo, once loaded (drawWallTo draws over it)
     function drawWall() { if (wallTex) drawWallTo(wallTex.image.getContext('2d'), wallTex.image.width, wallTex.image.height); }
     function drawWallTo(g, w, h) {
       g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
@@ -110,7 +111,6 @@ window.TriundPlaces = {
       });
       return ct;
     }
-    const plasterImg = { img: null };
     const tinMap = greyed('tin_d', 0.82, true), tinN = photo('tin_n', false);
     const woodDetail = photo('wood_d', true), woodN = photo('wood_n', false), plasterN = photo('plaster_n', false);
     photo('plaster_d', false, img => { plasterImg.img = img; drawWall(); wallTex.needsUpdate = true; });

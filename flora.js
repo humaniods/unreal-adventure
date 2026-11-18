@@ -466,7 +466,7 @@ window.TriundFlora = {
         const sz = big ? 0.7 + rockR() * 1.6 : 0.12 + rockR() * rockR() * 0.55;
         stones.push({ x, z, y: H(x, z), sx: sz * (1 + rockR() * 0.5), sy: sz * (0.45 + rockR() * 0.35), sz, rot: rockR() * 6.28, tilt: (rockR() - 0.5) * 0.4 });
       }
-      for (const run of tr.runs) {                        // stone risers where the trail is steep and not gravel or paved
+      if (!o.noRisers) for (const run of tr.runs) {      // stone risers where the trail is steep (unless steps.js lays real steps)
         if (run.surf === 0 || run.surf === 3) continue;
         for (let s = run.s0 + 1; s < run.s1 - 1; s += 1.25 + rockR() * 0.6) {
           const a = tr.pointAtS(s - 1), b = tr.pointAtS(s + 1), grade = (b.h - a.h) / 2;

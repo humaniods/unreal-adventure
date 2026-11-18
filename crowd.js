@@ -8,7 +8,7 @@
    World axes: x = east, y = up, z = south. */
 window.TriundCrowd = {
   async build(o) {
-    const { THREE, scene, H, trails, stops, top, rng, blocked, base, talkers, quality } = o;
+    const { THREE, scene, H, trails, stops, top, rng, blocked, base, talkers, quality, ground } = o;
     const R = rng(2468);
     const lin = c => new THREE.Color(c).convertSRGBToLinear();
     const loader = new THREE.GLTFLoader();
@@ -243,7 +243,7 @@ window.TriundCrowd = {
         const p = trailAt(a.tr, a.s, a.lat); a.x = p.x; a.z = p.z;
         if (a.state === 'walk') a.yaw = yawOf(p.dx * a.dir, p.dz * a.dir);
       }
-      a.y = H(a.x, a.z) + (a.state === 'sit' ? 0.0 : 0);
+      a.y = ground && (a.state === 'walk' || a.state === 'rest') ? ground(a.x, a.z, a.tr.id, a.s, a.lat) : H(a.x, a.z);   // on the steps where there are steps
     }
 
     /* ---------- far proxies: one instanced low-poly figure (torso, legs, head, pack) ---------- */
