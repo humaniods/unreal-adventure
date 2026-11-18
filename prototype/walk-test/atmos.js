@@ -84,6 +84,7 @@ float cloudShadow(vec3 vp) {
     const PUFF = puffTex();
     const fogU = THREE.UniformsUtils.clone(THREE.UniformsLib.fog);
     const sunCol = new THREE.Color(1.0, 0.94, 0.84).multiplyScalar(1.55), shadeCol = new THREE.Color(0.52, 0.57, 0.66).multiplyScalar(1.05);
+    const sunCol0 = sunCol.clone(), shadeCol0 = shadeCol.clone();
 
     // camera-facing instanced puffs; wrap = drift and wrap around the cloud field
     function puffMaterial(wrap, nearFade) {
@@ -215,6 +216,12 @@ void main() {
     const off = U.uCloudOff.value;
     return {
       counts: { clouds: clouds.length, puffs: puffs.length, mist: mist ? mist.count : 0 },
+      // camp.js: dim the clouds and mist with the daylight (1 day .. 0 night), warm them at sunset
+      setDaylight(day) {
+        const k = 0.04 + 0.96 * day, warm = Math.max(0, 1 - Math.abs(day - 0.45) * 3);
+        sunCol.copy(sunCol0).multiplyScalar(k); sunCol.r *= 1 + 0.35 * warm; sunCol.b *= 1 - 0.3 * warm;
+        shadeCol.copy(shadeCol0).multiplyScalar(0.06 + 0.94 * day);
+      },
       update(dt, cam, time) {
         off.x = (time * WIND.x) % SIZE; off.y = (time * WIND.y) % SIZE;
         U.uCloudSun.value.copy(sunDir);
