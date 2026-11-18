@@ -113,7 +113,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       dish.position.set(x, y, z); dish.rotation.y = P.yaw; dish.visible = true;
     }
     function receive(o, how) {
-      if (!sit) { const s = nearSeat(P, 3); sitDown(s); }
+      if (!sit) sitDown(findSeat(P));
       placeDish(o.dish); P.tray.push(o);
       ctx.say(how === 'counter' ? `You pick up your ${o.it.name.toLowerCase()} from the counter.` : `"Here you go, ${o.it.name.toLowerCase()}, nice and hot." The shopkeeper sets it down for you.`, 3.5);
       ctx.buzz(1);
@@ -180,7 +180,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       if (HN.busy) { ctx.toast('Finish what you are eating first.'); return false; }
       const tea = dish && (it === I.chai || it === I.lemontea);
       const kind = dish ? (tea ? 'sip' : 'eat') : it.icon === '🧃' ? 'drink' : 'snack';
-      if (dish && !sit) sitDown(nearSeat(P, 2.4));
+      if (dish && !sit) sitDown(findSeat(P));
       const need = kind === 'eat' ? Math.min(16, Math.max(6, Math.round(it.eat * 2))) : kind === 'sip' ? Math.max(4, Math.round(it.eat * 2)) : kind === 'snack' ? (it.eat > 2 ? 4 : 2) : 1;   // Maggi: 12 forkfuls, chai: 6 sips
       const e = eating = { it, src, dish, need, done: 0, kind };
       HN.start(kind, {
@@ -223,15 +223,24 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     /* ---------- seats ---------- */
     function seats() {
       const out = [], cr = ctx.crowd, pl = ctx.places;
-      if (cr && cr.seatSpots) for (const s of cr.seatSpots) out.push({ x: s.x, z: s.z, ry: s.ry, h: 0.45, ref: s });
+      if (cr && cr.seatSpots) for (const s of cr.seatSpots) out.push({ x: s.x, z: s.z, ry: s.ry, h: s.h || 0.45, ref: s });
       if (pl && pl.benches) for (const b of pl.benches) out.push({ x: b.x, z: b.z, ry: b.ry, h: 0.45 });
       return out;
     }
-    function nearSeat(p, r) {
-      let best = null, bd = r;
-      for (const s of seats()) { if (s.ref && s.ref.used) continue; const d = Math.hypot(s.x - p.x, s.z - p.z); if (d < bd) { bd = d; best = s; } }
+    function nearSeat(p, r, takeOver) {
+      let best = null, bd = r, busy = null, bb = r;
+      for (const s of seats()) {
+        const d = Math.hypot(s.x - p.x, s.z - p.z);
+        if (s.ref && s.ref.used) { if (d < bb) { bb = d; busy = s; } continue; }
+        if (d < bd) { bd = d; best = s; }
+      }
+      // every seat taken: a hiker sitting there gets up for you (only bots; never the player's own seat)
+      if (!best && takeOver && busy && ctx.crowd && ctx.crowd.freeSeat) { ctx.crowd.freeSeat(busy.ref); best = busy; }
       return best;
     }
+    const nearShop = p => ctx.stops.some(st => Math.hypot(p.x - st.spot.x, p.z - st.spot.z) < 12);
+    // at a stall you sit on its benches or chairs; out on the trail you can sit on the grass
+    function findSeat(p) { return nearShop(p) ? nearSeat(p, 9, true) : nearSeat(p, 2.4, false); }
     function sitDown(seat) {
       sit = seat ? { ...seat, bench: true } : { x: P.x, z: P.z, bench: false };
       if (seat) { if (seat.ref) seat.ref.used = true; P.x = seat.x; P.z = seat.z; P.yaw = seat.ry + Math.PI; }
@@ -241,8 +250,10 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     function toggleSit() {
       if (!P) return;
       if (sit) { if (eating) { ctx.say('Finish eating first.', 2); return; } standUp(); return; }
-      const s = nearSeat(P, 2.4); sitDown(s);
-      ctx.say(s ? 'You sit on the bench and catch your breath.' : 'You sit down on a rock by the trail.', 2.5);
+      const s = findSeat(P);
+      if (!s && nearShop(P)) { ctx.say('No free seat at this stall right now.', 2.5); return; }
+      sitDown(s);
+      ctx.say(s ? (s.h ? 'You take a seat at the stall and catch your breath.' : 'You sit on the bench and catch your breath.') : 'You sit down on the grass by the trail.', 2.5);
     }
     const eyeHeight = () => sit ? (sit.bench ? 1.15 : 0.85) : 1.65;
     function hudSit() {
