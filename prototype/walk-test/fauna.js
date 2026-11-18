@@ -290,7 +290,7 @@ window.TriundFauna = {
     /* ---------- animated models (Quaternius CC0 animal pack) replace the primitive rigs ---------- */
     function modelRig(gltf, targetH, recolor) {
       const root = THREE.SkeletonUtils.clone(gltf.scene);
-      root.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; n.frustumCulled = false; n.material = n.material.clone(); n.material.metalness = 0; n.material.roughness = 0.95; if (recolor) recolor(n.material); } });
+      root.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; if (!n.geometry.boundingSphere) n.geometry.computeBoundingSphere(); if (!n.geometry.userData.padded) { n.geometry.boundingSphere.radius *= 1.4; n.geometry.userData.padded = true; } n.frustumCulled = true; n.material = n.material.clone(); n.material.metalness = 0; n.material.roughness = 0.95; if (recolor) recolor(n.material); } });
       root.updateMatrixWorld(true);
       const bb = new THREE.Box3().setFromObject(root), c = bb.getCenter(new THREE.Vector3());
       let head = null; root.traverse(n => { if (!head && n.isBone && /head/i.test(n.name)) head = n; });
