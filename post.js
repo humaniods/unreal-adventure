@@ -32,10 +32,21 @@ precision highp float;
 uniform sampler2D tScene; uniform vec2 uUv, uTexel; uniform float uSharp, uGrade, uVig, uTime;
 varying vec2 vUv;
 vec3 tap(vec2 uv) { return texture2D(tScene, clamp(uv, vec2(0.0), uUv - uTexel * 0.5)).rgb; }
+// Catmull-Rom bicubic in 5 bilinear taps: a much sharper upscale than one bilinear tap when resolution is lowered
+vec3 bicubic(vec2 uv) {
+  vec2 sp = uv / uTexel, t1 = floor(sp - 0.5) + 0.5, f = sp - t1;
+  vec2 w0 = f * (-0.5 + f * (1.0 - 0.5 * f)), w1 = 1.0 + f * f * (-2.5 + 1.5 * f);
+  vec2 w2 = f * (0.5 + f * (2.0 - 1.5 * f)), w3 = f * f * (-0.5 + 0.5 * f);
+  vec2 w12 = w1 + w2, t0 = (t1 - 1.0) * uTexel, t3 = (t1 + 2.0) * uTexel, t12 = (t1 + w2 / w12) * uTexel;
+  vec3 c = tap(vec2(t12.x, t0.y)) * (w12.x * w0.y) + tap(vec2(t0.x, t12.y)) * (w0.x * w12.y) + tap(t12) * (w12.x * w12.y)
+         + tap(vec2(t3.x, t12.y)) * (w3.x * w12.y) + tap(vec2(t12.x, t3.y)) * (w12.x * w3.y);
+  float wsum = w12.x * w0.y + w0.x * w12.y + w12.x * w12.y + w3.x * w12.y + w12.x * w3.y;
+  return max(c / wsum, 0.0);
+}
 float luma(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
 void main() {
   vec2 uv = vUv * uUv, t = uTexel;
-  vec3 c = tap(uv);
+  vec3 c = uUv.x < 0.995 ? bicubic(uv) : tap(uv);
   vec3 n = tap(uv + vec2(0.0, -t.y)), s = tap(uv + vec2(0.0, t.y)), e = tap(uv + vec2(t.x, 0.0)), w = tap(uv + vec2(-t.x, 0.0));
   float lc = luma(c), ln = luma(n), ls = luma(s), le = luma(e), lw = luma(w);
   float lmin = min(lc, min(min(ln, ls), min(le, lw))), lmax = max(lc, max(max(ln, ls), max(le, lw))), range = lmax - lmin;
@@ -81,10 +92,11 @@ void main() {
     }
     return {
       rt, uniforms: U,
+      minScale: 0.75,     // below this the picture goes soft; the game prefers a few dropped frames
       get scale() { return scale; },
       // full drawing-buffer size; reallocates (only on window resize or a quality change)
       setSize(w, h) { w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h)); if (w === size.x && h === size.y) return; size.set(w, h); rt.setSize(w, h); applyViewport(); },
-      setScale(s) { s = Math.min(1, Math.max(0.5, s)); if (Math.abs(s - scale) < 0.005) return; scale = s; applyViewport(); },
+      setScale(s) { s = Math.min(1, Math.max(this.minScale, s)); if (Math.abs(s - scale) < 0.005) return; scale = s; applyViewport(); },
       render(scene, camera, time) {
         U.uTime.value = (time || 0) % 100;
         renderer.setRenderTarget(rt); renderer.render(scene, camera);
