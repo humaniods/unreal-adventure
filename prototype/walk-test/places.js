@@ -62,9 +62,15 @@ window.TriundPlaces = {
       return t;
     }
     // one wall module = 3 m wide x 2.9 m tall (one floor): plaster with a window. Vertex colour tints the plaster.
-    const wallTex = canvasTex(256, 256, (g, w, h) => {
+    let wallTex = null;
+    function drawWall() { if (wallTex) drawWallTo(wallTex.image.getContext('2d'), wallTex.image.width, wallTex.image.height); }
+    function drawWallTo(g, w, h) {
       g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
-      for (let i = 0; i < 1400; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * 0.05})`; g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 5, 2 + Math.random() * 5); }
+      if (plasterImg.img) {
+        // plaster photo, lifted toward white so the vertex colour reads as the paint colour
+        g.drawImage(plasterImg.img, 0, 0, w, h); g.globalCompositeOperation = 'screen'; g.fillStyle = 'rgba(150,150,150,1)'; g.fillRect(0, 0, w, h); g.globalCompositeOperation = 'source-over';
+      } else for (let i = 0; i < 1400; i++) { g.fillStyle = `rgba(0,0,0,${Math.random() * 0.05})`; g.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 5, 2 + Math.random() * 5); }
+      const k = w / 256; g.save(); g.scale(k, k); w = 256; h = 256;
       g.fillStyle = 'rgba(70,60,50,0.18)'; g.fillRect(0, h - 10, w, 10);                    // floor band / slab edge
       const wx = w * 0.3, ww = w * 0.4, wy = h * 0.22, wh = h * 0.45;
       g.fillStyle = '#5a4030'; g.fillRect(wx - 7, wy - 7, ww + 14, wh + 14);                 // wooden frame
@@ -74,14 +80,72 @@ window.TriundPlaces = {
       g.fillStyle = 'rgba(40,30,20,0.35)'; g.fillRect(wx - 10, wy + wh + 7, ww + 20, 8);   // sill shadow
       const grd = g.createLinearGradient(0, h * 0.75, 0, h); grd.addColorStop(0, 'rgba(60,50,40,0)'); grd.addColorStop(1, 'rgba(60,50,40,0.12)');
       g.fillStyle = grd; g.fillRect(0, h * 0.75, w, h * 0.25);                                // rain stains near the slab
-    }, true);
-    // corrugated tin / slate: stripes run down the slope (v)
-    const roofTex = canvasTex(128, 128, (g, w, h) => {
-      for (let x = 0; x < w; x++) { const v = 200 + 40 * Math.sin(x / w * Math.PI * 2 * 8); g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(x, 0, 1, h); }
-      for (let i = 0; i < 300; i++) { g.fillStyle = `rgba(90,60,40,${Math.random() * 0.12})`; g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 6, 1 + Math.random() * 10); }
-      g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(0, h - 3, w, 3);
-    }, true);
-    const plainTex = canvasTex(4, 4, (g) => { g.fillStyle = '#fff'; g.fillRect(0, 0, 4, 4); });
+      // streaks running down from the sill corners
+      for (const sx of [wx - 6, wx + ww + 2]) { const sg = g.createLinearGradient(0, wy + wh + 12, 0, h * 0.95); sg.addColorStop(0, 'rgba(50,42,34,0.22)'); sg.addColorStop(1, 'rgba(50,42,34,0)'); g.fillStyle = sg; g.fillRect(sx, wy + wh + 12, 5, h * 0.95 - wy - wh - 12); }
+      g.restore();
+    }
+    wallTex = canvasTex(512, 512, drawWallTo, true);
+
+    /* ---------- photo surfaces (Poly Haven, CC0; see tex/SOURCES.txt) ----------
+       Walls: the plaster photo under the painted window module (the canvas is redrawn once the photo arrives).
+       Roofs: corrugated iron with its normal map, greyed so the vertex colour paints it.
+       Props (stalls, benches, crates...): world-space triplanar wood grain as surface detail under the vertex
+       colour, so no UVs are needed. Every surface darkens toward the ground it stands on (contact occlusion,
+       from the per-vertex height above ground) and is a little desaturated and grimy, like things up a mountain. */
+    const texLoader = new THREE.TextureLoader(), blankN = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1, THREE.RGBAFormat); blankN.needsUpdate = true;
+    function photo(name, srgb, onImg) {
+      const t = texLoader.load('tex/' + name + '.jpg', tt => { if (onImg) onImg(tt.image); });
+      t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; if (srgb) t.encoding = THREE.sRGBEncoding; return t;
+    }
+    // greyed, brightened copy of a photo (so a vertex colour tints it like paint)
+    function greyed(name, gain, rep) {
+      const ct = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#c8c8c8'; g.fillRect(0, 0, w, h); }, rep);
+      texLoader.load('tex/' + name + '.jpg', t => {
+        const c = ct.image, g = c.getContext('2d'); g.drawImage(t.image, 0, 0, c.width, c.height);
+        const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
+        let m = 0; for (let i = 0; i < a.length; i += 4) m += a[i] * 0.3 + a[i + 1] * 0.59 + a[i + 2] * 0.11; m /= a.length / 4;
+        const k = 255 * gain / Math.max(m, 1);
+        for (let i = 0; i < a.length; i += 4) { const l = (a[i] * 0.3 + a[i + 1] * 0.59 + a[i + 2] * 0.11) * k; a[i] = Math.min(255, l * 0.97 + a[i] * 0.03 * k); a[i + 1] = Math.min(255, l); a[i + 2] = Math.min(255, l * 0.98); }
+        g.putImageData(d, 0, 0); ct.needsUpdate = true;
+      });
+      return ct;
+    }
+    const plasterImg = { img: null };
+    const tinMap = greyed('tin_d', 0.82, true), tinN = photo('tin_n', false);
+    const woodDetail = photo('wood_d', true), woodN = photo('wood_n', false), plasterN = photo('plaster_n', false);
+    photo('plaster_d', false, img => { plasterImg.img = img; drawWall(); wallTex.needsUpdate = true; });
+    // kind: 'wall' | 'roof' | 'prop'
+    function surfaceMat(kind, opts) {
+      const m = new THREE.MeshStandardMaterial(Object.assign({ vertexColors: true, roughness: 0.92, metalness: 0 }, opts));
+      m.onBeforeCompile = sh => {
+        sh.uniforms.tWood = { value: woodDetail };
+        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float gh; varying float vGh; varying vec3 vWp; varying vec3 vWn;')
+          .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGh = gh; vWp = (modelMatrix * vec4(transformed, 1.0)).xyz; vWn = normalize(mat3(modelMatrix) * objectNormal);');
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform sampler2D tWood; varying float vGh; varying vec3 vWp; varying vec3 vWn;')
+          .replace('#include <color_fragment>', `#include <color_fragment>
+  {
+    vec3 c = diffuseColor.rgb;
+    float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+    c = mix(vec3(l), c, 0.86);                                       // sun and dust fade paint
+    ${kind === 'prop' ? `
+    vec3 an = abs(normalize(vWn)); an /= (an.x + an.y + an.z);
+    vec3 tw = texture2D(tWood, vWp.zy * 0.45).rgb * an.x + texture2D(tWood, vWp.xz * 0.45).rgb * an.y + texture2D(tWood, vWp.xy * 0.45).rgb * an.z;
+    float g = dot(tw, vec3(0.333));
+    c *= mix(1.0, 0.55 + g * 1.5, 0.55);                             // grain and wear under the paint` : ''}
+    float grime = texture2D(tWood, vWp.xz * 0.031 + vWp.y * 0.07).g;
+    c *= 0.84 + 0.3 * grime;
+    ${kind === 'prop' || kind.indexOf('wood') >= 0 ? '' : `
+    // rain streaks on walls: the wood photo stretched vertically gives irregular dark runs
+    float vert = 1.0 - abs(normalize(vWn).y);
+    float streak = texture2D(tWood, vec2((vWp.x + vWp.z) * 0.9, vWp.y * 0.035)).r;
+    c *= 1.0 - 0.22 * vert * smoothstep(0.42, 0.75, streak);`}
+    c *= mix(0.5, 1.0, smoothstep(0.0, 1.1, vGh));                   // contact occlusion and splash dirt at the foot
+    diffuseColor.rgb = c;
+  }`);
+      };
+      m.customProgramCacheKey = () => 'triund-surface-' + kind;
+      return m;
+    }
 
     /* ---------- geometry batches (merged by material) ---------- */
     function Batch() { this.p = []; this.n = []; this.c = []; this.uv = []; }
@@ -104,6 +168,9 @@ window.TriundPlaces = {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(this.p, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(this.n, 3));
       g.setAttribute('color', new THREE.Float32BufferAttribute(this.c, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(this.uv, 2));
+      const gh = new Float32Array(this.p.length / 3);
+      for (let i = 0; i < gh.length; i++) gh[i] = this.p[i * 3 + 1] - H(this.p[i * 3], this.p[i * 3 + 2]);
+      g.setAttribute('gh', new THREE.BufferAttribute(gh, 1));
       g.computeBoundingSphere();
       const m = new THREE.Mesh(g, mat); m.castShadow = true; m.receiveShadow = true; scene.add(m); return m;
     };
@@ -516,9 +583,10 @@ window.TriundPlaces = {
     }
 
     /* ---------- finish the merged meshes ---------- */
-    const wallMesh = walls.mesh(new THREE.MeshLambertMaterial({ map: wallTex, vertexColors: true, side: THREE.DoubleSide }));
-    const roofMesh = roofs.mesh(new THREE.MeshLambertMaterial({ map: roofTex, vertexColors: true, side: THREE.DoubleSide }));
-    const propMesh = props.mesh(new THREE.MeshLambertMaterial({ map: plainTex, vertexColors: true }));
+    const wallMesh = walls.mesh(surfaceMat('wall', { map: wallTex, normalMap: plasterN, normalScale: new THREE.Vector2(0.6, 0.6), side: THREE.DoubleSide }));
+    const roofMesh = roofs.mesh(surfaceMat('roof', { map: tinMap, normalMap: tinN, roughness: 0.55, metalness: 0.35, side: THREE.DoubleSide }));
+    const propMat = surfaceMat('prop', { roughness: 0.85 });
+    const propMesh = props.mesh(propMat);
     if (tanks.length) {
       const g = new THREE.CylinderGeometry(1, 1, 1, 10); g.translate(0, 0.5, 0);
       const im = new THREE.InstancedMesh(g, new THREE.MeshLambertMaterial({ color: lin(0x1d1f22) }), tanks.length);
@@ -542,10 +610,12 @@ window.TriundPlaces = {
       const before = props.p.length;
       for (const q of list) goods(q.x, q.y, q.z, q.ry, q.w, q.d, q.hh, rng(q.seed || 5), false);
       const B = new Batch(); B.p = props.p.slice(before); B.n = props.n.slice(before); B.c = props.c.slice(before); B.uv = props.uv.slice(before);
-      B.mesh(new THREE.MeshLambertMaterial({ map: plainTex, vertexColors: true }));
+      B.mesh(propMat);
     }
     return {
       counts, stops, update, dress, meshes: { wallMesh, roofMesh, propMesh },
+      surfaceMat,
+      tex: { tinMap, tinN, plasterN, wood: woodDetail, woodN, plaster: photo('plaster_d', true), rock: photo('rock_d', true), rockN: photo('rock_n', false) },
       blocked: (x, z) => OCC.has(okey(Math.floor(x / OC), Math.floor(z / OC)))
     };
   }
