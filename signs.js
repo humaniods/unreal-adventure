@@ -24,12 +24,12 @@ window.TriundSigns = {
       ['Keep Triund clean', 'Carry your waste back down.'], ['Leave only footprints', 'Take only photos.'], ['No plastic on the trail', 'Use the bins at the stalls.'],
       ['Protect the forest', 'Do not break branches.'], ['Respect the mountain', 'Keep music low, carry litter back.']];
     const STYLE = {
-      km: { bg: '#1d4a34', fg: '#ffffff', sub: '#d8f0c8', w: 1.5, h: 0.95 },
+      km: { bg: '#5b2a1f', fg: '#f6ead2', sub: '#f2d9a8', w: 1.5, h: 0.95 },          // the forest department's maroon wooden boards
       motivate: { bg: '#f2c230', fg: '#2a1a04', sub: '#4a3008', w: 1.7, h: 0.85 },
       clean: { bg: '#1f5a8a', fg: '#ffffff', sub: '#cfe6ff', w: 1.7, h: 0.85 },
       camp: { bg: '#7a3418', fg: '#fff3e0', sub: '#ffd9b0', w: 1.7, h: 0.9 },
       selfie: { bg: '#b8285e', fg: '#ffffff', sub: '#ffd6e6', w: 1.8, h: 0.9 },
-      mark: { bg: '#24573c', fg: '#ffffff', sub: '#f4e7a1', w: 1.05, h: 0.6, y: 1.05, post: 1 }
+      mark: { bg: '#5b2a1f', fg: '#f6ead2', sub: '#f2d9a8', w: 1.05, h: 0.6, y: 1.05, post: 1 }
     };
     const LINES = ['Every step takes you higher', 'Breathe deep, walk slow', 'Keep Triund clean', 'Carry your waste back down', 'You are doing great',
       'Leave only footprints', 'Drink some water', 'Look back at the valley!', 'No plastic on the trail', 'Rest when you need to', 'Stay on the trail',
@@ -74,6 +74,10 @@ window.TriundSigns = {
     function draw(lines, st) {
       const W = 512, Hc = Math.round(512 * st.h / st.w), c = document.createElement('canvas'); c.width = W; c.height = Hc;
       const g = c.getContext('2d'); g.fillStyle = st.bg; g.fillRect(0, 0, W, Hc);
+      if (st.bg === '#5b2a1f') {   // painted wood: grain shows through the paint, and the edges are weathered
+        for (let i = 0; i < 40; i++) { const y = Math.random() * Hc; g.strokeStyle = `rgba(${Math.random() < 0.5 ? '30,12,8' : '120,70,50'},${0.08 + Math.random() * 0.1})`; g.lineWidth = 1 + Math.random() * 2;
+          g.beginPath(); g.moveTo(0, y); for (let x = 0; x <= W; x += 32) g.lineTo(x, y + Math.sin(x * 0.01 + i) * 3); g.stroke(); }
+      }
       g.strokeStyle = st.fg; g.lineWidth = 6; g.strokeRect(12, 12, W - 24, Hc - 24);
       g.textAlign = 'center'; g.textBaseline = 'middle';
       const n = lines.length, lh = (Hc - 40) / n;
@@ -94,7 +98,7 @@ window.TriundSigns = {
       for (let s = 500; s < tr.total - 150; s += 500) {
         const at = beside(tr, s, 2.3); if (!at) continue;
         const left = tr.total - at.s, alt = Math.round(at.p.h);
-        board(at, 'km', ['TRIUND TOP  ' + km(left), alt.toLocaleString('en-IN') + ' m above sea level', 'Walked ' + km(at.s)], ['TO ' + start.toUpperCase() + '  ' + km(at.s), 'Triund top is ' + km(left) + ' up', alt.toLocaleString('en-IN') + ' m']);
+        board(at, 'km', [km(left).toUpperCase() + ' TO GO', 'to Triund top · ' + alt.toLocaleString('en-IN') + ' m here', 'Walked ' + km(at.s)], ['TO ' + start.toUpperCase() + '  ' + km(at.s), 'Triund top is ' + km(left) + ' up', alt.toLocaleString('en-IN') + ' m']);
       }
       for (let s = 250; s < tr.total - 100; s += 500) {
         const at = beside(tr, s, 2.3); if (!at) continue;

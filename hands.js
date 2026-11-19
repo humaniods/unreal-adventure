@@ -165,6 +165,7 @@ window.TriundHands = {
     }
     function finish(abort) {
       const j = job; if (!j) return; job = null; fork.visible = false;
+      { const ch = getChar(); if (ch && ch.U && ch.U.uJaw) ch.U.uJaw.value = 0; }
       if (j.small) scene.remove(j.small);
       if (j.dish && j.onPutDown) j.onPutDown(j.dish);
       if (!abort && j.onDone) j.onDone();
@@ -200,7 +201,7 @@ window.TriundHands = {
         if (j.phase === 'loop') {
           const cyc = 2.2, p = (j.t % cyc) / cyc;
           if (p < 0.25) m = 0; else if (p < 0.55) m = ease((p - 0.25) / 0.3); else if (p < 0.65) { m = 1; biteAt = true; } else m = 1 - ease((p - 0.65) / 0.35);
-          tip = v3().copy(food).lerp(inMouth, m);
+          tip = v3().copy(food).lerp(inMouth, m); j.m = m;
           fork.userData.bite.visible = p > 0.15 && p < 0.6;
           if (!biteAt) j.bit = false;
         }
@@ -311,8 +312,16 @@ window.TriundHands = {
         const fd = v3().copy(ax); fork.position.copy(C).addScaledVector(fd, 0.02); fork.lookAt(v3().copy(fork.position).add(fd));
         j.tipOff = v3().copy(C).addScaledVector(fd, 0.17).sub(HR);   // the food on the tines, 17 cm out along the handle
       }
+      // the mouth opens as the food comes up, closes on the bite, and the jaw chews on the way back down
+      { const now = performance.now(), dtp = Math.min(0.1, (now - (j.lastPose || now)) / 1000); j.lastPose = now;
+        const drink = !!(j.dish && j.kind !== 'eat') || j.icon === '💧';
+        let open = j.kind === 'eat' ? (j.m || 0) : (j.tilt || 0);
+        open *= drink ? 0.35 : (biteAt && j.bit ? 0.25 : 1);
+        if (j.chew > 0) { j.chew -= dtp; open = Math.max(open * 0.3, 0.32 * (0.5 + 0.5 * Math.sin(j.chew * 14))); }
+        j.jaw = (j.jaw || 0) + (open - (j.jaw || 0)) * Math.min(1, dtp * 14);
+        if (ch.U && ch.U.uJaw) ch.U.uJaw.value = j.jaw; }
       // a bite or sip lands
-      if (biteAt && !j.bit) { j.bit = true; j.bites++; if (fork.userData.bite) fork.userData.bite.visible = false; if (j.small && j.small.userData.bite) j.small.userData.bite(j.bites / j.need); if (j.onBite) j.onBite(j.bites); }
+      if (biteAt && !j.bit) { j.bit = true; j.bites++; if (j.kind === 'eat' || (j.small && !(j.icon === '💧'))) j.chew = 1.7; if (fork.userData.bite) fork.userData.bite.visible = false; if (j.small && j.small.userData.bite) j.small.userData.bite(j.bites / j.need); if (j.onBite) j.onBite(j.bites); }
       if (j.bites >= j.need && !biteAt && j.phase === 'loop') { if (j.small && j.small.userData.open) { j.phase = 'away'; j.t = 0; } else finish(false); }
     }
     // the close camera: in front of the hiker and to one side, looking at the hands and the plate

@@ -16,7 +16,8 @@ window.TriundTerrain = {
       uBoxF: { value: new THREE.Vector4(farBox.e0, farBox.e1, farBox.n0, farBox.n1) },
       uSatOK: { value: 0 }, uSatGain: { value: 1.25 }, uSatSat: { value: 1.18 }, uTexOK: { value: 0 },
       uAutumn: { value: 1 },   // late-autumn grass: the high meadows dry to gold and brown (season.js)
-      uWet: { value: 0 }    // monsoon: wet, darker, greener ground and puddles on the trail (season.js)
+      uWet: { value: 0 },   // wet, darker ground (season.js)
+      uSnow: { value: 0 }   // fresh snow lying after a snowfall: the high meadows first, then lower (weather.js)
     };
     // ground photo textures (CC0, polyhaven.com): uniform -> file
     const TEX = { tGrass: 'grass_d', tMeadow: 'meadow_d', tLitter: 'litter_d', tRock: 'rock_d', tTrail: 'trail_d', tDirt: 'dirt_d', tPave: 'pave_d',
@@ -43,7 +44,7 @@ window.TriundTerrain = {
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>
 uniform sampler2D uSatN; uniform sampler2D uSatF; uniform vec4 uBoxN; uniform vec4 uBoxF;
-uniform float uSatOK; uniform float uSatGain; uniform float uSatSat; uniform float uTexOK; uniform float uWet; uniform float uAutumn;
+uniform float uSatOK; uniform float uSatGain; uniform float uSatSat; uniform float uTexOK; uniform float uWet; uniform float uAutumn; uniform float uSnow;
 uniform sampler2D tGrass; uniform sampler2D tMeadow; uniform sampler2D tLitter; uniform sampler2D tRock; uniform sampler2D tTrail;
 uniform sampler2D tDirt; uniform sampler2D tPave; uniform sampler2D nLitter; uniform sampler2D nRock; uniform sampler2D nTrail;
 uniform sampler2D tNoise;
@@ -133,6 +134,13 @@ base = mix(base, rockC, rock);
   snow = max(snow, smoothstep(3950.0, 4350.0, hAlt) * gully * 0.85);
   snow *= 0.85 + 0.15 * tf(p * 0.3);
   base = mix(base, vec3(0.86, 0.89, 0.93), clamp(snow, 0.0, 1.0));
+  // fresh snow from today's fall: a dusting on gentle ground above about 2,500 m, thicker higher up, broken by
+  // grass tufts and rocks; steep faces and the worn trail stay darker
+  if (uSnow > 0.001) {
+    float lay = uSnow * smoothstep(2450.0 - 250.0 * uSnow, 2750.0, hAlt) * (1.0 - smoothstep(0.45, 0.75, slope));
+    lay *= smoothstep(0.25, 0.65, tf(p * 0.9) * 0.6 + uSnow * 0.7);
+    base = mix(base, vec3(0.84, 0.87, 0.92), clamp(lay, 0.0, 0.92));
+  }
 }
 // trail surface (OSM surface tag)
 float tw = vT.x;

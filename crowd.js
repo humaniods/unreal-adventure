@@ -8,7 +8,7 @@
    World axes: x = east, y = up, z = south. */
 window.TriundCrowd = {
   async build(o) {
-    const { THREE, scene, H, trails, stops, top, rng, blocked, base, talkers, quality, ground, collide, night } = o;
+    const { THREE, scene, H, trails, stops, top, rng, blocked, base, talkers, quality, ground, collide, night } = o, HM = o.meshH || H;
     const R = rng(2468);
     const lin = c => new THREE.Color(c).convertSRGBToLinear();
     const loader = new THREE.GLTFLoader();
@@ -152,6 +152,18 @@ window.TriundCrowd = {
       return (g.userData.info = { top, section, surf, ridge });
     }
 
+    function mouthInfo(body) {
+      const g = body.geometry; if (g.userData.mouth) return g.userData.mouth;
+      const P = g.attributes.position, SI = g.attributes.skinIndex.array, SW = g.attributes.skinWeight.array, hi = body.skeleton.bones.findIndex(b => b.name === 'Head');
+      let nz = -1e9, ny = 0; const front = [];
+      for (let i = 0; i < P.count; i++) {
+        let w = 0; for (let k = 0; k < 4; k++) if (SI[i * 4 + k] === hi) w += SW[i * 4 + k];
+        if (w < 0.5 || Math.abs(P.getX(i)) > 0.02) continue;
+        const y = P.getY(i), z = P.getZ(i); front.push([y, z]); if (z > nz) { nz = z; ny = y; }
+      }
+      let cy = ny; for (const [y, z] of front) if (z > nz - 0.04 && y < cy) cy = y;
+      return (g.userData.mouth = { chinY: cy, noseY: ny, noseZ: nz, mouthY: cy + 0.55 * (ny - cy), hingeY: ny - 0.004, hingeZ: nz - 0.11 });
+    }
     function clothMaterial(src, U) {
       const m = src.clone();
       m.onBeforeCompile = sh => {
@@ -159,12 +171,16 @@ window.TriundCrowd = {
         // clothes have volume: push them out along the normal (puffer / fleece jacket or sweater, trousers, boots);
         // a shawl over the shoulders adds its own thickness
         sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
-attribute vec4 cloth; varying vec4 vCloth; varying vec3 vOP; varying float vShawl; uniform vec3 uPuff; uniform float uShawlOn, uH;
+attribute vec4 cloth; varying vec4 vCloth; varying vec3 vOP; varying float vShawl; uniform vec3 uPuff; uniform float uShawlOn, uH; uniform float uJaw; uniform vec4 uMouth;
 float shawlMask(vec3 p, vec4 c) {
   float y = p.y / uH, edge = (p.z > 0.0 ? 0.705 : 0.63) + abs(p.x) * 0.22;
   return uShawlOn * smoothstep(0.4, 0.7, c.y) * (1.0 - smoothstep(0.28, 0.32, abs(p.x))) * smoothstep(edge, edge + 0.006, y);
 }`)
-          .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCloth = cloth; vOP = position; vShawl = shawlMask(position, cloth);\ntransformed += objectNormal * (dot(cloth.yzw, uPuff) + vShawl * 0.012);');
+          .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCloth = cloth; vOP = position; vShawl = shawlMask(position, cloth);\ntransformed += objectNormal * (dot(cloth.yzw, uPuff) + vShawl * 0.012);\n' +
+            // the jaw: the face below the mouth line turns down about a hinge under the ears (there is no jaw bone in the rig)
+            'if (uJaw > 0.001) { float jw = smoothstep(uMouth.x + 0.004, uMouth.x - 0.004, position.y) * smoothstep(uMouth.y - 0.045, uMouth.y - 0.004, position.y) * smoothstep(uMouth.w - 0.02, uMouth.w + 0.05, position.z) * (1.0 - smoothstep(0.045, 0.08, abs(position.x)));\n' +
+            '  float ja = uJaw * 0.26 * jw, jc = cos(ja), js = sin(ja); vec2 jr = vec2(transformed.y - uMouth.z, transformed.z - uMouth.w);\n' +
+            '  transformed.y = uMouth.z + jr.x * jc - jr.y * js; transformed.z = uMouth.w + jr.x * js + jr.y * jc; }');
         sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uTop; uniform vec3 uBottom; uniform vec3 uShoe; uniform vec3 uShawl; uniform float uQuilt, uKnit, uZip, uH; varying vec4 vCloth; varying vec3 vOP; varying float vShawl;')
           .replace('#include <map_fragment>', `#include <map_fragment>
   {
@@ -307,7 +323,8 @@ float shawlMask(vec3 p, vec4 c) {
     function makeChar(sex) {
       const g = SRC[sex], root = THREE.SkeletonUtils.clone(g.scene);
       const U = { uTop: { value: new THREE.Color() }, uBottom: { value: new THREE.Color() }, uShoe: { value: new THREE.Color() }, uShawl: { value: new THREE.Color() },
-                  uPuff: { value: new THREE.Vector3(0.04, 0.018, 0.012) }, uQuilt: { value: 1 }, uKnit: { value: 0 }, uZip: { value: 1 }, uShawlOn: { value: 0 }, uH: { value: 1.8 } };
+                  uPuff: { value: new THREE.Vector3(0.04, 0.018, 0.012) }, uQuilt: { value: 1 }, uKnit: { value: 0 }, uZip: { value: 1 }, uShawlOn: { value: 0 }, uH: { value: 1.8 },
+                  uJaw: { value: 0 }, uMouth: { value: new THREE.Vector4(1.616, 1.578, 1.642, 0.0) } };
       let body = null, head = null, spine = null, neck = null, pelvis = null;
       root.traverse(n => {
         if (n.isSkinnedMesh) {
@@ -324,9 +341,14 @@ float shawlMask(vec3 p, vec4 c) {
       });
       root.updateMatrixWorld(true);
       const B = bodyInfo(body); U.uH.value = B.top;
+      // the mouth, from the face itself: chin (lowest front point), nose (most forward), the lips between them;
+      // the jaw hinges under the ears. A dark mouth inside shows when the jaw opens.
+      const M = mouthInfo(body); U.uMouth.value.set(M.mouthY, M.chinY, M.hingeY, M.hingeZ);
       const hp = new THREE.Vector3().setFromMatrixPosition(head.matrixWorld), sp = new THREE.Vector3().setFromMatrixPosition(spine.matrixWorld);
       const np = new THREE.Vector3().setFromMatrixPosition(neck.matrixWorld);
       const acc = { pack: null, cap: null, beanie: null, topi: null, muffler: null, kurta: null, collar: null, hair: {} };
+      { const cav = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6), new THREE.MeshBasicMaterial({ color: 0x2a0d0b })); cav.castShadow = false;
+        attach(head, cav, T4(0, M.mouthY - 0.006, M.noseZ - 0.052).multiply(new THREE.Matrix4().makeScale(0.022, 0.012, 0.018))); acc.mouth = cav; }
       const puffT = 0.045;   // the jacket's thickness over the body (uPuff.x for a puffer)
 
       // rucksack: rounded main bag against the back, a lid, a front pocket, side bottles, a sleeping mat under it,
@@ -576,7 +598,7 @@ float shawlMask(vec3 p, vec4 c) {
       }
       if (a.state === 'sit') a.y = sitRoot(a.seat, a.look.scale).y;   // on the seat, not on the ground under it
       else if (a.state === 'fire') a.y = groundSit(a.fseat, a.look.scale).y;
-      else a.y = ground && (a.state === 'walk' || a.state === 'rest') ? ground(a.x, a.z, a.tr.id, a.s, a.lat) : H(a.x, a.z);   // on the steps where there are steps
+      else a.y = ground && (a.state === 'walk' || a.state === 'rest') ? ground(a.x, a.z, a.tr.id, a.s, a.lat) : HM(a.x, a.z);   // on the steps where there are steps
     }
 
     /* ---------- far proxies: one instanced low-poly figure (torso, legs, head, pack) ---------- */

@@ -37,13 +37,20 @@ window.TriundSteps = {
           const depth = e - s + 0.12, width = paved ? 2.1 : 1.85 + R() * 0.3;   // a full trail width: feet never stand half off a tread
           if (paved) slabs.push({ x: p.x, z: p.z, top, rot, w: width, d: depth, t: 0.5, kind: 1 });
           else {
-            // one to three rough stones side by side, uneven and worn; now and then one has gone (washed out)
-            const q = R(), n = q < 0.2 ? 1 : q < 0.65 ? 2 : 3; let off = -width / 2 + (R() - 0.5) * 0.3;
+            // as on the real trail: two to four rough slabs of different sizes laid across, none square to the path,
+            // tilted, some sitting proud, some sunk; now and then one has gone; loose rubble in the gaps and along the
+            // edges. Dark grey-blue slate lower down, paler weathered granite toward the top.
+            const q = R(), n = q < 0.15 ? 1 : q < 0.5 ? 2 : q < 0.85 ? 3 : 4; let off = -width / 2 + (R() - 0.5) * 0.35;
+            const pale = Math.max(0, Math.min(1, (top - 2450) / 300));
             for (let k = 0; k < n; k++) {
-              const w = width / n * (0.8 + R() * 0.4), cx = off + w / 2; off += w;
-              if (n > 1 && R() < 0.12) continue;
-              const lx = Math.cos(rot) * cx, lz = -Math.sin(rot) * cx;
-              slabs.push({ x: p.x + lx, z: p.z + lz, top: top + (R() - 0.6) * 0.06, rot: rot + (R() - 0.5) * 0.3, w: w * (0.85 + R() * 0.12), d: depth * (1.02 + R() * 0.25), t: 0.45, kind: 0, tilt: (R() - 0.5) * 0.1 });
+              const w = width / n * (0.65 + R() * 0.7), cx = off + w / 2; off += w * (0.85 + R() * 0.25);
+              if (n > 1 && R() < 0.14) continue;
+              const fw = (R() - 0.5) * 0.25, lx = Math.cos(rot) * cx + Math.sin(rot) * fw, lz = -Math.sin(rot) * cx + Math.cos(rot) * fw;
+              slabs.push({ x: p.x + lx, z: p.z + lz, top: top + (R() - 0.6) * 0.08, rot: rot + (R() - 0.5) * 0.55, w: w * (0.8 + R() * 0.2), d: depth * (0.85 + R() * 0.45), t: 0.32 + R() * 0.25, kind: 0, tilt: (R() - 0.5) * 0.22, pale });
+            }
+            for (let k = 0, m = 2 + (R() * 4 | 0); k < m; k++) {   // rubble
+              const cx = (R() - 0.5) * (width + 0.6), fw = (R() - 0.5) * depth * 1.3, sz = 0.07 + R() * 0.16;
+              slabs.push({ x: p.x + Math.cos(rot) * cx + Math.sin(rot) * fw, z: p.z - Math.sin(rot) * cx + Math.cos(rot) * fw, top: top - 0.06 + sz * 0.35 + (R() - 0.5) * 0.05, rot: R() * 6.28, w: sz * (1 + R() * 0.6), d: sz, t: sz * 0.7, kind: 2, tilt: (R() - 0.5) * 0.8, pale });
             }
           }
           s = e;
@@ -102,14 +109,15 @@ window.TriundSteps = {
     const concMat = tex ? stepMat(tex.rock, tex.rockN, new THREE.Color(2.0, 1.98, 1.9), 0.8) : new THREE.MeshLambertMaterial({ color: 0x8a867e });
     const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new THREE.Vector3(), T = new THREE.Vector3(), E = new THREE.Euler();
     const meshes = [];
-    for (const [kind, geo, mat] of [[0, slabGeo(true), stoneMat], [1, slabGeo(false), concMat]]) {
+    for (const [kind, geo, mat] of [[0, slabGeo(true), stoneMat], [1, slabGeo(false), concMat], [2, slabGeo(true), stoneMat]]) {
       const list = slabs.filter(b => b.kind === kind); if (!list.length) continue;
       const im = new THREE.InstancedMesh(geo, mat, list.length), C = new THREE.Color();
       list.forEach((b, i) => {
         M.compose(T.set(b.x, b.top, b.z), Q.setFromEuler(E.set(b.tilt || 0, b.rot, (b.tilt || 0) * 0.7, 'YXZ')), S.set(b.w, b.t, b.d));
         im.setMatrixAt(i, M);
-        const v = (kind ? 0.8 + R() * 0.2 : 0.55 + R() * 0.55) * (sunAt ? 0.7 + 0.3 * sunAt(b.x, b.z) : 1), g = kind ? 1 : 0.96 + R() * 0.08;
-        im.setColorAt(i, C.setRGB(v, v * g, v * g * 0.95));
+        const v = (kind === 1 ? 0.8 + R() * 0.2 : 0.5 + R() * 0.6) * (sunAt ? 0.7 + 0.3 * sunAt(b.x, b.z) : 1), g = kind === 1 ? 1 : 0.96 + R() * 0.08;
+        if (kind === 1) im.setColorAt(i, C.setRGB(v, v * g, v * g * 0.95));
+        else { const pl = (b.pale || 0) * 0.55; im.setColorAt(i, C.setRGB(v * (0.86 + 0.45 * pl), v * g * (0.92 + 0.36 * pl), v * g * (1.04 + 0.12 * pl))); }   // slate: a touch blue; granite: pale buff
       });
       im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false;
       // 16 000 stones over 10 km of trail: keep every matrix, draw only the ones within VIEW m (rebuilt as you walk)
