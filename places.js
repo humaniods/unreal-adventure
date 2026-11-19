@@ -5,14 +5,45 @@
    World axes: x = east, z = south (z = -north), y = altitude.
    Everything static is merged into a handful of meshes; only the name boards are separate (and hidden when far). */
 window.TriundPlaces = {
+  // Level ground in front of every cafe and shop, where its benches, table and chairs stand (as on the real ridge,
+  // where each dhaba has a levelled patio). Called before the terrain is built, so it repeats the placement rules
+  // of build() below for cafes and shops: keep the two in step. Returns pads {x, z, r0, r1} centred on the seating.
+  pads(o) {
+    const { data, trails, skip } = o, out = [];
+    const TS = [];
+    for (const tr of trails) for (let s = 0; s <= tr.total; s += 4) { const p = tr.pointAtS(s); TS.push({ x: p.x, z: p.z, s, tr }); }
+    const nearestTrail = (x, z) => { let b = TS[0], bd = Infinity; for (const t of TS) { const d = (t.x - x) ** 2 + (t.z - z) ** 2; if (d < bd) { bd = d; b = t; } } return { x: b.x, z: b.z, s: b.s, tr: b.tr, d: Math.sqrt(bd) }; };
+    const inPoly = (P, x, z) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) if ((P[i][1] > z) !== (P[j][1] > z) && x < (P[j][0] - P[i][0]) * (z - P[i][1]) / (P[j][1] - P[i][1] + 1e-12) + P[i][0]) c = !c; return c; };
+    for (const poi of data.pois) {
+      if (poi.kind !== 'cafe' && poi.kind !== 'shop') continue;
+      let x = poi.e, z = -poi.n;
+      if (skip.some(k => Math.hypot(k.x - x, k.z - z) < k.r)) continue;
+      const nt = nearestTrail(x, z);
+      let tx = (nt.x - x) / (nt.d || 1), tz = (nt.z - z) / (nt.d || 1);
+      if (nt.d < 1e-3) { const d = nt.tr.dirAtS(nt.s, 10); tx = -d.dz; tz = d.dx; }
+      if (poi.b >= 0) {
+        const b = data.buildings[poi.b]; if (!b || !poi.name || poi.kind !== 'cafe' || nt.d >= 30) continue;
+        const P = []; for (let k = 0; k < b.p.length; k += 2) P.push([b.p[k], -b.p[k + 1]]);
+        let bx = x, bz = z; for (let k = 0; k < 40 && inPoly(P, bx, bz); k++) { bx += tx * 0.5; bz += tz * 0.5; }
+        const sx = bx + tx * 1.6, sz = bz + tz * 1.6;            // storefront centre (1.3 m + 0.3 m out from the wall)
+        out.push({ x: sx + tx * 1.6, z: sz + tz * 1.6, r0: 3.7, r1: 5.6 });
+        continue;
+      }
+      const clear = poi.kind === 'cafe' ? 6 : 5;
+      if (nt.d < clear) { x = nt.x - tx * clear; z = nt.z - tz * clear; }
+      out.push({ x: x + tx * 1.5, z: z + tz * 1.5, r0: 4.1, r1: 6.2 });
+    }
+    return out;
+  },
   build(o) {
     const { THREE, scene, H, data, trails, textPlane, lin, rng, skip, prayerFlags, collide } = o;
     // solid footprints (collide.js); a local box inside a rotated frame like lbox()
     const colRect = (x, z, ry, lx, lz, w, d, low) => { if (!collide) return; const c = Math.cos(ry), s = Math.sin(ry); collide.rect(x + lx * c + lz * s, z - lx * s + lz * c, ry, w, d, low); };
     const benches = [];   // public benches: places to sit
     const lw = (x, z, ry, lx, lz) => ({ x: x + lx * Math.cos(ry) + lz * Math.sin(ry), z: z - lx * Math.sin(ry) + lz * Math.cos(ry) });
-    // a seat at a stall: position, the way the sitter faces (character yaw), and seat height
-    const seatAt = (x, z, ry, lx, lz, face) => Object.assign(lw(x, z, ry, lx, lz), { ry: face, h: 0.45 });
+    // a seat at a stall: position, the way the sitter faces (character yaw), seat height above its ground, and y:
+    // the world height of the seat top (people sit at that height, not on the terrain under them)
+    const seatAt = (x, z, ry, lx, lz, face, top) => Object.assign(lw(x, z, ry, lx, lz), { ry: face, h: 0.45, y: top });
     const R = rng(4242);
     const counts = {};
     const bump = k => { counts[k] = (counts[k] || 0) + 1; };
@@ -194,6 +225,48 @@ window.TriundPlaces = {
       B.geo(BOX, mtx(x + lx * c + lz * s, y + ly, z - lx * s + lz * c, ry, w, h, d), col);
     };
     const C = hex => lin(hex);
+    // furniture on a slope: each piece stands on the ground under its own centre (not the stall's), and its legs
+    // run down past the lowest corner so nothing floats; returns the base height and how far legs must extend
+    // A seat takes its height from the ground where the sitter's feet go (fx, fz: local point about 0.5 m in front
+    // of it), so the feet rest on the ground; `hi` is how far the ground anywhere under the piece rises above that.
+    function footing(x, z, ry, lx, lz, w, d, fx, fz) {
+      const c = lw(x, z, ry, fx == null ? lx : fx, fz == null ? lz : fz), y = H(c.x, c.z); let lo = y, hi = -Infinity;
+      for (const [ax, az] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2], [0, 0]]) { const q = lw(x, z, ry, lx + ax, lz + az), g = H(q.x, q.z); lo = Math.min(lo, g); hi = Math.max(hi, g - y); }
+      return { y, ext: y - lo + 0.08, hi };
+    }
+    // a leg from height `top` down to the ground (plus `ext` into it)
+    const leg = (x, y, z, ry, lx, lz, top, ext, tw, td, col) => lbox(props, x, y, z, ry, lx, (top - ext) / 2, lz, tw, top + ext, td, col);
+    // tables, chairs and benches never stand on the trail or its steps
+    function trailDist(x, z) {
+      let bi = 0, bd = Infinity;
+      for (let i = 0; i < TS.length; i++) { const d = (TS[i].x - x) ** 2 + (TS[i].z - z) ** 2; if (d < bd) { bd = d; bi = i; } }
+      let m = Math.sqrt(bd);
+      for (const j of [bi - 1, bi + 1]) {
+        const a = TS[bi], b = TS[j]; if (!b || b.tr !== a.tr) continue;
+        const dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz || 1e-9, t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / l2));
+        m = Math.min(m, Math.hypot(a.x + dx * t - x, a.z + dz * t - z));
+      }
+      return m;
+    }
+    const onTrail = (x, z, ry, lx, lz, r) => { const c = lw(x, z, ry, lx, lz); return trailDist(c.x, c.z) < 1.25 + r; };
+    // a plank bench 1.8 m long at local (bx, bz), seat top 0.47 m above its own ground; sitters face `face`
+    // (back: 1 adds a backrest on the far side). Pushes two seats.
+    function plankBench(x, z, ry, bx, bz, face, back, seats) {
+      if (onTrail(x, z, ry, bx, bz, 0.9)) return;
+      const wood = C(0x6e4b2e), dark = C(0x5b4330), f = footing(x, z, ry, bx, bz, 1.8, 0.45, bx, bz + 0.5);
+      if (f.hi > 0.3) return;    // the slope behind would bury it: no bench here
+      lbox(props, x, f.y, z, ry, bx, 0.43, bz, 1.8, 0.08, 0.45, wood);
+      if (back) lbox(props, x, f.y, z, ry, bx, 0.8, bz - 0.22, 1.8, 0.3, 0.06, wood);
+      for (const lx of [-0.75, 0.75]) leg(x, f.y, z, ry, bx + lx, bz, 0.4, f.ext, 0.08, 0.36, dark);
+      if (back) for (const lx of [-0.75, 0.75]) lbox(props, x, f.y, z, ry, bx + lx, 0.62, bz - 0.22, 0.06, 0.4, 0.05, dark);
+      colRect(x, z, ry, bx, bz, 1.8, 0.45, true);
+      for (const o of [-0.45, 0.45]) seats.push(seatAt(x, z, ry, bx + o, bz, face, f.y + 0.47));
+    }
+    // no room in front (steps, a steep bank): benches along the stall's sides instead, so every stall has a seat
+    function sideBenches(x, z, ry, w, seats) {
+      if (seats.length) return;
+      for (const sd of [1, -1]) { const r2 = ry - sd * Math.PI / 2; plankBench(x, z, r2, 0, w / 2 + 0.7, r2, false, seats); }
+    }
 
     /* ---------- buildings ---------- */
     const WALL = [0xeeeae2, 0xeeeae2, 0xe8dcc0, 0xe9d48f, 0xe4b9b0, 0xbcd3df, 0xc5dcc0, 0xb7b3aa, 0xc98a6a, 0xd9d4c7];
@@ -423,15 +496,19 @@ window.TriundPlaces = {
         for (let i = 0; i < 6; i++) lbox(props, x, y, z, ry, lx, hh - 0.12 - i * 0.2, d / 2 + 0.06, 0.14, 0.18, 0.012, C(SNACK[(k * 3 + i) % SNACK.length]));
       }
       // plastic table and chairs in front
-      if (inside) {
-      const tx = w * 0.15, tz = d / 2 + 1.7, plast = C(r() < 0.5 ? 0xf2f2ee : 0xc0392b); colRect(x, z, ry, tx, tz, 1.9, 0.9, true);   // table and chairs
-      lbox(props, x, y, z, ry, tx, 0.7, tz, 0.7, 0.04, 0.7, C(0xf2f2ee));
-      for (const [ax, az] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) lbox(props, x, y, z, ry, tx + ax, 0.35, tz + az, 0.04, 0.7, 0.04, C(0xe0e0dc));
+      const tx = w * 0.15, tz = d / 2 + 1.7;
+      if (inside && !onTrail(x, z, ry, tx, tz, 1.0)) {
+      const plast = C(r() < 0.5 ? 0xf2f2ee : 0xc0392b); colRect(x, z, ry, tx, tz, 1.9, 0.9, true);   // table and chairs, each on its own ground
+      const ft = footing(x, z, ry, tx, tz, 0.7, 0.7);
+      lbox(props, x, ft.y, z, ry, tx, 0.7, tz, 0.7, 0.04, 0.7, C(0xf2f2ee));
+      for (const [ax, az] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) leg(x, ft.y, z, ry, tx + ax, tz + az, 0.68, ft.ext, 0.04, 0.04, C(0xe0e0dc));
       for (const [ax, az, back] of [[-0.6, 0, -1], [0.6, 0, 1]]) {
-        seats.push(seatAt(x, z, ry, tx + ax, tz + az, ry - back * Math.PI / 2));   // faces the table
-        lbox(props, x, y, z, ry, tx + ax, 0.43, tz + az, 0.42, 0.04, 0.42, plast);
-        lbox(props, x, y, z, ry, tx + ax + back * 0.2, 0.68, tz + az, 0.04, 0.46, 0.42, plast);
-        for (const [bx, bz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) lbox(props, x, y, z, ry, tx + ax + bx, 0.21, tz + az + bz, 0.03, 0.42, 0.03, plast);
+        const fc = footing(x, z, ry, tx + ax, tz + az, 0.42, 0.42, tx + ax - back * 0.5, tz + az);
+        if (fc.hi > 0.3) continue;
+        seats.push(seatAt(x, z, ry, tx + ax, tz + az, ry - back * Math.PI / 2, fc.y + 0.45));   // faces the table
+        lbox(props, x, fc.y, z, ry, tx + ax, 0.43, tz + az, 0.42, 0.04, 0.42, plast);
+        lbox(props, x, fc.y, z, ry, tx + ax + back * 0.2, 0.68, tz + az, 0.04, 0.46, 0.42, plast);
+        for (const [bx, bz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) leg(x, fc.y, z, ry, tx + ax + bx, tz + az + bz, 0.41, fc.ext, 0.03, 0.03, plast);
       }
       }
       // menu board on the side wall, blue tarp awning on some stalls
@@ -446,7 +523,7 @@ window.TriundPlaces = {
       const w = small ? 3.2 : 4.6, d = small ? 2.6 : 3.4, hh = 2.5;
       const wall = C([0x3f72a8, 0xb5523b, 0x3b4f9a, 0x2f7a5a, 0xc9a23a, 0x8a5a3c][(r() * 6) | 0]);
       const wood = C(0x6e4b2e), tin = C(TIN[(r() * TIN.length) | 0]);
-      lbox(props, x, y, z, ry, 0, -0.5, 0, w + 0.4, 1.1, d + 0.4, C(0x8f8b84));                    // stone platform
+      lbox(props, x, y, z, ry, 0, -1.45, 0, w + 0.4, 3.0, d + 0.4, C(0x8f8b84));                   // stone platform (deep: the ground slopes)
       lbox(props, x, y, z, ry, 0, hh / 2 + 0.05, -d / 2, w, hh, 0.12, wall);                          // back wall
       lbox(props, x, y, z, ry, -w / 2, hh / 2 + 0.05, 0, 0.12, hh, d, wall);                           // side walls
       lbox(props, x, y, z, ry, w / 2, hh / 2 + 0.05, 0, 0.12, hh, d, wall);
@@ -456,9 +533,10 @@ window.TriundPlaces = {
       lbox(props, x, y, z, ry, 0, 0.5, d / 2 - 0.4, w * 0.7, 1.0, 0.6, wood);                          // counter
       lbox(props, x, y, z, ry, -w * 0.15, 1.1, d / 2 - 0.4, 0.35, 0.3, 0.35, C(0xb8b8b4));            // kettle / stove
       const seats = [];
-      for (const sx of [-1, 1]) { const bx = sx * (w / 2 + 0.9), bz = d / 2 + 0.6; colRect(x, z, ry, bx, bz, 1.8, 0.45, true); for (const o of [-0.45, 0.45]) seats.push(seatAt(x, z, ry, bx + o, bz, ry)); lbox(props, x, y, z, ry, bx, 0.22, bz, 1.8, 0.1, 0.45, wood); lbox(props, x, y, z, ry, bx, 0.1, bz, 1.6, 0.25, 0.3, C(0x5b4330)); }
+      for (const sx of [-1, 1]) plankBench(x, z, ry, sx * (w / 2 + 0.9), d / 2 + 0.6, ry, false, seats);
       if (r() < 0.6) for (let i = 0; i < 4; i++) lbox(props, x, y, z, ry, (i - 1.5) * 0.7, 1.6, -d / 2 + 0.15, 0.5, 0.7, 0.05, C([0xe0402a, 0xf2c230, 0x2f6fd6, 0x2f9a52][i]));   // snack packets on the back wall
       for (const st of goods(x, y, z, ry, w, d, hh, r, true)) seats.push(st);
+      sideBenches(x, z, ry, w, seats);
       const c = Math.cos(ry), s = Math.sin(ry), fx = x + (d / 2 + 0.05) * s, fz = z + (d / 2 + 0.05) * c;
       nameBoard(fx, y + hh + 0.1, fz, ry, poi.name || (poi.kind === 'cafe' ? 'Tea Stall' : 'General Store'), poi.kind === 'cafe' ? 'chai · maggi · omelette' : '', '#f2c230', '#2a1a04', Math.min(w, 3.2));
       occupyDisc(x, z, Math.max(w, d) / 2 + 2.5); colRect(x, z, ry, 0, 0, w + 0.4, d + 0.4);
@@ -470,7 +548,7 @@ window.TriundPlaces = {
     function storefront(x, z, ry, poi) {
       const r = rng(poi.id.length * 131 + (poi.e | 0)), y = H(x, z), w = 3.4, d = 2.4, hh = 2.45;
       const wood = C(0x6e4b2e), tin = C(TIN[(r() * TIN.length) | 0]);
-      lbox(props, x, y, z, ry, 0, -0.45, 0, w + 0.3, 1.0, d + 0.3, C(0x8f8b84));                                   // stone floor slab
+      lbox(props, x, y, z, ry, 0, -1.45, 0, w + 0.3, 3.0, d + 0.3, C(0x8f8b84));                                   // stone floor slab (deep: the ground slopes)
       for (const sx of [-1, 1]) lbox(props, x, y, z, ry, sx * (w / 2 - 0.08), hh / 2 + 0.1, d / 2 - 0.08, 0.1, hh + 0.2, 0.1, wood);   // front posts
       const roofM = new THREE.Matrix4().compose(T.set(0, 0, 0), new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.18, ry, 0, 'YXZ')), S.set(w + 0.6, 0.07, d + 0.9));
       const rp = lw(x, z, ry, 0, 0.25); roofM.setPosition(rp.x, y + hh + 0.25, rp.z); props.geo(BOX, roofM, tin);   // tin lean-to
@@ -478,11 +556,9 @@ window.TriundPlaces = {
       colRect(x, z, ry, 0, d / 2 - 0.4, w * 0.72, 0.6, true);
       const seats = goods(x, y, z, ry, w, d, hh, r, true);
       for (const sx of [-1, 1]) {                                                                                  // benches either side
-        const bx = sx * (w / 2 + 0.9), bz = d / 2 + 0.6;
-        lbox(props, x, y, z, ry, bx, 0.45, bz, 1.8, 0.08, 0.45, wood); lbox(props, x, y, z, ry, bx, 0.8, bz - 0.22, 1.8, 0.3, 0.06, wood);
-        for (const lx of [-0.75, 0.75]) lbox(props, x, y, z, ry, bx + lx, 0.2, bz, 0.08, 0.4, 0.4, C(0x5b4330));
-        colRect(x, z, ry, bx, bz, 1.8, 0.45, true); for (const o of [-0.45, 0.45]) seats.push(seatAt(x, z, ry, bx + o, bz, ry));
+        plankBench(x, z, ry, sx * (w / 2 + 0.9), d / 2 + 0.6, ry, true, seats);
       }
+      sideBenches(x, z, ry, w, seats);
       occupyDisc(x, z, 4); bump('storefront');
       return seats;
     }
@@ -517,13 +593,13 @@ window.TriundPlaces = {
       roofM.setPosition(x, y + 2.4, z); props.geo(BOX, roofM, slate);
       if (poi.name) nameBoard(x + Math.sin(ry) * 2.6, y + 1.9, z + Math.cos(ry) * 2.6, ry, poi.name, 'shelter', '#1f3b2e', '#f1ead8', 2.4);
       occupyDisc(x, z, 4.5); colRect(x, z, ry, 0, -1.8, 4.4, 0.4); colRect(x, z, ry, -2.0, 0, 0.4, 4); colRect(x, z, ry, 2.0, 0, 0.4, 4);
-      benches.push({ x: x - Math.sin(ry) * 1.0, z: z - Math.cos(ry) * 1.0, ry, shelter: true }); bump('shelter');
+      benches.push({ x: x - Math.sin(ry) * 1.0, z: z - Math.cos(ry) * 1.0, ry, shelter: true, y: y + 0.45 }); bump('shelter');
     }
     function bench(x, y, z, ry) {
       const wood = C(0x6e4b2e);
       lbox(props, x, y, z, ry, 0, 0.45, 0, 1.8, 0.08, 0.45, wood); lbox(props, x, y, z, ry, 0, 0.8, -0.22, 1.8, 0.3, 0.06, wood);
       for (const sx of [-0.75, 0.75]) lbox(props, x, y, z, ry, sx, 0.15, 0, 0.1, 0.7, 0.4, C(0x55595e));
-      benches.push({ x, z, ry }); colRect(x, z, ry, 0, 0, 1.8, 0.45, true); bump('bench');
+      benches.push({ x, z, ry, y: y + 0.49 }); colRect(x, z, ry, 0, 0, 1.8, 0.45, true); bump('bench');
     }
     function toilet(x, y, z, ry) {
       lbox(props, x, y, z, ry, 0, 0.9, 0, 2.2, 2.4, 2, C(0xdcd6c8)); lbox(props, x, y, z, ry, 0, 2.2, 0, 2.6, 0.12, 2.4, C(0x3c5f95));

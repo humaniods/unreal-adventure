@@ -49,6 +49,63 @@ window.TriundAnim = {
     const side = pr.filter(x => Math.sign(x) === Math.sign(med)).map(Math.abs).sort((a, b) => a - b);
     return side.length ? side[side.length >> 1] : 0;
   },
+  // Feet on uneven ground. Animation clips are authored on a flat floor and the character's origin stands on the
+  // ground under its centre, so on a slope or a staircase the uphill foot goes into the ground and the downhill one
+  // hangs in the air. legIK (call right after the mixer update) finds the ground under each ankle with
+  // groundAt(x, z), lowers the hips if a foot has to reach down, then bends each knee (two-bone IK: thigh, calf) so
+  // the ankle sits as high above that ground as the clip had it above the flat floor. The foot keeps its animated
+  // world orientation. Returns the hip offset applied to root.position.y (the caller resets it next frame).
+  // Bone names are the Quaternius / UE mannequin ones (thigh_l, calf_l, foot_l).
+  legIK(THREE, root, groundAt, baseY) {
+    const K = this._ik || (this._ik = { a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), t: new THREE.Vector3(), n: new THREE.Vector3(),
+      u: new THREE.Vector3(), v: new THREE.Vector3(), q: new THREE.Quaternion(), p: new THREE.Quaternion(), w: new THREE.Quaternion(), f: new THREE.Quaternion() });
+    let legs = root.userData.legs;
+    if (!legs) {
+      legs = root.userData.legs = [];
+      for (const sd of ['l', 'r']) { const th = root.getObjectByName('thigh_' + sd), ca = root.getObjectByName('calf_' + sd), ft = root.getObjectByName('foot_' + sd), ba = root.getObjectByName('ball_' + sd); if (th && ca && ft) legs.push({ th, ca, ft, ba }); }
+    }
+    if (legs.length !== 2) return 0;
+    root.userData.ikAt = performance.now();
+    root.updateMatrixWorld(true);
+    // how far each foot must move: the ground under it minus the ground the clip assumed (the origin's). Both the
+    // ankle and the ball of the foot are tested, so the toes never go into the riser of the next step up.
+    let off = 0;
+    for (const L of legs) {
+      L.ft.getWorldPosition(K.c); let g = groundAt(K.c.x, K.c.z);
+      if (L.ba) { L.ba.getWorldPosition(K.c); g = Math.max(g, groundAt(K.c.x, K.c.z)); }
+      let d = g - baseY; d = Math.max(-0.45, Math.min(0.45, d));
+      L.d = d; if (d < off) off = d;
+    }
+    if (off < -1e-3) { root.position.y += off; root.updateMatrixWorld(true); }
+    const rot = (bone, qWorld) => {      // apply a world-space rotation to a bone
+      bone.parent.getWorldQuaternion(K.p); bone.getWorldQuaternion(K.w);
+      bone.quaternion.copy(K.p.invert().multiply(K.q.copy(qWorld).multiply(K.w))); bone.updateMatrixWorld(true);
+    };
+    for (const L of legs) {
+      const lift = L.d - off; if (Math.abs(lift) < 0.005) continue;
+      L.ft.getWorldQuaternion(K.f);                                   // keep the foot's own orientation
+      L.th.getWorldPosition(K.a); L.ca.getWorldPosition(K.b); L.ft.getWorldPosition(K.c);
+      K.t.copy(K.c); K.t.y += lift;
+      const l1 = K.a.distanceTo(K.b), l2 = K.b.distanceTo(K.c);
+      const dt = Math.max(0.05, Math.min(l1 + l2 - 1e-3, K.a.distanceTo(K.t)));
+      // knee: open or close the hinge (axis across the leg) to the bend that gives the hip-ankle distance dt
+      K.u.subVectors(K.a, K.b).normalize(); K.v.subVectors(K.c, K.b).normalize();
+      K.n.crossVectors(K.u, K.v);
+      if (K.n.lengthSq() > 1e-8) {
+        K.n.normalize();
+        const cur = Math.acos(Math.max(-1, Math.min(1, K.u.dot(K.v))));
+        const want = Math.acos(Math.max(-1, Math.min(1, (l1 * l1 + l2 * l2 - dt * dt) / (2 * l1 * l2))));
+        rot(L.ca, K.q.setFromAxisAngle(K.n, want - cur));
+      }
+      // hip: swing the whole leg so the ankle lands on the target
+      L.ft.getWorldPosition(K.c);
+      K.u.subVectors(K.c, K.a).normalize(); K.v.subVectors(K.t, K.a).normalize();
+      rot(L.th, K.q.setFromUnitVectors(K.u, K.v));
+      // the foot: back to its animated world orientation
+      L.ca.getWorldQuaternion(K.p); L.ft.quaternion.copy(K.p.invert().multiply(K.f)); L.ft.updateMatrixWorld(true);
+    }
+    return off;
+  },
   // shortest signed angle from a to b
   angDiff(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; }
 };
