@@ -1,6 +1,7 @@
 'use strict';
 /* Trail signs and selfie points for the Triund walk test.
    Along both routes, beside the path (never on it, on the flatter side):
+   - every 50 m a small marker on a post: how far to Triund top, and a short line (keep going / keep Triund clean)
    - every 500 m a forest-department style board: distance left to Triund top and the height here; its back,
      for hikers coming down, gives the distance back to the start
    - between them, alternately, a motivation board and a "keep Triund clean" board
@@ -21,46 +22,52 @@ window.TriundSigns = {
       ['Look back:', 'see how high you are!'], ['Strong legs, happy heart.', 'Keep climbing.'], ['Almost there.', 'The meadow is waiting.']];
     const CLEAN = [
       ['Keep Triund clean', 'Carry your waste back down.'], ['Leave only footprints', 'Take only photos.'], ['No plastic on the trail', 'Use the bins at the stalls.'],
-      ['Protect the forest', 'Do not break branches.'], ['Respect the mountain', 'No loud music, no litter.']];
+      ['Protect the forest', 'Do not break branches.'], ['Respect the mountain', 'Keep music low, carry litter back.']];
     const STYLE = {
       km: { bg: '#1d4a34', fg: '#ffffff', sub: '#d8f0c8', w: 1.5, h: 0.95 },
       motivate: { bg: '#f2c230', fg: '#2a1a04', sub: '#4a3008', w: 1.7, h: 0.85 },
       clean: { bg: '#1f5a8a', fg: '#ffffff', sub: '#cfe6ff', w: 1.7, h: 0.85 },
       camp: { bg: '#7a3418', fg: '#fff3e0', sub: '#ffd9b0', w: 1.7, h: 0.9 },
-      selfie: { bg: '#b8285e', fg: '#ffffff', sub: '#ffd6e6', w: 1.8, h: 0.9 }
+      selfie: { bg: '#b8285e', fg: '#ffffff', sub: '#ffd6e6', w: 1.8, h: 0.9 },
+      mark: { bg: '#24573c', fg: '#ffffff', sub: '#f4e7a1', w: 1.05, h: 0.6, y: 1.05, post: 1 }
     };
+    const LINES = ['Every step takes you higher', 'Breathe deep, walk slow', 'Keep Triund clean', 'Carry your waste back down', 'You are doing great',
+      'Leave only footprints', 'Drink some water', 'Look back at the valley!', 'No plastic on the trail', 'Rest when you need to', 'Stay on the trail',
+      'Do not feed the monkeys', 'Small steps, steady breath', 'Respect the mountain', 'Keep music low on the trail', 'The top is worth it'];
+    const km2 = m => m >= 1000 ? (m / 1000).toFixed(2) + ' km' : Math.round(m / 10) * 10 + ' m';
+    const frameParts = [], miss = [];   // every board's posts and edge, merged into one mesh at the end (one draw call)
     const km = m => m >= 1000 ? (m / 1000).toFixed(1) + ' km' : Math.round(m / 10) * 10 + ' m';
-    const postMat = new THREE.MeshStandardMaterial({ color: lin(0x5a4330), roughness: 0.9 });
-    const edgeMat = new THREE.MeshStandardMaterial({ color: lin(0x2a2420), roughness: 0.8 });
-    const blankMat = st => new THREE.MeshLambertMaterial({ color: lin(st.bg) });
+    const BLANK = {}, PLANE = {}, blank = st => BLANK[st.bg] || (BLANK[st.bg] = new THREE.MeshLambertMaterial({ color: lin(st.bg) }));
 
     // a free spot beside the trail at s: the side whose ground is nearest the path's height, off steps and stalls
-    function beside(tr, s, off) {
-      for (const ds of [0, 12, -12, 25, -25]) {
+    function beside(tr, s, off, shifts, maxDh, onSteps) {
+      for (const ds of shifts || [0, 12, -12, 25, -25]) {
         const ss = Math.max(5, Math.min(tr.total - 5, s + ds)), p = tr.pointAtS(ss), d = tr.dirAtS(ss, 8);
-        if (isStep && isStep(tr.id, ss)) continue;
+        if (!onSteps && isStep && isStep(tr.id, ss)) continue;
         let best = null;
         for (const sd of [1, -1]) {
           const x = p.x - d.dz * off * sd, z = p.z + d.dx * off * sd, dh = Math.abs(H(x, z) - p.h);
-          if ((blocked && blocked(x, z)) || dh > 1.0) continue;
+          if ((blocked && blocked(x, z)) || dh > (maxDh || 1.0)) continue;
           if (!best || dh < best.dh) best = { x, z, dh, sd, s: ss, p, d };
         }
-        if (best) return best;
+        if (best && !boards.some(b => (b.x - best.x) ** 2 + (b.z - best.z) ** 2 < 36)) return best;
       }
       return null;
     }
     // a two-post board facing walkers coming up (its back faces those going down)
     function board(at, kind, front, back, extra) {
-      const st = STYLE[kind], g = new THREE.Group(), y = Math.min(H(at.x, at.z), at.p.h);
+      const st = STYLE[kind], g = new THREE.Group(), gy = H(at.x, at.z), y = st.post ? Math.max(gy, at.p.h - 0.5) : Math.min(gy, at.p.h), drop = Math.max(0, y - gy);   // a marker on a bank stands on it; below the path its post is longer
       g.position.set(at.x, y, at.z); g.rotation.y = Math.atan2(-at.d.dx, -at.d.dz);   // front faces down the trail
-      const ph = 1.35 + st.h;
-      for (const sx of [-st.w / 2 + 0.08, st.w / 2 - 0.08]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, ph + 0.4, 8), postMat); p.position.set(sx, ph / 2 - 0.2, -0.05); p.castShadow = true; g.add(p); }
-      const edge = new THREE.Mesh(new THREE.BoxGeometry(st.w + 0.08, st.h + 0.08, 0.05), edgeMat); edge.position.y = 1.35 + st.h / 2; edge.castShadow = true; g.add(edge);
-      const fm = new THREE.Mesh(new THREE.PlaneGeometry(st.w, st.h), blankMat(st)); fm.position.set(0, 1.35 + st.h / 2, 0.027); g.add(fm);
-      const bm = new THREE.Mesh(new THREE.PlaneGeometry(st.w, st.h), blankMat(st)); bm.position.set(0, 1.35 + st.h / 2, -0.027); bm.rotation.y = Math.PI; g.add(bm);
+      const by = st.y || 1.35, ph = by + st.h;
+      g.updateMatrix();
+      const part = (geo, x, yy, z, col) => frameParts.push({ geo, m: new THREE.Matrix4().multiplyMatrices(g.matrix, new THREE.Matrix4().makeTranslation(x, yy, z)), col });
+      for (const sx of st.post ? [0] : [-st.w / 2 + 0.08, st.w / 2 - 0.08]) part(new THREE.CylinderGeometry(0.045, 0.055, ph + 0.4 + drop, 8), sx, (ph - 0.4 - drop) / 2, -0.05, 0x5a4330);
+      part(new THREE.BoxGeometry(st.w + 0.08, st.h + 0.08, 0.05), 0, by + st.h / 2, 0, 0x2a2420);
+      const fm = new THREE.Mesh(PLANE[kind] || (PLANE[kind] = new THREE.PlaneGeometry(st.w, st.h)), blank(st)); fm.position.set(0, by + st.h / 2, 0.027); g.add(fm);
+      const bm = new THREE.Mesh(PLANE[kind], blank(st)); bm.position.set(0, by + st.h / 2, -0.027); bm.rotation.y = Math.PI; g.add(bm);
       if (extra) extra(g, st);
       scene.add(g);
-      if (collide) for (const sx of [-1, 1]) collide.circle(at.x + Math.cos(g.rotation.y) * sx * st.w / 2, at.z - Math.sin(g.rotation.y) * sx * st.w / 2, 0.1, true);
+      if (collide) for (const sx of st.post ? [0] : [-1, 1]) collide.circle(at.x + Math.cos(g.rotation.y) * sx * st.w / 2, at.z - Math.sin(g.rotation.y) * sx * st.w / 2, 0.1, true);
       const b = { g, fm, bm, kind, front, back, st, x: at.x, z: at.z, drawn: false };
       boards.push(b); list.push({ kind, x: at.x, z: at.z, text: front[0] }); return b;
     }
@@ -94,6 +101,15 @@ window.TriundSigns = {
         const k = Math.round(s / 500) % 2;
         if (k === 0) { const q = MOTIVATE[mi++ % MOTIVATE.length]; board(at, 'motivate', q, q); }
         else { const q = CLEAN[ci++ % CLEAN.length]; board(at, 'clean', q, q); }
+      }
+      // every 50 m between them: a small marker
+      let li = id === 'shiva' ? 5 : 0;
+      for (let s = 50; s < tr.total - 60; s += 50) {
+        if (s % 250 === 0) continue;
+        if (Math.abs(s - (tr.total - 420)) < 25 || Math.abs(s - (tr.total - 160)) < 25) continue;
+        const at = beside(tr, s, 1.8, [0, 5, -5, 10, -10]) || beside(tr, s, 1.6, [0, 5, -5, 10, -10, 15, -15], 2.4) || beside(tr, s, 1.5, [0, 5, -5, 10, -10, 15, -15], 3.0, true); if (!at) { miss.push([id, s]); continue; }
+        const left = tr.total - at.s, line = LINES[li++ % LINES.length];
+        board(at, 'mark', ['TRIUND TOP  ' + km2(left), line], [start + '  ' + km2(at.s), line === 'Keep Triund clean' ? line : 'Take it slow going down']);
       }
       // the camping ground at the top
       if (camp) for (const back of [420, 160]) {
@@ -133,14 +149,25 @@ window.TriundSigns = {
       }
     }
 
+    {
+      const pos = [], nor = [], col = [], idx = []; let base = 0; const nm = new THREE.Matrix3(), v = new THREE.Vector3(), c = new THREE.Color();
+      for (const { geo, m, col: cc } of frameParts) {
+        const P = geo.attributes.position, N = geo.attributes.normal; nm.getNormalMatrix(m); c.copy(lin(cc));
+        for (let i = 0; i < P.count; i++) { v.fromBufferAttribute(P, i).applyMatrix4(m); pos.push(v.x, v.y, v.z); v.fromBufferAttribute(N, i).applyMatrix3(nm).normalize(); nor.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b); }
+        for (const i of geo.index.array) idx.push(i + base); base += P.count; geo.dispose();
+      }
+      const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); ge.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); ge.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); ge.setIndex(idx);
+      const fr = new THREE.Mesh(ge, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 })); fr.castShadow = true; fr.receiveShadow = true; scene.add(fr);
+    }
     return {
-      spots, list, counts: { boards: boards.length, selfie: spots.length },
+      spots, list, miss, counts: { boards: boards.length, marks: boards.filter(b => b.kind === 'mark').length, selfie: spots.length },
       update(cam) {
         for (const b of boards) {
           const d2 = (b.x - cam.x) ** 2 + (b.z - cam.z) ** 2;
-          b.g.visible = d2 < 400 * 400;
-          if (d2 < 70 * 70 && !b.drawn) { b.drawn = true; b.fm.material.dispose(); b.bm.material.dispose(); b.fm.material = draw(b.front, b.st); b.bm.material = draw(b.back, b.st); }
-          else if (d2 > 120 * 120 && b.drawn) { b.drawn = false; for (const m of [b.fm, b.bm]) { m.material.map.dispose(); m.material.dispose(); m.material = blankMat(b.st); } }
+          const mk = b.kind === 'mark';
+          b.g.visible = d2 < (mk ? 220 * 220 : 400 * 400);
+          if (d2 < (mk ? 55 * 55 : 70 * 70) && !b.drawn) { b.drawn = true; b.fm.material = draw(b.front, b.st); b.bm.material = draw(b.back, b.st); }
+          else if (d2 > (mk ? 90 * 90 : 120 * 120) && b.drawn) { b.drawn = false; for (const m of [b.fm, b.bm]) { m.material.map.dispose(); m.material.dispose(); m.material = blank(b.st); } }
         }
       },
       // the selfie point within reach of (x, z), if any

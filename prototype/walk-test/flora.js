@@ -10,7 +10,7 @@ window.TriundFlora = {
     const R = rng(7);
     const lin = hex => new THREE.Color(hex).convertSRGBToLinear();
     const lodTrees = { value: new THREE.Vector2(0, 1) }, lodBush = { value: new THREE.Vector2(0, 1) };   // dissolve band (m)
-    const wind = { uTime: { value: 0 }, uWind: { value: 1 }, uCam: { value: new THREE.Vector3() }, uR: { value: Q.grassR } };
+    const wind = { uTime: { value: 0 }, uWind: { value: 1 }, uCam: { value: new THREE.Vector3() }, uR: { value: Q.grassR }, uDay: { value: 1 }, uHole: { value: new THREE.Vector4(0, 0, 0, 0) } };
 
     /* ---------------- shader patches ---------------- */
     // foliage/grass: wind sway, optional fade at the grass radius, no back-face normal flip (cards light the same from
@@ -19,10 +19,10 @@ window.TriundFlora = {
     // matched by the impostor dissolving in, so the switch never pops
     function windify(mat, bend, fade, trans, lodU) {
       mat.onBeforeCompile = sh => {
-        sh.uniforms.uTime = wind.uTime; sh.uniforms.uWind = wind.uWind; sh.uniforms.uCam = wind.uCam; sh.uniforms.uR = wind.uR;
+        sh.uniforms.uTime = wind.uTime; sh.uniforms.uWind = wind.uWind; sh.uniforms.uCam = wind.uCam; sh.uniforms.uR = wind.uR; sh.uniforms.uDay = wind.uDay; sh.uniforms.uHole = wind.uHole;
         if (lodU) sh.uniforms.uLod = lodU;
         sh.vertexShader = sh.vertexShader
-          .replace('#include <common>', '#include <common>\nuniform float uTime; uniform float uWind; uniform vec3 uCam; uniform float uR;' + (lodU ? '\nuniform vec2 uLod; varying float vLodF;' : ''))
+          .replace('#include <common>', '#include <common>\nuniform float uTime; uniform float uWind; uniform vec3 uCam; uniform float uR; uniform vec4 uHole;' + (lodU ? '\nuniform vec2 uLod; varying float vLodF;' : ''))
           .replace('#include <begin_vertex>', `#include <begin_vertex>
 #ifdef USE_INSTANCING
   vec3 ip = vec3(instanceMatrix[3][0], instanceMatrix[3][1], instanceMatrix[3][2]);
@@ -35,6 +35,7 @@ window.TriundFlora = {
   transformed.x += sw * ${bend.toFixed(4)} * hh * hh;
   transformed.z += cos(uTime * 1.05 + ph * 1.3) * 0.45 * uWind * ${bend.toFixed(4)} * hh * hh;
   ${fade ? 'transformed *= 1.0 - smoothstep(uR * 0.62, uR, distance(ip.xz, uCam.xz));' : ''}
+  ${fade ? 'if (uHole.w > 0.5 && distance(ip.xz, uHole.xy) < uHole.z) transformed *= 0.0;' : ''}
   ${lodU ? 'vLodF = 1.0 - smoothstep(uLod.x, uLod.y, distance(ip.xz, uCam.xz));' : ''}`);
         if (lodU) sh.fragmentShader = sh.fragmentShader
           .replace('#include <common>', '#include <common>\nvarying float vLodF;\nfloat ign(vec2 p){ return fract(52.9829189 * fract(dot(p, vec2(0.06711056, 0.00583715)))); }')
@@ -47,8 +48,9 @@ window.TriundFlora = {
         prev(sh);
         if (window.TriundAtmos) window.TriundAtmos.optIn(sh);   // cloud shadows
         sh.fragmentShader = sh.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform float uDay;')
           .replace('#include <normal_fragment_begin>', THREE.ShaderChunk.normal_fragment_begin.replace('normal = normal * faceDirection;', ''))
-          .replace('#include <aomap_fragment>', '#include <aomap_fragment>\nreflectedLight.directSpecular *= 0.0;\nreflectedLight.indirectSpecular *= 0.0;\nreflectedLight.indirectDiffuse += diffuseColor.rgb * ' + (trans || 0).toFixed(3) + ';');
+          .replace('#include <aomap_fragment>', '#include <aomap_fragment>\nreflectedLight.directSpecular *= 0.0;\nreflectedLight.indirectSpecular *= 0.0;\nreflectedLight.indirectDiffuse += diffuseColor.rgb * ' + (trans || 0).toFixed(3) + ' * uDay;');   // light through the blades: only while there is daylight
       };
       mat.customProgramCacheKey = () => 'wind' + bend + (fade ? 'f' : '') + (trans || 0) + (lodU ? 'L' : '');
       return mat;
@@ -97,7 +99,8 @@ window.TriundFlora = {
       });
     }
     const oakTex = leafTex(['#3c5331', '#4b6239', '#5d7448', '#6f7f5e', '#33482b', '#7c8b6c'], null, 9);
-    const rhodoTex = leafTex(['#22361f', '#2c4527', '#1c2d1a', '#35512f', '#3f5a36'], ['#b3202a', '#cf3038', '#9e1b26', '#e04a4f'], 12);
+    // rhododendron flowers only in March-April; the game's seasons (late autumn, monsoon) show leaves alone
+    const rhodoTex = leafTex(['#22361f', '#2c4527', '#1c2d1a', '#35512f', '#3f5a36'], null, 12);
     const bushTex = leafTex(['#34482a', '#425a33', '#526b3e', '#2b3d24'], null, 7);
     /* ---------------- geometry helpers (unit height 1) ---------------- */
     function Builder() { this.p = []; this.n = []; this.uv = []; this.i = []; }
@@ -511,6 +514,9 @@ window.TriundFlora = {
 
     let gust = 0;
     return {
+      setDaylight(d) { wind.uDay.value = d; },
+      // no grass inside your tent (x, z, radius)
+      setHole(x, z, r) { wind.uHole.value.set(x, z, r, 1); },
       counts: { deodar: trees.deodar.length, oak: trees.oak.length, rhodo: trees.rhodo.length, bush: trees.bush.length, stones: stones.length },
       tint(c) { for (const m of tintMats) if (m && m.color) m.color.copy(c); },
       update(dt, cam, time) {

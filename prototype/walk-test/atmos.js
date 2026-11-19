@@ -218,9 +218,10 @@ void main() {
       counts: { clouds: clouds.length, puffs: puffs.length, mist: mist ? mist.count : 0 },
       // camp.js: dim the clouds and mist with the daylight (1 day .. 0 night), warm them at sunset
       setDaylight(day) {
-        const k = 0.04 + 0.96 * day, warm = Math.max(0, 1 - Math.abs(day - 0.45) * 3);
+        // at night clouds are dark shapes against the stars, only faintly lit from below by the towns
+        const k = 0.008 + 0.992 * Math.pow(day, 1.3), warm = Math.max(0, 1 - Math.abs(day - 0.45) * 3);
         sunCol.copy(sunCol0).multiplyScalar(k); sunCol.r *= 1 + 0.35 * warm; sunCol.b *= 1 - 0.3 * warm;
-        shadeCol.copy(shadeCol0).multiplyScalar(0.06 + 0.94 * day);
+        shadeCol.copy(shadeCol0).multiplyScalar(0.012 + 0.988 * Math.pow(day, 1.3)); if (day < 0.3) { shadeCol.r += 0.006 * (1 - day / 0.3); shadeCol.g += 0.003 * (1 - day / 0.3); }
       },
       update(dt, cam, time) {
         off.x = (time * WIND.x) % SIZE; off.y = (time * WIND.y) % SIZE;

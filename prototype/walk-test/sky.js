@@ -59,9 +59,9 @@ window.TriundSky = {
         if (sky) sky.material.uniforms.sunPosition.value.copy(d);
         const ss = t => Math.max(0, Math.min(1, t)), day = ss((elDeg + 6) / 16), lit = ss((elDeg + 1) / 9);
         sun.intensity = W.sun * lit; sun.color.setRGB(1, 0.62 + 0.26 * lit, 0.42 + 0.3 * lit).convertSRGBToLinear();
-        hemi.intensity = W.hemi * (0.05 + 0.95 * day);
+        hemi.intensity = W.hemi * (0.018 + 0.982 * day);
         this._dark = 1 - day;
-        renderer.toneMappingExposure = W.exposure * (1 + 1.6 * (1 - day));
+        renderer.toneMappingExposure = W.exposure * (1 + 0.7 * (1 - day));   // the eye adapts a little to the dark, not to daylight
         return day;
       },
       setWeather(w) {

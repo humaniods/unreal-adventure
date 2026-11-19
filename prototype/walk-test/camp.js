@@ -2,7 +2,8 @@
 /* A night at Triund top.
    A rental stand on the meadow rents a 2-person tent with sleeping bags (600 coins) or a sleeping bag alone
    (150 coins), per 2025-26 rates at the top. Hikers who carried their own tent pitch it free.
-   "Sleep" plays the night as a time-lapse: sunset over the Kangra valley, stars and a campfire, dawn on the
+   Your tent is pitched on the meadow (night.js builds it); walk in and press E to sleep: the night passes as a
+   time-lapse seen from the door (the real sun, stars and camp fires of night.js), dawn on the
    Dhauladhar. A sleeping bag means a full night's recovery; without one the cold leaves you at 60 %.
    Player-facing text is English. */
 window.TriundCamp = {
@@ -38,7 +39,7 @@ window.TriundCamp = {
     /* ---------- panel ---------- */
     const panel = document.createElement('div'); panel.className = 'tpanel'; panel.hidden = true; panel.id = 'campPanel';
     panel.innerHTML = `<div class="box" role="dialog" aria-labelledby="campTitle"><h3 id="campTitle">Triund camp site</h3><div class="sub" id="campSub"></div><div id="campRows"></div>
-      <div class="foot"><span class="coins">🪙 <span id="campCoins">0</span> coins</span><span><button type="button" class="btn ghost" id="campClose">Not now</button> <button type="button" class="btn primary" id="campSleep">Pitch the tent and sleep</button></span></div></div>`;
+      <div class="foot"><span class="coins">🪙 <span id="campCoins">0</span> coins</span><span><button type="button" class="btn ghost" id="campClose">Not now</button> <button type="button" class="btn primary" id="campSleep">Pitch my tent</button></span></div></div>`;
     document.body.appendChild(panel);
     const has = id => { const b = ctx.trek.bag; return !!b && (b.gear.includes(id) || b.rented.includes(id)); };
     function render() {
@@ -55,7 +56,7 @@ window.TriundCamp = {
       else add('⛺', 'Rent a 2-person tent with sleeping bags', 'For one night, pitched for you', `🪙 ${RENT.tent}`, () => rent('tent'));
       if (!has('sbag') && has('tent')) add('🛏', 'Rent a sleeping bag', 'Rated to about 0 °C', `🪙 ${RENT.sbag}`, () => rent('sbag'));
       if (!has('sbag') && !has('tent')) add('🛏', 'Sleeping bag', 'Comes with the rented tent', '', null);
-      $('campSleep').disabled = !has('tent');
+      $('campSleep').disabled = !has('tent'); $('campSleep').textContent = myTent ? 'Your tent is up' : 'Pitch my tent'; if (myTent) $('campSleep').disabled = true;
     }
     function rent(what) {
       const price = RENT[what];
@@ -68,67 +69,80 @@ window.TriundCamp = {
     $('campClose').addEventListener('click', () => { close(); ctx.lock(); });
     panel.addEventListener('click', e => { if (e.target === panel) close(); });
     window.addEventListener('keydown', e => { if (!panel.hidden && e.code === 'Escape') { close(); e.stopImmediatePropagation(); } }, true);
-    $('campSleep').addEventListener('click', () => { close(); startNight(); });
+    $('campSleep').addEventListener('click', () => { close(); pitchMine(); ctx.lock(); });
 
-    /* ---------- night: tent, campfire, stars, time-lapse ---------- */
-    const stars = (() => {
-      const N = 1800, p = new Float32Array(N * 3);
-      for (let i = 0; i < N; i++) { const u = Math.random(), v = Math.random() * 0.95, th = u * Math.PI * 2, ph = Math.acos(1 - v); p.set([Math.sin(ph) * Math.cos(th) * 40000, Math.cos(ph) * 40000, Math.sin(ph) * Math.sin(th) * 40000], i * 3); }
-      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(p, 3));
-      const m = new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xdfe8ff, size: 1.6, sizeAttenuation: false, transparent: true, opacity: 0, depthWrite: false, fog: false }));
-      m.frustumCulled = false; m.renderOrder = -0.5; m.visible = false; scene.add(m); return m;
-    })();
-    let tent = null, fire = null, night = null;
-    function glowTex() {
-      const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
-      const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,220,150,1)'); gr.addColorStop(0.3, 'rgba(255,140,40,0.7)'); gr.addColorStop(1, 'rgba(255,90,10,0)');
-      x.fillStyle = gr; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
-    }
-    function pitch() {
-      const P = ctx.P, a = P.yaw + Math.PI * 0.75, tx = P.x - Math.sin(a) * 4, tz = P.z - Math.cos(a) * 4, ty = H(tx, tz);
-      if (!tent) {
-        const t = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: new THREE.Color(0xf2a93b).convertSRGBToLinear(), roughness: 0.6, side: THREE.DoubleSide }));
-        t.scale.set(1.3, 1.1, 1.7); t.castShadow = true; scene.add(t); tent = t;
-        const f = new THREE.Group();
-        for (let i = 0; i < 5; i++) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.8, 6), mat(0x4a3324)); l.rotation.set(Math.PI / 2 - 0.5, i * 1.26, 0); l.position.y = 0.15; f.add(l); }
-        for (let i = 0; i < 8; i++) { const s = new THREE.Mesh(new THREE.DodecahedronGeometry(0.12, 0), mat(0x6f6a62)); s.position.set(Math.cos(i * 0.785) * 0.55, 0.05, Math.sin(i * 0.785) * 0.55); f.add(s); }
-        const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false })); gl.scale.set(1.3, 1.3, 1); gl.position.y = 0.45; f.add(gl); f.userData.glow = gl;
-        scene.add(f); fire = f;
+    /* ---------- your tent: pitched on the meadow, you walk in, sleep inside ---------- */
+    let myTent = null, night = null, wasIn = false;
+    // the lantern's light inside your tent (made now at zero, so it never recompiles shaders when it comes on)
+    const lanternLight = new THREE.PointLight(new THREE.Color(0xffc27a).convertSRGBToLinear(), 0, 4.5, 1.8); lanternLight.castShadow = false; scene.add(lanternLight);
+    const COLS = [0x2f9a52, 0x2f6fd6, 0xf2a93b];
+    function pitchMine() {
+      if (myTent) return;
+      const N = window.TriundNight; if (!N) return;
+      // a flat free spot 9-18 m from the stand, clear of other tents, fires and buildings
+      let at = null;
+      for (let k = 0; k < 80 && !at; k++) {
+        const a = k * 2.399 + 0.7, r = 9 + (k % 6) * 1.8, x = desk.x + Math.sin(face + a) * r, z = desk.z + Math.cos(face + a) * r, y = H(x, z);
+        if (Math.abs(H(x + 1.3, z) - y) > 0.35 || Math.abs(H(x, z + 1.3) - y) > 0.35 || Math.abs(H(x - 1.3, z) - y) > 0.35 || Math.abs(H(x, z - 1.3) - y) > 0.35) continue;
+        if ((ctx.blocked && ctx.blocked(x, z)) || (ctx.night && (ctx.night.tentAt(x, z) || ctx.night.fires.some(f => Math.hypot(f.x - x, f.z - z) < 3)))) continue;
+        if (ctx.collide && ctx.collide.inside(x, z)) continue;
+        at = { x, z };
       }
-      tent.position.set(tx, ty - 0.05, tz); tent.rotation.y = a;
-      const fx = P.x - Math.sin(a - 1.1) * 2.6, fz = P.z - Math.cos(a - 1.1) * 2.6; fire.position.set(fx, H(fx, fz), fz); fire.visible = true;
-      return { tx, tz, fx, fz };
+      if (!at) at = { x: desk.x + Math.sin(face) * 9, z: desk.z + Math.cos(face) * 9 };
+      const ry = Math.atan2(sx - at.x, sz - at.z);           // the door looks toward the stand and the trail
+      const t = N.tent(THREE, { color: COLS[(Math.random() * 3) | 0], open: true }); t.position.set(at.x, H(at.x, at.z) - 0.02, at.z); t.rotation.y = ry; scene.add(t);
+      const D = t.userData.dims;
+      // walls: short segments round the edge, except where the door is (a body can walk in through it)
+      if (ctx.collide) for (let i = 0; i < 16; i++) {
+        const a0 = i / 16 * Math.PI * 2, a1 = (i + 1) / 16 * Math.PI * 2, am = (a0 + a1) / 2;
+        if (Math.sin(am) > 0.8) continue;                    // the door (local +z)
+        const pt = a => { const lx = Math.cos(a) * D.A, lz = Math.sin(a) * D.B; return [at.x + lx * Math.cos(ry) + lz * Math.sin(ry), at.z - lx * Math.sin(ry) + lz * Math.cos(ry)]; };
+        const p0 = pt(a0), p1 = pt(a1), nx = (p0[0] + p1[0]) / 2 - at.x, nz = (p0[1] + p1[1]) / 2 - at.z, nl = Math.hypot(nx, nz) || 1, w = 0.06;
+        ctx.collide.add([[p0[0] - nx / nl * w, p0[1] - nz / nl * w], [p1[0] - nx / nl * w, p1[1] - nz / nl * w], [p1[0] + nx / nl * w, p1[1] + nz / nl * w], [p0[0] + nx / nl * w, p0[1] + nz / nl * w]], true);
+      }
+      if (ctx.flora && ctx.flora.setHole) ctx.flora.setHole(at.x, at.z, 1.25);
+      myTent = { g: t, x: at.x, z: at.z, ry, D }; lanternLight.position.set(at.x, H(at.x, at.z) + D.HH - 0.3, at.z);
+      const dir = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'][Math.round(((Math.atan2(at.x - ctx.P.x, -(at.z - ctx.P.z)) * 180 / Math.PI + 360) % 360) / 45) % 8];
+      ctx.say(`Your tent is up, ${Math.round(Math.hypot(at.x - ctx.P.x, at.z - ctx.P.z))} m to the ${dir}. Walk in through the door and press E to sleep.`, 6);
     }
+    // inside your tent (a little inside the walls)
+    function inTent(P) {
+      if (!myTent) return false;
+      const dx = P.x - myTent.x, dz = P.z - myTent.z, c = Math.cos(myTent.ry), s2 = Math.sin(myTent.ry), lx = dx * c - dz * s2, lz = dx * s2 + dz * c;
+      return (lx / (myTent.D.A * 0.95)) ** 2 + (lz / (myTent.D.B * 0.95)) ** 2 < 1;
+    }
+    const hourOf = gt => { const h = (window.TRIUND_DAY0 || 9) + gt / 3600; return h - Math.floor(h / 24) * 24; };
     function startNight() {
-      const P = ctx.P, at = pitch();
-      night = { t: 0, at, warm: has('sbag'), start: { gt: Math.max(P.gt, (17.5 - (window.TRIUND_DAY0 || 9)) * 3600) } };   // the clock shows 17:30 at sunset
+      const P = ctx.P, h = hourOf(P.gt);
+      if (h >= 6 && h < 16) { ctx.say('It is the middle of the day. Come back to your tent after sunset to sleep.', 4); return; }
+      // sleep until 06:30 tomorrow; the night passes in about 22 seconds, seen from the tent's door
+      const toMorning = ((7.2 - h + 24) % 24) * 3600;          // you wake a little after sunrise (06:55)
+      night = { t: 0, dur: 22, gt0: P.gt, span: toMorning, warm: has('sbag') };
       ctx.setState('night'); document.body.classList.add('cinema');
-      stars.visible = true;
-      ctx.say(night.warm ? 'You pitch the tent, crawl into the sleeping bag, and watch the light go.' : 'You pitch the tent. No sleeping bag: it will be a cold night.', 5);
+      ctx.say(night.warm ? 'You zip up the door, crawl into the sleeping bag and lie looking out at the sky.' : 'No sleeping bag: you lie down in your clothes. It will be a cold night.', 5);
     }
-    // 24 s: sunset (0-8 s), night with stars and the fire (8-17 s), dawn (17-24 s)
     function nightTick(dt, camera) {
       if (!night) return;
-      const n = night; n.t += dt; const t = n.t, P = ctx.P;
-      let az, el;
-      if (t < 8) { az = 115 + t / 8 * 140; el = 12 - t / 8 * 30; }                       // the sun swings west and sets
-      else if (t < 17) { az = 255; el = -18 - Math.sin((t - 8) / 9 * Math.PI) * 10; }    // night
-      else { const k = (t - 17) / 7; az = 75 + k * 40; el = -18 + k * 30; }                // dawn in the east
-      const day = SKY.setSun(az, el); if (ctx.atmos && ctx.atmos.setDaylight) ctx.atmos.setDaylight(day);
-      stars.material.opacity = Math.max(0, 1 - day * 1.6) * 0.95;
-      if (fire) { const gl = fire.userData.glow, f = 0.85 + 0.15 * Math.sin(t * 17) * Math.sin(t * 7.3); gl.scale.setScalar(1.3 * f); gl.material.opacity = (1 - day) * 0.85 + 0.1; }
-      // camera: sitting outside the tent, looking south over the valley at sunset, then up the Dhauladhar at dawn
-      const look = t < 12 ? Math.PI : 0, eye = new THREE.Vector3(n.at.fx + 2.6, H(n.at.fx + 2.6, n.at.fz + 2.6) + 1.1, n.at.fz + 2.6);
-      camera.position.copy(eye); camera.rotation.set(0.05, look + Math.sin(t * 0.1) * 0.2, 0);
-      // game clock: 17:30 sunset to 06:30 next morning
-      P.gt = n.start.gt + (t / 24) * 13 * 3600;
-      if (t >= 24) endNight();
+      const n = night, P = ctx.P; n.t += dt;
+      if (camera.near !== 0.05) { camera.near = 0.05; camera.updateProjectionMatrix(); }
+      const k = Math.min(1, n.t / n.dur), e = k * k * (3 - 2 * k);
+      P.gt = n.gt0 + n.span * e;
+      const h = hourOf(P.gt), s = ctx.sunAt ? ctx.sunAt(h) : { az: 255, el: -20 };
+      const day = SKY.setSun(s.az, s.el); if (ctx.atmos && ctx.atmos.setDaylight) ctx.atmos.setDaylight(day);
+      if (myTent && myTent.g.userData.lantern) myTent.g.userData.lantern.material.emissiveIntensity = 0;
+      // lying in the tent, looking out of the door and up at the sky
+      const t = myTent || { x: P.x, z: P.z, ry: P.yaw };
+      const fx = Math.sin(t.ry), fz = Math.cos(t.ry);
+      // lying on the mat with your head out of the door, looking up at the sky turning over the camp
+      camera.position.set(t.x + fx * 0.95, H(t.x, t.z) + 0.32, t.z + fz * 0.95);
+      camera.rotation.set(0, 0, 0); camera.lookAt(t.x + fx * 7, H(t.x, t.z) + 4.2 + Math.sin(n.t * 0.12) * 0.4, t.z + fz * 7);
+      if (n.t >= n.dur) endNight();
     }
     function endNight() {
       const P = ctx.P, warm = night.warm; night = null;
-      SKY.setSun(115, 12); if (ctx.atmos && ctx.atmos.setDaylight) ctx.atmos.setDaylight(1); stars.visible = false; if (fire) fire.visible = false;
       document.body.classList.remove('cinema');
       P.energy = warm ? 100 : 60; P.stamina = warm ? 100 : 70; P.hyd = Math.max(P.hyd, 70); P.hr = 72;
+      if (myTent) { P.x = myTent.x + Math.sin(myTent.ry) * 1.6; P.z = myTent.z + Math.cos(myTent.ry) * 1.6; P.y = H(P.x, P.z); P.yaw = Math.atan2(-Math.sin(myTent.ry), -Math.cos(myTent.ry)); P.pitch = 0.05; }   // you crawl out of the door into the morning
       ctx.setState('play'); ctx.camped();
       ctx.say(warm ? 'Morning on Triund. The Dhauladhar is lit gold. You slept well: energy and stamina are full.' : 'Morning. You shivered most of the night: energy 60 %. A sleeping bag would have made the difference.', 6);
       ctx.buzz(2);
@@ -138,9 +152,14 @@ window.TriundCamp = {
     document.head.appendChild(css);
     return {
       desk,
-      prompt(P) { return Math.hypot(P.x - desk.x, P.z - desk.z) < 3.5 ? '<kbd>E</kbd> Tent hire and camping' : ''; },
-      interact(P) { if (Math.hypot(P.x - desk.x, P.z - desk.z) < 3.5) { open(); return true; } return false; },
-      nightTick, get active() { return !!night; }
+      prompt(P) { return inTent(P) ? '<kbd>E</kbd> Sleep until morning' : Math.hypot(P.x - desk.x, P.z - desk.z) < 3.5 ? '<kbd>E</kbd> Tent hire and camping' : ''; },
+      interact(P) { if (inTent(P)) { startNight(); return true; } if (Math.hypot(P.x - desk.x, P.z - desk.z) < 3.5) { open(); return true; } return false; },
+      inTent, get tent() { return myTent; },
+      // the lantern in your tent glows after dark
+      tick(dark) { const on = !!myTent && !night && dark > 0.35; if (myTent && myTent.g.userData.lantern) myTent.g.userData.lantern.material.emissiveIntensity = on ? 0.9 : 0; lanternLight.intensity = on ? 0.35 : 0;
+        // crawling in, you turn round and sit on your sleeping bag, looking out of the door
+        const P = ctx.P, inn = !!P && inTent(P); if (inn && !wasIn && myTent) { P.x = myTent.x - Math.sin(myTent.ry) * 0.25; P.z = myTent.z - Math.cos(myTent.ry) * 0.25; P.yaw = Math.atan2(-Math.sin(myTent.ry), -Math.cos(myTent.ry)); P.pitch = -0.05; P.vx = P.vz = 0; P.moveLock = true; ctx.say('Inside your tent. E to sleep, W to crawl out.', 3.5); } wasIn = inn; },
+      nightTick, get active() { return !!night; }, pitchMine
     };
   }
 };
