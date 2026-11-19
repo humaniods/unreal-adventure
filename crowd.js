@@ -8,7 +8,7 @@
    World axes: x = east, y = up, z = south. */
 window.TriundCrowd = {
   async build(o) {
-    const { THREE, scene, H, trails, stops, top, rng, blocked, base, talkers, quality, ground, collide } = o;
+    const { THREE, scene, H, trails, stops, top, rng, blocked, base, talkers, quality, ground, collide, night } = o;
     const R = rng(2468);
     const lin = c => new THREE.Color(c).convertSRGBToLinear();
     const loader = new THREE.GLTFLoader();
@@ -477,6 +477,13 @@ float shawlMask(vec3 p, vec4 c) {
       a.tx = top.x + (R() - 0.5) * 40; a.tz = top.z + (R() - 0.5) * 40;
     }
     for (const a of agents.slice(14, 26)) { a.tr = trails.galu; a.s = a.tr.total - 5; a.state = 'top'; a.t = 30 + R() * 200; topSpot(a); const p = trailAt(a.tr, a.s, 0); a.x = a.tx + (R() - 0.5) * 2; a.z = a.tz + (R() - 0.5) * 2; }
+    // campers: they have tents up here and stay the night (at dusk they gather round the camp fires)
+    for (const a of agents.slice(26, 46)) { a.tr = trails.galu; a.s = a.tr.total - 5; a.state = 'top'; a.camper = true; a.t = 1e9; topSpot(a); a.x = a.tx; a.z = a.tz; }
+    const hourNow = P => { const h = (window.TRIUND_DAY0 || 9) + (P && P.gt || 0) / 3600; return h - Math.floor(h / 24) * 24; };
+    const isNight = h => h >= 17.9 || h < 5.6;
+    const fireSeats = night && night.fireSeats ? night.fireSeats : [];
+    // sitting cross-legged on the grass: the hips over the spot, the root 0.3 m in front (sitting clip) and 0.44 m down
+    const groundSit = (seat, k) => ({ x: seat.x + Math.sin(seat.ry) * 0.3 * k, z: seat.z + Math.cos(seat.ry) * 0.3 * k, y: seat.y - 0.44 * k });
     // shopkeepers (one per stall) and the trail talkers
     const kOff = st => ({ stall: -1.9, building: 0.6 }[st.kind] != null ? { stall: -1.9, building: 0.6 }[st.kind] : 2.35);
     const keepers = stops.map((st, i) => ({ id: 'keeper' + i, kind: 'keeper', x: st.keeper ? st.keeper.x : st.x + st.tx * kOff(st), z: st.keeper ? st.keeper.z : st.z + st.tz * kOff(st), yaw: Math.atan2(st.tx, st.tz), state: 'keeper',
@@ -537,11 +544,25 @@ float shawlMask(vec3 p, vec4 c) {
         const p = trailAt(a.tr, a.s, a.lat), ex = p.x - a.x, ez = p.z - a.z, el = Math.hypot(ex, ez);
         if (el < 0.4 || (a.leaveT = (a.leaveT || 0) + dt) > 25) { a.state = 'walk'; a.leaveT = 0; }
         else { a.x += ex / el * 0.9 * dt; a.z += ez / el * 0.9 * dt; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = 0.9; }
+      } else if (a.state === 'top' && isNight(hourNow(P)) && !a.fseat && fireSeats.some(q => !q.used) && R() < dt * 0.5) {
+        const free = fireSeats.filter(q => !q.used); let best = free[0], bd = Infinity;
+        for (const q of free) { const d = (q.x - a.x) ** 2 + (q.z - a.z) ** 2 + R() * 400; if (d < bd) { bd = d; best = q; } }
+        best.used = true; a.fseat = best; a.state = 'toFire'; a.warm = R() < 0.5;
+      } else if (a.state === 'toFire') {
+        const sr = groundSit(a.fseat, a.look.scale), ex = sr.x - a.x, ez = sr.z - a.z, el = Math.hypot(ex, ez);
+        // far from the player (out of sight up on the meadow) they are simply there already
+        if (el < 0.25 || (P && Math.hypot(a.x - P.x, a.z - P.z) > 45 && Math.hypot(sr.x - P.x, sr.z - P.z) > 45)) { a.state = 'fire'; a.x = sr.x; a.z = sr.z; }
+        else { const sp = Math.min(0.9, el * 2); a.x += ex / el * sp * dt; a.z += ez / el * sp * dt; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = sp; }
+      } else if (a.state === 'fire') {
+        const sr = groundSit(a.fseat, a.look.scale); a.x = sr.x; a.z = sr.z; a.yaw = a.fseat.ry;
+        a.anim = 'Sitting_Idle'; a.animSpeed = 1;
+        if (R() < dt * 0.04) a.warm = !a.warm;              // now hands to the fire, now resting on the knees
+        if (!isNight(hourNow(P))) { a.fseat.used = false; a.fseat = null; a.state = 'top'; topSpot(a); }
       } else if (a.state === 'top') {
         const ex = a.tx - a.x, ez = a.tz - a.z, el = Math.hypot(ex, ez);
         if (el > 0.4) { a.x += ex / el * 0.8 * dt; a.z += ez / el * 0.8 * dt; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = 0.8; }
         else { a.anim = a.idleAnim || (a.idleAnim = R() < 0.4 ? 'Idle_Talking' : 'Idle'); a.animSpeed = 1; if (R() < dt * 0.02) a.yaw += (R() - 0.5) * 2; }
-        if (a.t < 0) { a.state = 'walk'; a.dir = -1; a.s = a.tr.total - 6; a.vWalk = 0.85 + R() * 0.45; a.idleAnim = null; const i = topSpots.findIndex(p => p.a === a); if (i >= 0) topSpots.splice(i, 1); }
+        if (a.t < 0 && !a.camper && !isNight(hourNow(P))) { a.state = 'walk'; a.dir = -1; a.s = a.tr.total - 6; a.vWalk = 0.85 + R() * 0.45; a.idleAnim = null; const i = topSpots.findIndex(p => p.a === a); if (i >= 0) topSpots.splice(i, 1); }
       }
       if (a.state === 'walk' || a.state === 'rest') {
         a.s = Math.max(0, Math.min(a.tr.total, a.s));
@@ -550,10 +571,11 @@ float shawlMask(vec3 p, vec4 c) {
       }
       // solid world: hikers slide round stalls, benches, tables, tents and houses like the player does
       // (the last metre to a seat is free, the seat itself sits inside its bench's footprint)
-      if (collide && a.state !== 'sit' && !(a.state === 'toSeat' && a.seat && Math.hypot(a.seat.x - a.x, a.seat.z - a.z) < 1.2)) {
+      if (collide && a.state !== 'sit' && a.state !== 'fire' && !(a.state === 'toFire' && Math.hypot(a.fseat.x - a.x, a.fseat.z - a.z) < 1.5) && !(a.state === 'toSeat' && a.seat && Math.hypot(a.seat.x - a.x, a.seat.z - a.z) < 1.2)) {
         const r = collide.resolve(a.x, a.z, 0.3); a.x = r.x; a.z = r.z;
       }
       if (a.state === 'sit') a.y = sitRoot(a.seat, a.look.scale).y;   // on the seat, not on the ground under it
+      else if (a.state === 'fire') a.y = groundSit(a.fseat, a.look.scale).y;
       else a.y = ground && (a.state === 'walk' || a.state === 'rest') ? ground(a.x, a.z, a.tr.id, a.s, a.lat) : H(a.x, a.z);   // on the steps where there are steps
     }
 
@@ -700,7 +722,7 @@ float shawlMask(vec3 p, vec4 c) {
     const TV = { f: new THREE.Vector3(), l: new THREE.Vector3(), r: new THREE.Vector3(), u: new THREE.Vector3(0, 1, 0) };
     function separate(cam, dt) {
       near.length = 0;
-      for (const a of agents) if ((a.x - cam.x) ** 2 + (a.z - cam.z) ** 2 < 70 * 70 && a.state !== 'sit') near.push(a);
+      for (const a of agents) if ((a.x - cam.x) ** 2 + (a.z - cam.z) ** 2 < 70 * 70 && a.state !== 'sit' && a.state !== 'fire') near.push(a);
       for (let i = 0; i < near.length; i++) for (let j = i + 1; j < near.length; j++) {
         const a = near[i], b = near[j], dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
         if (d > 0.7 || d < 1e-4) continue;
@@ -776,6 +798,14 @@ float shawlMask(vec3 p, vec4 c) {
               ch.mixer.update(ch.animAcc); ch.animAcc = 0;
               // feet on the slope and on the steps instead of through them (near people in view only)
               if (seen && p.d2 < IK_D2 && !(p.anim && p.anim.startsWith('Sitting'))) window.TriundAnim.legIK(THREE, ch.root, p.gfn || (p.gfn = groundFn(p)), p.y);
+              if (p.state === 'fire' && seen && p.d2 < IK_D2) {
+                window.TriundAnim.pose(THREE, ch.root, 'cross', { hands: !p.warm });
+                if (p.warm && p.fseat) {   // palms to the fire
+                  const f = p.fseat.fire, fx = Math.sin(p.ryaw), fz = Math.cos(p.ryaw), lx = Math.cos(p.ryaw), lz = -Math.sin(p.ryaw), k = p.look.scale, hy = p.y + 0.44 * k + 0.5 * k;
+                  const tgt = sd => { const s2 = sd === 'l' ? 1 : -1; return { p: TV.f.clone().set(p.x - fx * 0.3 * k + fx * 0.5 * k + lx * s2 * 0.12, hy, p.z - fz * 0.3 * k + fz * 0.5 * k + lz * s2 * 0.12), dir: TV.u.clone().set(fx * 0.3, 0.95, fz * 0.3).normalize(), thumb: TV.l.clone().set(-lx * s2, 0, -lz * s2) }; };
+                  window.TriundAnim.armIK(THREE, ch.root, { l: tgt('l'), r: tgt('r') }, p.ryaw);
+                }
+              }
               // a shopkeeper with a tray holds it: palms up under its rim (and the right hand taking the dish off it)
               if (p.kind === 'keeper' && p.task && p.tray && p.tray.visible && p.task.hl && window.TriundAnim.armIK) {
                 const T = p.task, fx = Math.sin(p.ryaw), fz = Math.cos(p.ryaw), lx = Math.cos(p.ryaw), lz = -Math.sin(p.ryaw);

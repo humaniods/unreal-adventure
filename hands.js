@@ -94,48 +94,59 @@ window.TriundHands = {
     const curL = v3(), curR = v3(); let haveCur = false;
     const ease = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
-    // a real banana: curved, five-sided, brown tips. The first bite peels the top (three strips of skin hang down);
-    // each bite after that takes the fruit lower. Built along +y, gripped about a third of the way up.
+    // a real banana (about 19 cm, curved, five-sided, brown tips), gripped about a quarter of the way up.
+    // Peeling: the top half of the skin is three strips; each folds down from the stalk end when the other hand pulls
+    // it (open(i, k), k 0..1). Bites take the fruit down from the top (a flat cut face); at the end the skin is empty.
     function banana() {
       const g = new THREE.Group(), skinM = new THREE.MeshStandardMaterial({ color: 0xe8c43a, roughness: 0.55, side: THREE.DoubleSide }),
-        fleshM = new THREE.MeshStandardMaterial({ color: 0xf3ead0, roughness: 0.75 }), tipM = new THREE.MeshStandardMaterial({ color: 0x4a3a22, roughness: 0.8 });
-      const L = 0.19, R = 0.15, A = L / R;           // length along an arc of radius R
-      const at = t => { const a = (t - 0.25) * A; return new THREE.Vector3(0, Math.sin(a) * R, (1 - Math.cos(a)) * R); };   // gripped a quarter of the way up
+        fleshM = new THREE.MeshStandardMaterial({ color: 0xf3ead0, roughness: 0.75, side: THREE.DoubleSide }), tipM = new THREE.MeshStandardMaterial({ color: 0x4a3a22, roughness: 0.8 });
+      const L = 0.19, R = 0.15, A = L / R, PEEL = 0.5;
+      const at = t => { const a = (t - 0.25) * A; return new THREE.Vector3(0, Math.sin(a) * R, (1 - Math.cos(a)) * R); };
+      const tan = t => { const a = (t - 0.25) * A; return new THREE.Vector3(0, Math.cos(a), Math.sin(a)); };
       const rad = t => 0.004 + 0.019 * Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, t * 0.92 + 0.04))), 0.55);
-      function tube(t0, t1, k, mat) {
-        const N = 16, S = 5, pos = [], idx = [];
+      function tube(t0, t1, k) {
+        const N = 14, S = 5, pos = [], idx = [];
         for (let i = 0; i <= N; i++) {
-          const t = t0 + (t1 - t0) * i / N, c = at(t), a = (t - 0.25) * A, ty = new THREE.Vector3(0, Math.cos(a), Math.sin(a)), nx = new THREE.Vector3(1, 0, 0), nz = new THREE.Vector3().crossVectors(nx, ty);
+          const t = t0 + (t1 - t0) * i / N, c = at(t), ty = tan(t), nx = new THREE.Vector3(1, 0, 0), nz = new THREE.Vector3().crossVectors(nx, ty);
           for (let j = 0; j < S; j++) { const q = j / S * Math.PI * 2, r = rad(t) * k; pos.push(c.x + (nx.x * Math.cos(q) + nz.x * Math.sin(q)) * r, c.y + (nx.y * Math.cos(q) + nz.y * Math.sin(q)) * r, c.z + (nx.z * Math.cos(q) + nz.z * Math.sin(q)) * r); }
         }
         for (let i = 0; i < N; i++) for (let j = 0; j < S; j++) { const a0 = i * S + j, a1 = i * S + (j + 1) % S; idx.push(a0, a0 + S, a1, a1, a0 + S, a1 + S); }
-        const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); ge.setIndex(idx); ge.computeVertexNormals();
-        return new THREE.Mesh(ge, mat);
+        const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); ge.setIndex(idx); ge.computeVertexNormals(); return ge;
       }
-      const parts = { skin: null, flesh: null, flaps: null };
+      g.add(new THREE.Mesh(tube(0, PEEL + 0.01, 1), skinM));                                    // the lower skin, in the hand
       const tip0 = new THREE.Mesh(new THREE.SphereGeometry(0.006, 6, 4), tipM); tip0.position.copy(at(0)); g.add(tip0);
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.005, 0.02, 5), tipM); stem.position.copy(at(1.03)); g.add(stem);
-      function build(peel, top) {   // peel: where the skin is opened down to (1 = closed); top: how much fruit is left
-        for (const k in parts) if (parts[k]) { g.remove(parts[k]); parts[k].geometry && parts[k].geometry.dispose(); }
-        parts.skin = tube(0, peel, 1, skinM); g.add(parts.skin);
-        stem.visible = peel >= 1;
-        if (peel < 1) {
-          parts.flesh = tube(peel - 0.03, top, 0.82, fleshM); g.add(parts.flesh);
-          // three strips of skin folded down from the peel line
-          const fl = new THREE.Group(), base = at(peel), len = (1 - peel) * L;
-          for (let i = 0; i < 3; i++) {
-            const q = i / 3 * Math.PI * 2 + 0.3, strip = new THREE.Mesh(new THREE.PlaneGeometry(0.022, len), skinM);
-            strip.geometry.translate(0, -len / 2, 0);
-            const o = new THREE.Object3D(); o.position.copy(base).add(new THREE.Vector3(Math.cos(q) * rad(peel), 0, Math.sin(q) * rad(peel)));
-            o.rotation.set(Math.sin(q) * 0.5, -q + Math.PI / 2, -Math.cos(q) * 0.5); o.add(strip); fl.add(o);
-          }
-          parts.flaps = fl; g.add(fl);
-        } else parts.flesh = parts.flaps = null;
-        g.userData.top = at(peel < 1 ? top : 1).y;
+      const flesh = new THREE.Mesh(tube(PEEL - 0.02, 1, 0.8), fleshM); g.add(flesh);
+      const cap = new THREE.Mesh(new THREE.CircleGeometry(1, 5), fleshM); g.add(cap);            // the cut face of a bite
+      // the three upper strips: each a thin curved shell over a third of the fruit, hinged at the peel line
+      const base = at(PEEL), ty0 = tan(PEEL), strips = [];
+      for (let i = 0; i < 3; i++) {
+        const pos = [], idx = [], N = 10, S = 4;
+        for (let a = 0; a <= N; a++) {
+          const t = PEEL + (1 - PEEL) * a / N, c = at(t), ty = tan(t), nx = new THREE.Vector3(1, 0, 0), nz = new THREE.Vector3().crossVectors(nx, ty);
+          for (let j = 0; j <= S; j++) { const q = (i + j / S) / 3 * Math.PI * 2, r = rad(t) * 1.02; pos.push(c.x + (nx.x * Math.cos(q) + nz.x * Math.sin(q)) * r - base.x, c.y + (nx.y * Math.cos(q) + nz.y * Math.sin(q)) * r - base.y, c.z + (nx.z * Math.cos(q) + nz.z * Math.sin(q)) * r - base.z); }
+        }
+        for (let a = 0; a < N; a++) for (let j = 0; j < S; j++) { const a0 = a * (S + 1) + j; idx.push(a0, a0 + S + 1, a0 + 1, a0 + 1, a0 + S + 1, a0 + S + 2); }
+        const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); ge.setIndex(idx); ge.computeVertexNormals();
+        const hinge = new THREE.Object3D(); hinge.position.copy(base); hinge.add(new THREE.Mesh(ge, skinM));
+        const qm = (i + 0.5) / 3 * Math.PI * 2, nz0 = new THREE.Vector3().crossVectors(new THREE.Vector3(1, 0, 0), ty0);
+        const out = new THREE.Vector3(1, 0, 0).multiplyScalar(Math.cos(qm)).addScaledVector(nz0, Math.sin(qm)).normalize();
+        hinge.userData.axis = new THREE.Vector3().crossVectors(ty0, out).normalize();             // folds outward and down
+        if (i === 0) { const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.005, 0.022, 5), tipM); stem.position.copy(at(1.04)).sub(base); stem.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tan(1)); hinge.add(stem); }
+        g.add(hinge); strips.push(hinge);
       }
-      build(1, 1);
-      g.userData.bite = f => build(0.6, Math.max(0.62, 1 - 0.38 * f / 0.99));   // f: share eaten after this bite
-      g.userData.peel = () => build(0.6, 1);
+      let top = 1;
+      function setTop(t) {
+        top = t; flesh.visible = t > PEEL - 0.01;
+        if (flesh.visible) { flesh.geometry.dispose(); flesh.geometry = tube(PEEL - 0.02, t, 0.8); const r = rad(t) * 0.8; cap.position.copy(at(t)); cap.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tan(t)); cap.scale.setScalar(r); }
+        cap.visible = flesh.visible && t < 0.99;
+        g.userData.top = at(Math.max(t, PEEL)).y;
+      }
+      setTop(1);
+      g.userData.open = (i, k) => { const h = strips[i]; if (h) h.quaternion.setFromAxisAngle(h.userData.axis, k * 2.75); };
+      g.userData.bite = f => setTop(f >= 0.999 ? PEEL - 0.05 : 1 - (1 - PEEL + 0.02) * f);
+      const tipL = new THREE.Vector3();
+      g.userData.tipW = (i, out) => { const h = strips[i]; h.updateMatrixWorld(true); return out.copy(tipL.copy(at(1)).sub(base)).applyMatrix4(h.matrixWorld); };
+      g.scale.setScalar(1.12);                         // a touch larger than life so it reads from the camera
       return g;
     }
     function smallItem(icon) {
@@ -197,6 +208,38 @@ window.TriundHands = {
         const fdMouth = v3().copy(T.fwd).multiplyScalar(-0.7).addScaledVector(T.left, 0.5).addScaledVector(T.up, 0.3).normalize();
         j.fd = fdScoop.lerp(fdMouth, m).normalize();
         gr = v3().copy(tip).sub(j.tipOff || v3().copy(j.fd).multiplyScalar(0.17));
+      } else if (j.small && j.small.userData.open) {
+        // a banana: out of the bag into the right hand, the left hand peels the three strips down one by one, then
+        // bite (the top goes to the mouth), lower it and chew with the banana in view, and finally the empty skin goes
+        // into the bag's side pocket (nothing is thrown on the trail)
+        const bn = j.small, sc = bn.scale.x;
+        const hold = v3().copy(T.chest).addScaledVector(T.fwd, 0.34).addScaledVector(T.up, -0.04).addScaledVector(T.left, -0.07);
+        const lipOff = j.lipOff || v3().copy(T.up).multiplyScalar(0.12), ctrOff = j.ctrOff || v3();
+        const biteP = v3().copy(mouth).addScaledVector(T.fwd, 0.035).addScaledVector(T.up, 0.03).addScaledVector(T.left, 0.02);
+        j.tilt = 0;
+        if (j.phase === 'reach') { gr = v3().copy(hold).sub(ctrOff); if (j.t > 0.6) { j.phase = 'peel'; j.t = 0; } }
+        else if (j.phase === 'peel') {
+          const D = 0.8, i = Math.min(2, Math.floor(j.t / D)), k = Math.min(1, (j.t - i * D) / D);
+          for (let s2 = 0; s2 < 3; s2++) bn.userData.open(s2, s2 < i ? 1 : s2 === i ? ease(Math.max(0, (k - 0.25) / 0.75)) : 0);
+          gr = v3().copy(hold).sub(ctrOff);
+          bn.updateMatrixWorld(true);
+          const tip = bn.userData.tipW(i, v3());
+          gl = v3().copy(tip).sub(j.pinchOff || v3());
+          if (j.t > 3 * D + 0.2) { j.phase = 'loop'; j.t = 0; }
+        } else if (j.phase === 'loop') {
+          const cyc = 3.4, p = (j.t % cyc) / cyc;
+          let lp;
+          if (p < 0.26) lp = v3().copy(hold).lerp(biteP, ease(p / 0.26)); else if (p < 0.38) { lp = biteP; biteAt = true; } else if (p < 0.6) lp = v3().copy(biteP).lerp(hold, ease((p - 0.38) / 0.22)); else lp = hold;
+          gr = lp.sub(lipOff);
+          if (!biteAt) j.bit = false;
+          j.tilt = p < 0.26 ? ease(p / 0.26) : p < 0.38 ? 1 : p < 0.6 ? 1 - ease((p - 0.38) / 0.22) : 0;
+        } else {   // 'away': the skin into the side pocket of the bag
+          const k = ease(Math.min(1, j.t / 1.1));
+          gr = v3().copy(hold).lerp(v3().copy(T.chest).addScaledVector(T.up, -0.42).addScaledVector(T.left, -0.26).addScaledVector(T.fwd, -0.02), k).sub(ctrOff);
+          if (j.t > 0.95) bn.visible = false;
+          if (j.t > 1.3) { finish(false); return; }
+        }
+        j.sc = sc;
       } else {
         // sip / drink / snack: the right hand picks it up (from where it was served) and lifts it to the mouth
         // (targets are for the held thing: its middle when picking it up, its lip point while drinking; the wrist
@@ -231,17 +274,24 @@ window.TriundHands = {
         G = wrapGrip(b, 'r', 0.012);
         if (j.phase !== 'reach') orient(b, 'l', v3().copy(T.fwd).addScaledVector(T.left, -0.4).normalize(), T.left);
       } else {
-        const a = 0.12 + (j.tilt || 0) * 1.0, ca = Math.cos(a), sa = Math.sin(a);
+        const isB = !!(j.small && j.small.userData.open), a = 0.12 + (j.tilt || 0) * (isB ? 0.55 : 1.0), ca = Math.cos(a), sa = Math.sin(a);
         orient(b, 'r', v3().copy(T.fwd).multiplyScalar(ca).addScaledVector(T.up, sa).addScaledVector(T.left, 0.3).normalize(),
           v3().copy(T.up).multiplyScalar(ca).addScaledVector(T.fwd, -sa));
-        G = wrapGrip(b, 'r', j.dish ? 0.034 : j.icon === '💧' ? 0.035 : 0.022);
+        G = wrapGrip(b, 'r', j.dish ? 0.034 : j.icon === '💧' ? 0.035 : isB ? 0.02 : 0.022);
+        if (isB && j.phase === 'peel') {
+          // left hand: fingers toward the strip's end, pinched on it; remember where the fingertips are from the wrist
+          const tip = j.small.userData.tipW(Math.min(2, Math.floor(j.t / 0.8)), v3());
+          orient(b, 'l', v3().copy(tip).sub(wpos(b.hand_l, v3())).normalize(), T.up);
+          wrapGrip(b, 'l', 0.004);
+          const f = b.index_03_l || b.middle_02_l; if (f) j.pinchOff = wpos(f, v3()).sub(wpos(b.hand_l, v3()));
+        }
       }
       const HL = wpos(b.hand_l, v3()), HR = wpos(b.hand_r, v3());
       const C = G ? G.C : HR.clone(), ax = G ? G.ax : T.up;
       // where the held thing touches the lips (the near rim of a glass, the top of a bottle or snack): remember its
       // offset from the wrist so the next frame's arm target brings that point, not the wrist, to the mouth
       if (j.kind !== 'eat') {
-        const half = j.dish ? 0.045 : j.icon === '💧' ? 0.11 : j.small && j.small.userData.top != null ? j.small.userData.top : 0.06;
+        const half = j.dish ? 0.045 : j.icon === '💧' ? 0.11 : j.small && j.small.userData.top != null ? j.small.userData.top * j.small.scale.x : 0.06;
         const toFace = v3().copy(T.fwd).negate(); toFace.addScaledVector(ax, -toFace.dot(ax)).normalize();
         const lip = v3().copy(C).addScaledVector(ax, half).addScaledVector(toFace, j.dish ? 0.03 : 0);
         j.lipOff = v3().copy(lip).sub(HR); j.ctrOff = v3().copy(C).sub(HR);
@@ -262,9 +312,8 @@ window.TriundHands = {
         j.tipOff = v3().copy(C).addScaledVector(fd, 0.17).sub(HR);   // the food on the tines, 17 cm out along the handle
       }
       // a bite or sip lands
-      if (j.small && j.small.userData.peel && j.phase === 'loop' && !j.peeled) { j.peeled = true; j.small.userData.peel(); }   // peeled once it is up in the hand
       if (biteAt && !j.bit) { j.bit = true; j.bites++; if (fork.userData.bite) fork.userData.bite.visible = false; if (j.small && j.small.userData.bite) j.small.userData.bite(j.bites / j.need); if (j.onBite) j.onBite(j.bites); }
-      if (j.bites >= j.need && !biteAt && j.phase === 'loop') finish(false);
+      if (j.bites >= j.need && !biteAt && j.phase === 'loop') { if (j.small && j.small.userData.open) { j.phase = 'away'; j.t = 0; } else finish(false); }
     }
     // the close camera: in front of the hiker and to one side, looking at the hands and the plate
     let orbit = 0;
@@ -273,12 +322,50 @@ window.TriundHands = {
       orbit += (dt || 0.016) * 0.25;
       const ry = ch.root.rotation.y + 0.6 + Math.sin(orbit) * 0.2, f = v3().set(Math.sin(ry), 0, Math.cos(ry));
       const look = v3().copy(T.chest).addScaledVector(T.up, 0.02);
-      const eye = v3().copy(look).addScaledVector(f, 1.5).addScaledVector(T.up, 0.15);
+      const snack = job && job.small; if (snack) look.addScaledVector(T.up, 0.12);
+      const eye = v3().copy(look).addScaledVector(f, snack ? 1.15 : 1.5).addScaledVector(T.up, 0.15);
       if (clearView) { const k = clearView(look.x, look.z, eye.x, eye.z); eye.x = look.x + (eye.x - look.x) * k; eye.z = look.z + (eye.z - look.z) * k; }   // never through a wall
       if (H) eye.y = Math.max(eye.y, H(eye.x, eye.z) + 0.5);
       camera.position.copy(eye); camera.lookAt(look);
       return true;
     }
-    return { start, update, pose, frame, finish, get busy() { return !!job; }, get kind() { return job && job.kind; } };
+    // a hand torch (the "headlamp" gear shown as a torch in the hand, which most Triund hikers carry): held in the
+    // left hand in front of the chest, beam forward and a little down where the path is. After the clip; returns the
+    // lens position and beam direction for the spot light, or null.
+    const torchM = new THREE.Group();
+    { const al = new THREE.MeshStandardMaterial({ color: 0x1d1f22, roughness: 0.35, metalness: 0.7 });
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.13, 12), al); body.position.y = 0.0; torchM.add(body);
+      const head = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.015, 0.04, 14), al); head.position.y = 0.083; torchM.add(head);
+      const lens = new THREE.Mesh(new THREE.CircleGeometry(0.019, 14), new THREE.MeshBasicMaterial({ color: 0xfff6dc })); lens.rotation.x = -Math.PI / 2; lens.position.y = 0.1035; torchM.add(lens); torchM.userData.lens = lens;
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.012, 10), al); cap.position.y = -0.07; torchM.add(cap); }
+    torchM.visible = false; scene.add(torchM);
+    const tOut = { p: v3(), d: v3() };
+    function torch(on, aimDown) {
+      const ch = getChar(); torchM.visible = false;
+      if (!on || job || !ch || !ch.root.visible) return null;
+      const b = findBones(ch); if (!b) return null;
+      ch.root.updateMatrixWorld(true);
+      wpos(b.spine_03, T.chest);
+      const ry = ch.root.rotation.y; T.fwd.set(Math.sin(ry), 0, Math.cos(ry)); T.left.set(Math.cos(ry), 0, -Math.sin(ry));
+      const beam = v3().copy(T.fwd).addScaledVector(T.up, -(aimDown == null ? 0.35 : aimDown)).normalize();
+      const W = v3().copy(T.chest).addScaledVector(T.fwd, 0.33).addScaledVector(T.up, -0.02).addScaledVector(T.left, 0.11);
+      twoBone(b.upperarm_l, b.lowerarm_l, b.hand_l, W, v3().copy(T.chest).addScaledVector(T.up, -0.6).addScaledVector(T.left, 0.6));
+      // fist round the torch: fingers point across the body (to the right), the thumb side (index knuckle) along the beam
+      const fing = v3().copy(T.left).negate().addScaledVector(T.up, -0.25); fing.addScaledVector(beam, -fing.dot(beam)).normalize();
+      orient(b, 'l', fing, beam);
+      let G = wrapGrip(b, 'l', 0.015); if (!G) return null;
+      // the knuckle line is not exactly the thumb's direction: turn the hand until the grip's axis is on the beam
+      for (let it = 0; it < 2; it++) {
+        const ax0 = G.ax.dot(beam) < 0 ? G.ax.clone().negate() : G.ax.clone();
+        Qa.setFromUnitVectors(ax0, beam); b.hand_l.getWorldQuaternion(Qb); Qb.premultiply(Qa);
+        b.hand_l.parent.getWorldQuaternion(Qp); b.hand_l.quaternion.copy(Qp.invert().multiply(Qb)); b.hand_l.updateMatrixWorld(true);
+        G = wrapGrip(b, 'l', 0.015); if (!G) return null;
+      }
+      const ax = G.ax.dot(beam) < 0 ? G.ax.clone().negate() : G.ax;
+      torchM.quaternion.setFromUnitVectors(T.up, ax); torchM.position.copy(G.C).addScaledVector(ax, 0.01); torchM.visible = true;
+      tOut.d.copy(ax); tOut.p.copy(torchM.position).addScaledVector(ax, 0.11);
+      return tOut;
+    }
+    return { start, update, pose, frame, finish, torch, get busy() { return !!job; }, get kind() { return job && job.kind; }, get job() { return job; } };
   }
 };

@@ -190,7 +190,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
           const f = dish && dish.userData.food;
           if (f) { if (tea) f.position.y = 0.08 - 0.07 * (n / need); else { const k = Math.max(0.06, 1 - n / need); f.scale.x = f.scale.z = k; if (f.scale.y > 0.5) f.scale.y = k; } }
         },
-        onDone: () => { if (eating === e) eating = null; ctx.say(`Finished the ${it.name.toLowerCase()}. ${fx({ en: it.en, hyd: it.hyd })}.`, 3); },
+        onDone: () => { if (eating === e) eating = null; ctx.say(`Finished the ${it.name.toLowerCase()}. ${fx({ en: it.en, hyd: it.hyd })}.` + (it.icon === '🍌' ? ' The peel goes in your bag for the bin at the next stall.' : ''), 3.5); },
         onPutDown: d => { if (d.userData.food) d.userData.food.visible = false; d.scale.setScalar(1.3); placeDish(d, true); setTimeout(() => doneDish(d), 25000); }
       });
       return true;
@@ -208,7 +208,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
         P.stamina = clamp(P.stamina + ECON.REST.staminaPerMin / 60 * gdt, 0, 100);
         if (!eating && P.tray.length && !(ctx.hands && ctx.hands.busy)) { const o = P.tray.shift(); setTimeout(() => startEating(o.it, 'tray', o.dish), 900); eating = { it: o.it, pending: true, need: 1, done: 0 }; }
       } else {
-        P.energy = clamp(P.energy - ECON.burnPerHour(P.v, P.grade, load) / 3600 * gdt, 0, 100);
+        P.energy = clamp(P.energy - ECON.burnPerHour(P.v, P.grade, load, P.hr) / 3600 * gdt, 0, 100);
         if (P.energy <= 0.5 && P.v > 0.2) P.stamina = Math.max(0, P.stamina - 1.2 * dt);   // running on empty: the body stops you
       }
       const e = P.energy;
@@ -265,7 +265,10 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       const s = findSeat(P);
       if (!s && nearShop(P)) { ctx.say('No free seat at this stall right now.', 2.5); return; }
       sitDown(s);
-      ctx.say(s ? (s.h ? 'You take a seat at the stall and catch your breath.' : 'You sit on the bench and catch your breath.') : 'You sit down on the grass by the trail.', 2.5);
+      // by a camp fire: you sit down facing it
+      const f = !s && ctx.fireNear ? ctx.fireNear(P.x, P.z) : null;
+      if (f) { P.yaw = Math.atan2(-(f.x - P.x), -(f.z - P.z)); ctx.say(f.lit > 0.3 ? 'You sit down cross-legged by the fire. The warmth reaches your hands.' : 'You sit down by the fire ring.', 3); return; }
+      ctx.say(s ? (s.h ? 'You take a seat at the stall and catch your breath.' : 'You sit on the bench and catch your breath.') : 'You sit down cross-legged on the grass.', 2.5);
     }
     const eyeHeight = () => sit ? (sit.bench ? (sit.y != null ? sit.y - ctx.H(P.x, P.z) + 0.78 : 1.2) : 0.82) : 1.65;
     function hudSit() {
@@ -345,13 +348,14 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
           bag.food[id]--; closePanels(); if (!startEating(it, 'bag')) bag.food[id]++;
         });
       }
-      // gear you can use on the way: the headlamp (T), a rain jacket or poncho, warm layers; camp gear is for the top
+      // gear you can use on the way: the torch (L), a rain jacket or poncho, warm layers; camp gear is for the top
       const G = ctx.gearState ? ctx.gearState() : {};
       const USE = {
-        headlamp: () => G.headlamp ? ['Turn off', 'On · lights the trail ahead (T)'] : ['Turn on', 'For the dark: press T any time'],
+        headlamp: () => G.headlamp ? ['Turn off', 'On · in your hand, lighting the trail (L)'] : ['Turn on', 'For the dark: press L any time'],
         rain: () => G.coat === 'rain' ? ['Take off', 'You are wearing it'] : ['Put on', 'Keeps you dry in rain and drizzle'],
         poncho: () => G.coat === 'poncho' ? ['Take off', 'You are wearing it, over the bag too'] : ['Put on', 'Covers you and the bag in rain'],
-        fleece: () => G.fleece ? ['Take off', 'You are wearing it'] : ['Put on', 'Warm layer for the cold top and the evening']
+        fleece: () => G.fleece ? ['Take off', 'You are wearing it'] : ['Put on', 'Warm layer for the cold top and the evening'],
+        speaker: () => G.music ? ['Stop', 'Playing a campfire mix (B)'] : ['Play music', 'Small speaker: press B any time']
       };
       for (const g of bag.gear) {
         const u = USE[g] && USE[g]();
@@ -426,7 +430,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       drinkAnim() { if (ctx.hands && !ctx.hands.busy) ctx.hands.start('drink', { icon: '💧', need: 1 }); }, speedFactor, sitting, toggleSit, eyeHeight, prompt, hud, renderKit, syncCoins,
       interact(p) { const st = nearStop(p, 3.6); if (st) { openShop(st); return true; } return false; },
       toggleBag() { if (panelOpen === bagP) closePanels(); else openBag(); },
-      qaEat(id) { const d = dishMesh(id); placeDish(d); return startEating(I[id], 'qa', d); },   // QA: eat or sip a served dish here
+      qaEat(id) { if (I[id] && I[id].bag) return startEating(I[id], 'bag', null); const d = dishMesh(id); placeDish(d); return startEating(I[id], 'qa', d); },   // QA: eat or sip a served dish here
       closePanels, get panelOpen() { return !!panelOpen; }, get bag() { return bag; }, get lastStop() { return lastStop; }
     };
   }

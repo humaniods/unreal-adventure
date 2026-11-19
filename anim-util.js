@@ -145,6 +145,51 @@ window.TriundAnim = {
       }
     }
   },
+  // Whole-body poses built on top of a clip (bone names: the UE mannequin ones). Call after the mixer update.
+  //  'cross': sitting on the ground cross-legged (sukhasana): knees out to the sides, each shin across in front of
+  //           the body (the left one ahead of the right), feet tucked under the opposite knee, hands resting on the knees.
+  //           Use with the Sitting_Idle clip and the root lowered so the hips are on the ground (see groundSitRoot).
+  //  'squat': down on the heels to reach something low (a dog): thighs forward, shins back, hips 0.45 m lower.
+  //  opts.hands === false leaves the arms to someone else (eating, patting a dog).
+  pose(THREE, root, kind, opts) {
+    const K = this._pk || (this._pk = { a: new THREE.Vector3(), b: new THREE.Vector3(), d: new THREE.Vector3(), f: new THREE.Vector3(), l: new THREE.Vector3(), u: new THREE.Vector3(0, 1, 0), x: new THREE.Vector3(), q: new THREE.Quaternion(), w: new THREE.Quaternion(), p: new THREE.Quaternion() });
+    let B = root.userData.poseBones;
+    if (!B) { B = root.userData.poseBones = {}; root.traverse(n => { if (n.isBone) B[n.name] = n; }); }
+    const o = opts || {};
+    root.updateMatrixWorld(true);
+    const ry = root.rotation.y; K.f.set(Math.sin(ry), 0, Math.cos(ry)); K.l.set(Math.cos(ry), 0, -Math.sin(ry));
+    const wp = (b, v) => v.setFromMatrixPosition(b.matrixWorld);
+    const aim = (bone, child, dir) => {
+      wp(bone, K.a); wp(child, K.b); K.x.copy(K.b).sub(K.a).normalize(); K.q.setFromUnitVectors(K.x, dir);
+      bone.getWorldQuaternion(K.w); K.w.premultiply(K.q); bone.parent.getWorldQuaternion(K.p); bone.quaternion.copy(K.p.invert().multiply(K.w)); bone.updateMatrixWorld(true);
+    };
+    const dir = (f, l, u) => K.d.set(0, 0, 0).addScaledVector(K.f, f).addScaledVector(K.l, l).addScaledVector(K.u, u).normalize();
+    const knees = {}, w = o.w == null ? 1 : o.w, saved = [];
+    if (w < 1) for (const sd of ['l', 'r']) for (const n of ['thigh_', 'calf_', 'foot_']) { const bn = B[n + sd]; if (bn) saved.push([bn, bn.quaternion.clone()]); }
+    for (const sd of ['l', 'r']) {
+      const s = sd === 'l' ? 1 : -1, th = B['thigh_' + sd], ca = B['calf_' + sd], ft = B['foot_' + sd], ba = B['ball_' + sd];
+      if (!th || !ca || !ft) continue;
+      if (kind === 'cross') {
+        aim(th, ca, dir(0.62, s * 0.74, -0.12));                                   // knee forward and out, near the ground
+        aim(ca, ft, dir(s > 0 ? 0.3 : 0.02, -s * 0.94, -0.08));                    // shin across the front; the left one ahead
+        if (ba) aim(ft, ba, dir(0.55, -s * 0.55, -0.35));                          // foot tucked, toes forward and in
+      } else if (kind === 'squat') {
+        aim(th, ca, dir(0.86, s * 0.2, -0.42));
+        aim(ca, ft, dir(-0.42, s * 0.05, -0.9));
+        if (ba) aim(ft, ba, dir(1, s * 0.12, -0.05));
+      }
+      knees[sd] = wp(ca, new THREE.Vector3());
+    }
+    if (w < 1) { for (const [bn, q0] of saved) { const q1 = bn.quaternion.clone(); bn.quaternion.copy(q0).slerp(q1, w); } root.updateMatrixWorld(true); }
+    if (o.hands !== false && kind === 'cross' && knees.l && knees.r) {
+      // hands resting on the knees, palms down, fingers forward and in
+      const tg = {};
+      for (const sd of ['l', 'r']) { const s = sd === 'l' ? 1 : -1; tg[sd] = { p: knees[sd].clone().addScaledVector(K.u, 0.07).addScaledVector(K.l, -s * 0.04).addScaledVector(K.f, -0.02), dir: dir(0.8, -s * 0.45, -0.4).clone(), thumb: dir(0.2, -s * 0.6, 0.3).clone() }; }
+      if (o.only) for (const k of ['l', 'r']) if (k !== o.only) tg[k] = null;
+      this.armIK(THREE, root, tg, ry);
+    }
+    return knees;
+  },
   // shortest signed angle from a to b
   angDiff(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; }
 };

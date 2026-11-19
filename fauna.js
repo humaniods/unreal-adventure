@@ -121,9 +121,16 @@ window.TriundFauna = {
           }
           if (P.trailD > 12) { tx = P.x + 2; tz = P.z + 2; run = 3.4; sitWant = dp < 3 ? 1 : 0; }
           // you sit down: it comes and sits right beside you (on the side away from your bag), facing the same way
-          if (P.seated) {
+          if (d.patted > 0 && !P.seated) {
+            // patted while you stand: it comes round in front of you and sits facing you
+            const fx = P.dirx || -Math.sin(P.yaw), fz = P.dirz || -Math.cos(P.yaw);
+            if (d.patFix == null) { d.patFix = { x: P.x + (g.position.x - P.x) / (dp || 1) * 0.5, z: P.z + (g.position.z - P.z) / (dp || 1) * 0.5 }; }
+            tx = d.patFix.x; tz = d.patFix.z; run = 2.2; d.wait = 0;
+            const el2 = Math.hypot(tx - g.position.x, tz - g.position.z); sitWant = el2 < 0.3 ? 1 : 0;
+            if (el2 < 0.3) d.yaw = lerpAng(d.yaw, yawOf(P.x - g.position.x, P.z - g.position.z), Math.min(1, dt * 4));
+          } else if (P.seated) {
             const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = -fz, rz = fx;
-            tx = P.x + rx * 0.6 + fx * 0.6; tz = P.z + rz * 0.6 + fz * 0.6; run = 2.2; d.wait = 0;   // by your knees, clear of a bench
+            tx = P.x - rx * 0.62 + fx * 0.22; tz = P.z - rz * 0.62 + fz * 0.22; run = 2.2; d.wait = 0;   // at your left hip; your bag is on the right
             const el2 = Math.hypot(tx - g.position.x, tz - g.position.z); sitWant = el2 < 0.35 ? 1 : 0;
             if (el2 < 0.35) d.yaw = lerpAng(d.yaw, Math.atan2(fx, fz), Math.min(1, dt * 3));
           } else if (P.stillT > 1.2) {
@@ -140,6 +147,7 @@ window.TriundFauna = {
         if (dp > 80) d.state = 'home';
         else if (ACT === d.tr && P.s > d.s0 && P.s < d.s1 && dp < 9) d.state = 'follow';
       }
+      if (!(d.patted > 0)) d.patFix = null;
       // move
       const ex = tx - g.position.x, ez = tz - g.position.z, el = Math.hypot(ex, ez);
       const target = el > 0.3 ? Math.min(run, el * 1.5) : 0;
@@ -148,6 +156,11 @@ window.TriundFauna = {
         g.position.x += ex / el * d.v * dt; g.position.z += ez / el * d.v * dt;
         d.yaw = lerpAng(d.yaw, yawOf(ex, ez), Math.min(1, dt * 6));
       } else if (dp < 12 && !(P.seated && d.state === 'follow')) d.yaw = lerpAng(d.yaw, yawOf(dpx, dpz), Math.min(1, dt * 2));
+      // a body is solid: it walks round you and round your rucksack on the ground, not through them
+      if (dp < 3) {
+        const solid = [[P.x, P.z, 0.5]]; if (P.packAt) solid.push([P.packAt.x, P.packAt.z, 0.42]);
+        for (const [cx, cz, r] of solid) { const ox = g.position.x - cx, oz = g.position.z - cz, od = Math.hypot(ox, oz); if (od < r && od > 1e-4) { g.position.x = cx + ox / od * r; g.position.z = cz + oz / od * r; } }
+      }
       g.rotation.y = d.yaw; g.position.y = H(g.position.x, g.position.z);
       d.sit += ((d.v < 0.15 ? sitWant : 0) - d.sit) * Math.min(1, dt * 3);
       const wag = d.state === 'follow' || d.patted > 0 ? 9 : 3;
@@ -321,7 +334,7 @@ window.TriundFauna = {
         if (C[name] === undefined) C[name] = window.TriundAnim.clipSpeed(THREE, gltf.scene, c);
         return C[name] * sc;
       };
-      return { holder, mixer, actions, cur: null, natWalk: nat('Walk'), natRun: nat('Gallop') };
+      return { holder, mixer, actions, cur: null, natWalk: nat('Walk'), natRun: nat('Gallop'), head };
     }
     function animModel(a, dt, speed, opt) {
       const M = a.model, A = M.actions;
@@ -377,8 +390,8 @@ window.TriundFauna = {
       },
       // E near a dog: give it a scratch
       pat(P) {
-        for (const d of dogs) if (Math.hypot(P.x - d.a.g.position.x, P.z - d.a.g.position.z) < 2.6) { d.patted = 3; d.wait = Math.max(d.wait, 2); return true; }
-        return false;
+        for (const d of dogs) if (Math.hypot(P.x - d.a.g.position.x, P.z - d.a.g.position.z) < 2.6) { d.patted = 4.4; d.wait = Math.max(d.wait, 2); if (d.state === 'home') { d.state = 'follow'; d.lead = 8; } return d; }
+        return null;
       },
       nearDog(P) { return dogs.some(d => Math.hypot(P.x - d.a.g.position.x, P.z - d.a.g.position.z) < 2.6); }
     };

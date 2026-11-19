@@ -33,15 +33,16 @@ window.TriundEconomy = (function () {
     fleece:   { name: 'Fleece and warm layers', kg: 0.9, icon: '🧥' },
     rain:     { name: 'Rain jacket', kg: 0.4, icon: '🧥' },
     poncho:   { name: 'Rain poncho', kg: 0.2, icon: '🧥' },
-    headlamp: { name: 'Headlamp', kg: 0.1, icon: '🔦' }
+    headlamp: { name: 'Torch', kg: 0.1, icon: '🔦' },
+    speaker: { name: 'Bluetooth speaker', kg: 0.25, icon: '🔊' }
   };
   // what each bag size comes with (free). Food deliberately covers only part of the climb.
   const KITS = {
-    8:  { label: 'Day hike', food: { water: 2, parleg: 2, banana: 1 }, gear: ['poncho', 'headlamp'],
+    8:  { label: 'Day hike', food: { water: 2, parleg: 2, banana: 1 }, gear: ['poncho', 'headlamp', 'speaker'],
           note: 'Light and quick. No tent or sleeping bag: rent them at the top to stay the night.' },
-    12: { label: 'Overnight, light', food: { water: 2, homeparatha: 1, parleg: 2, chocolate: 1 }, gear: ['sbag', 'fleece', 'rain', 'headlamp'],
+    12: { label: 'Overnight, light', food: { water: 2, homeparatha: 1, parleg: 2, chocolate: 1 }, gear: ['sbag', 'fleece', 'rain', 'headlamp', 'speaker'],
           note: 'Sleeping bag and warm layers. Rent a tent at the top to stay the night.' },
-    18: { label: 'Full camping', food: { water: 3, homeparatha: 2, dryfruit: 1, chocolate: 2 }, gear: ['tent', 'sbag', 'mat', 'fleece', 'rain', 'headlamp'],
+    18: { label: 'Full camping', food: { water: 3, homeparatha: 2, dryfruit: 1, chocolate: 2 }, gear: ['tent', 'sbag', 'mat', 'fleece', 'rain', 'headlamp', 'speaker'],
           note: 'Everything for a night out, and the most food, but the heaviest climb.' }
   };
   // a stall's menu: big cafes and stalls cook; every stall sells packed snacks and water. Price rises with altitude.
@@ -87,9 +88,12 @@ window.TriundEconomy = (function () {
   /* ---------- energy (food fuel), in % per game hour ---------- */
   // Flat walking burns ~30 %/h, a steep climb up to ~60 %/h; standing ~6 %/h; the pack multiplies it (sqrt of the
   // load factor). The climb from Gallu Devi takes ~3.5 game hours: about 150-200 % in all, against a breakfast of 80 %.
-  function burnPerHour(v, grade, load) {
-    if (v < 0.15) return 6;
-    return (30 + 30 * Math.max(0, Math.min(1, grade / 0.25))) * Math.sqrt(load);
+  // hr: heart rate. Above about 140 bpm the legs run on sugar, not fat, and the store empties several times faster:
+  // pushing hard shows up in energy, not only in stamina
+  function burnPerHour(v, grade, load, hr) {
+    const hard = Math.max(0, (hr || 0) - 140) * 1.6;
+    if (v < 0.15) return 6 + hard * 0.5;
+    return (30 + 30 * Math.max(0, Math.min(1, grade / 0.25))) * Math.sqrt(load) + hard;
   }
   // resting (seated) brings energy and stamina back: 2 %/game minute energy, 4 %/game minute stamina
   const REST = { energyPerMin: 2, staminaPerMin: 4 };

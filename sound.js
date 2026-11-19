@@ -97,11 +97,53 @@ window.TriundSound = {
     }
     let templeT = 8;
 
+    /* ---------- music: a small Bluetooth speaker (yours, or one by a camp fire) ----------
+       Generated here, not a recording: an acoustic guitar (Karplus-Strong plucks) strumming G-D-Em-C at 92 bpm,
+       a cajon-like beat and a soft bansuri-like melody on the G major pentatonic. Scheduled a little ahead. */
+    const mus = { g: AC.createGain(), p: hasPan ? AC.createStereoPanner() : null, lp: AC.createBiquadFilter(), next: 0, bar: 0, on: false };
+    mus.g.gain.value = 0; mus.lp.type = 'lowpass'; mus.lp.frequency.value = 9000; mus.lp.connect(mus.g);
+    if (mus.p) { mus.g.connect(mus.p); mus.p.connect(out); } else mus.g.connect(out);
+    const KS = new Map();
+    function pluckBuf(f) {
+      const k = Math.round(f * 10); if (KS.has(k)) return KS.get(k);
+      const sr = AC.sampleRate, n = Math.floor(sr * 2.2), b = AC.createBuffer(1, n, sr), d = b.getChannelData(0), N = Math.max(2, Math.round(sr / f));
+      const ring = new Float32Array(N); for (let i = 0; i < N; i++) ring[i] = Math.random() * 2 - 1;
+      let idx = 0, prev = 0;
+      for (let i = 0; i < n; i++) { const cur = ring[idx]; const nv = 0.996 * 0.5 * (cur + prev); prev = cur; ring[idx] = nv; d[i] = cur; idx = (idx + 1) % N; }
+      KS.set(k, b); return b;
+    }
+    function pluck(t, f, v) { const s2 = AC.createBufferSource(); s2.buffer = pluckBuf(f); const g = AC.createGain(); g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 2.0); s2.connect(g); g.connect(mus.lp); s2.start(t); s2.stop(t + 2.1); }
+    const CH = [[98, 123.5, 146.8, 196, 246.9, 392], [146.8, 220, 293.7, 370], [82.4, 123.5, 164.8, 196, 246.9, 329.6], [130.8, 164.8, 196, 261.6, 329.6]];
+    const PENTA = [392, 440, 493.9, 587.3, 659.3, 784];
+    function strum(t, ch, down, v) { const notes = down ? ch : ch.slice().reverse().slice(0, 4); notes.forEach((f, i) => pluck(t + i * 0.012, f, v * (down ? 1 : 0.6))); }
+    function drum(t, kind) {
+      if (kind === 'k') { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12); g.gain.setValueAtTime(0.55, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18); o.connect(g); g.connect(mus.lp); o.start(t); o.stop(t + 0.2); }
+      else { const s2 = AC.createBufferSource(); s2.buffer = noise; const bf = AC.createBiquadFilter(); bf.type = kind === 's' ? 'bandpass' : 'highpass'; bf.frequency.value = kind === 's' ? 1800 : 7000; bf.Q.value = 0.8;
+        const g = AC.createGain(); const pk = kind === 's' ? 0.32 : 0.05, dur = kind === 's' ? 0.12 : 0.04; g.gain.setValueAtTime(pk, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); s2.connect(bf); bf.connect(g); g.connect(mus.lp); s2.start(t, Math.random(), dur + 0.02); }
+    }
+    function flute(t, f, dur) { const o = AC.createOscillator(), vib = AC.createOscillator(), vg = AC.createGain(), g = AC.createGain(); o.type = 'triangle'; o.frequency.value = f; vib.frequency.value = 5.2; vg.gain.value = f * 0.008; vib.connect(vg); vg.connect(o.frequency);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.09, t + 0.08); g.gain.setValueAtTime(0.09, t + dur * 0.7); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(mus.lp); o.start(t); vib.start(t); o.stop(t + dur + 0.05); vib.stop(t + dur + 0.05); }
+    function musicBar(t0) {
+      const beat = 60 / 92, ch = CH[mus.bar % 4];
+      [[0, 1], [1, 1], [1.5, 0], [2.5, 0], [3, 1], [3.5, 0]].forEach(([b, dn]) => strum(t0 + b * beat, ch, !!dn, 0.22));
+      drum(t0, 'k'); drum(t0 + 2 * beat, 'k'); drum(t0 + beat, 's'); drum(t0 + 3 * beat, 's');
+      for (let i = 0; i < 8; i++) drum(t0 + i * beat / 2, 'h');
+      if ((mus.bar >> 2) % 2 === 1) { let x = 0; while (x < 4) { const d = [0.5, 1, 1, 1.5][(Math.random() * 4) | 0]; if (Math.random() < 0.8) flute(t0 + x * beat, PENTA[(Math.random() * PENTA.length) | 0], d * beat * 0.95); x += d; } }
+      mus.bar++; return 4 * beat;
+    }
     let slow = 0;
     const st = { waterD: Infinity };
     return {
       update(dt, L, info, active) {
         out.gain.setTargetAtTime(active ? 1 : 0, now(), 0.3);
+        // music: your own speaker (close, a little muffled by the bag) or the one by a fire (by distance and side)
+        { const m = info.music || {}; let g = 0, pan = 0;
+          if (m.own) { g = 0.2; pan = 0; mus.lp.frequency.setTargetAtTime(6500, now(), 0.2); }
+          else if (m.fire) { const d = Math.hypot(m.fire.x - L.x, m.fire.z - L.z); g = 0.32 * 8 / (8 + d) * Math.max(0, 1 - d / 95); pan = panTo(L, m.fire.x, m.fire.z) * 0.8; mus.lp.frequency.setTargetAtTime(Math.max(1500, 12000 * Math.exp(-d / 40)), now(), 0.3); }
+          if (!active) g = 0;
+          mus.g.gain.setTargetAtTime(g, now(), 0.4); if (mus.p) mus.p.pan.setTargetAtTime(pan, now(), 0.3);
+          mus.on = g > 0.002;
+          if (mus.on) { if (mus.next < now()) mus.next = now() + 0.1; while (mus.next < now() + 0.6) mus.next += musicBar(mus.next); } }
         if (!active) return;
         slow -= dt;
         if (slow <= 0) {
