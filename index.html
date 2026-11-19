@@ -1017,7 +1017,17 @@ function selfieAfterRender(){
   $('ssCap').textContent=SELFIE.where+' · '+(WX?WX.clock:'')+' · K to save · walk on to close';show('selfieShot',true);SELFIE.showT=7;
 }
 // the photo stays up for a few seconds over the game (no pause): K saves it, walking on or P closes it
-function saveSelfie(){if(!$('selfieShot').hidden){$('ssSave').click();toast('Photo saved to your downloads');}}
+// saving goes through the viewer's downloads capability when the game runs as a claude.ai artifact (the viewer
+// confirms), and through a plain download link when it runs on its own
+let DL=null;if(window.claude&&window.claude.use)window.claude.use('downloads').then(d=>{DL=d;}).catch(()=>{});
+async function saveSelfie(){
+  if($('selfieShot').hidden)return;const url=$('ssSave').href,name=$('ssSave').download;SELFIE.showT=Math.max(SELFIE.showT,4);
+  if(DL){try{const blob=await (await fetch(url)).blob();const r=await DL.save({filename:name,data:blob});if(r&&r.status==='saved')toast('Photo saved');}
+    catch(e){toast(e&&e.code==='declined'?'Not saved':'This view cannot save files');}return;}
+  if(window.claude){toast('This view cannot save files');return;}
+  $('ssSave').click();toast('Photo saved to your downloads');
+}
+$('ssSave').addEventListener('click',e=>{if(DL||window.claude){e.preventDefault();saveSelfie();}});
 $('ssClose').addEventListener('click',()=>{show('selfieShot',false);});
 function gearTick(dt){
   if(!WX)return;
