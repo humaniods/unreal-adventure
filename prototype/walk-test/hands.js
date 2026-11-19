@@ -46,35 +46,49 @@ window.TriundHands = {
       aim(low, E2, W2, v3().copy(T).sub(E2).normalize());
     }
 
-    // a closed grip: point the fingers along `dir`, turn the thumb toward `thumbTo`, then curl every finger joint
-    function grip(b, side, dir, thumbTo, curl) {
+    // point the fingers along `dir` and turn the hand about them so the thumb side faces `thumbTo`
+    function orient(b, side, dir, thumbTo) {
       const hand = b['hand_' + side], mid = b['middle_01_' + side], th = b['thumb_01_' + side]; if (!mid || !th) return;
       const H0 = wpos(hand, v3());
       aim(hand, H0, wpos(mid, v3()), dir);
-      // twist about the finger direction so the thumb side faces thumbTo
       const tcur = wpos(th, v3()).sub(H0); tcur.sub(v3().copy(dir).multiplyScalar(tcur.dot(dir))).normalize();
       const twant = v3().copy(thumbTo); twant.sub(v3().copy(dir).multiplyScalar(twant.dot(dir))).normalize();
       Qa.setFromUnitVectors(tcur, twant); hand.getWorldQuaternion(Qb); Qb.premultiply(Qa);
       hand.parent.getWorldQuaternion(Qp); hand.quaternion.copy(Qp.invert().multiply(Qb)); hand.updateMatrixWorld(true);
-      if (!curl) return;
-      // curl about the knuckle axis; which way closes the hand is found once per hand by trying both and keeping
-      // the one that brings the fingertip toward the thumb tip
-      const fdir = wpos(mid, v3()).sub(wpos(hand, v3())).normalize(), tdir = wpos(th, v3()).sub(wpos(hand, v3())).normalize();
-      const axis = v3().crossVectors(fdir, tdir).normalize();
-      const rot = (bone, ang) => { Qa.setFromAxisAngle(axis, ang); bone.getWorldQuaternion(Qb); Qb.premultiply(Qa); bone.parent.getWorldQuaternion(Qp); bone.quaternion.copy(Qp.invert().multiply(Qb)); bone.updateMatrixWorld(true); };
-      const key = 'curlSign_' + side;
-      if (b[key] === undefined) {
-        const i1 = b['index_01_' + side], tip = b['index_04_leaf_' + side] || b['index_03_' + side], ttip = b['thumb_04_leaf_' + side] || b['thumb_03_' + side];
-        if (i1 && tip && ttip) {
-          const q0 = i1.quaternion.clone(), d0 = wpos(tip, v3()).distanceTo(wpos(ttip, v3()));
-          rot(i1, 0.5); const d1 = wpos(tip, v3()).distanceTo(wpos(ttip, v3())); i1.quaternion.copy(q0); i1.updateMatrixWorld(true);
-          b[key] = d1 < d0 ? 1 : -1;
-        } else b[key] = 1;
+    }
+    // bend one finger (bones from the knuckle to the tip) round a cylinder (centre C, axis ax, radius R): each joint
+    // is turned so the next one lands on the cylinder's surface, going round it in the `sense` direction
+    function wrapChain(ch, C, ax, R, sense) {
+      if (ch.some(x => !x)) return;
+      for (let k = 0; k < ch.length - 1; k++) {
+        const P = wpos(ch[k], v3()), Q = wpos(ch[k + 1], v3()), L = P.distanceTo(Q);
+        const rel = v3().copy(P).sub(C), h = rel.dot(ax); rel.addScaledVector(ax, -h);
+        const d = rel.length(); if (d < 1e-5 || L < 1e-5) return;
+        const e1 = rel.divideScalar(d), e2 = v3().crossVectors(ax, e1).multiplyScalar(sense);
+        const a = (R * R - L * L + d * d) / (2 * d), bq = R * R - a * a;
+        let tgt;
+        if (bq >= 0) tgt = v3().copy(C).addScaledVector(ax, h).addScaledVector(e1, a).addScaledVector(e2, Math.sqrt(bq));
+        else tgt = v3().copy(P).addScaledVector(v3().copy(e1).multiplyScalar(d > R ? -0.55 : 0.55).addScaledVector(e2, 0.83).normalize(), L);   // cannot reach the surface: bend toward it
+        aim(ch[k], P, Q, tgt.sub(P).normalize());
       }
-      for (const f of ['index', 'middle', 'ring', 'pinky']) for (let k = 1; k <= 3; k++) {
-        const bone = b[`${f}_0${k}_${side}`]; if (bone) rot(bone, b[key] * curl * (k === 1 ? 0.9 : 1.2));
-      }
-      for (let k = 2; k <= 3; k++) { const bone = b[`thumb_0${k}_${side}`]; if (bone) rot(bone, b[key] * curl * 0.4); }   // thumb folds over a little
+    }
+    // close the hand round a cylinder of radius R held across the palm (a glass, a bottle, a fork's handle).
+    // The geometry comes from the bones themselves, so it does not depend on how the rig's joint axes point:
+    // the cylinder lies along the knuckle line, just in front of the palm; the four fingers wrap round it from the
+    // knuckles, the thumb from the other side. Returns the cylinder's centre and axis (index side = "up").
+    function wrapGrip(b, side, R) {
+      const hand = b['hand_' + side], m1 = b['middle_01_' + side], i1 = b['index_01_' + side], p1 = b['pinky_01_' + side], t1 = b['thumb_01_' + side];
+      if (!m1 || !i1 || !p1 || !t1) return null;
+      const Hw = wpos(hand, v3()), M = wpos(m1, v3()), fdir = v3().copy(M).sub(Hw).normalize();
+      const ax = wpos(i1, v3()).sub(wpos(p1, v3())); ax.addScaledVector(fdir, -ax.dot(fdir)).normalize();
+      const n = v3().crossVectors(fdir, ax);
+      if (wpos(t1, v3()).sub(Hw).dot(n) < 0) n.negate();   // palm side: the thumb's root sits in front of the palm
+      const C = v3().copy(M).addScaledVector(n, R + 0.006).addScaledVector(fdir, 0.008);
+      const sense = Math.sign(v3().crossVectors(ax, v3().copy(M).sub(C)).dot(fdir)) || 1;
+      const Rf = R + 0.008;                                                                      // finger bones run through the finger's middle
+      for (const f of ['index', 'middle', 'ring', 'pinky']) wrapChain([1, 2, 3].map(k => b[`${f}_0${k}_${side}`]).concat([b[`${f}_04_leaf_${side}`]]), C, ax, Rf, sense);
+      wrapChain([2, 3].map(k => b[`thumb_0${k}_${side}`]).concat([b[`thumb_04_leaf_${side}`]]), C, ax, Rf, -sense);
+      return { C, ax, fdir, n };
     }
     const T = { chest: v3(), head: v3(), fwd: v3(), left: v3(), up: new THREE.Vector3(0, 1, 0) };
     const curL = v3(), curR = v3(); let haveCur = false;
@@ -124,24 +138,36 @@ window.TriundHands = {
         if (j.phase === 'reach') { gl = j.from || plate; if (j.t > 0.8) { j.phase = 'lift'; j.t = 0; } }
         else if (j.phase === 'lift') { gl = v3().copy(j.from || plate).lerp(plate, ease(Math.min(1, j.t / 0.8))); if (j.t > 0.8) { j.phase = 'loop'; j.t = 0; } }
         else gl = plate;
-        const scoop = v3().copy(plate).addScaledVector(T.up, 0.05).addScaledVector(T.left, -0.07);
-        gr = scoop;
+        // forkfuls: the targets are for the fork's tip (food on the plate, then the mouth); the tine direction turns
+        // from down into the plate to toward the lips, and the wrist offset measured last frame gives the arm target
+        const food = v3().copy(plate).addScaledVector(T.up, 0.03).addScaledVector(T.left, -0.02), inMouth = v3().copy(mouth).addScaledVector(T.fwd, 0.02).addScaledVector(T.up, 0.02);
+        let tip = food, m = 0;
         if (j.phase === 'loop') {
           const cyc = 2.2, p = (j.t % cyc) / cyc;
-          if (p < 0.25) gr = scoop; else if (p < 0.55) gr = v3().copy(scoop).lerp(mouth, ease((p - 0.25) / 0.3));
-          else if (p < 0.65) { gr = mouth; biteAt = true; } else gr = v3().copy(mouth).lerp(scoop, ease((p - 0.65) / 0.35));
+          if (p < 0.25) m = 0; else if (p < 0.55) m = ease((p - 0.25) / 0.3); else if (p < 0.65) { m = 1; biteAt = true; } else m = 1 - ease((p - 0.65) / 0.35);
+          tip = v3().copy(food).lerp(inMouth, m);
           fork.userData.bite.visible = p > 0.15 && p < 0.6;
           if (!biteAt) j.bit = false;
         }
+        const fdScoop = v3().copy(T.up).multiplyScalar(-0.85).addScaledVector(T.fwd, 0.4).addScaledVector(T.left, 0.25).normalize();
+        const fdMouth = v3().copy(T.fwd).multiplyScalar(-0.7).addScaledVector(T.left, 0.5).addScaledVector(T.up, 0.3).normalize();
+        j.fd = fdScoop.lerp(fdMouth, m).normalize();
+        gr = v3().copy(tip).sub(j.tipOff || v3().copy(j.fd).multiplyScalar(0.17));
       } else {
         // sip / drink / snack: the right hand picks it up (from where it was served) and lifts it to the mouth
-        const hold = v3().copy(T.chest).addScaledVector(T.fwd, 0.3).addScaledVector(T.up, -0.12).addScaledVector(T.left, -0.1);
-        if (j.phase === 'reach') { gr = j.from || hold; if (j.t > (j.from ? 0.8 : 0.3)) { j.phase = 'loop'; j.t = 0; } }
+        // (targets are for the held thing: its middle when picking it up, its lip point while drinking; the wrist
+        // offsets measured on the previous frame turn them into wrist targets)
+        const hold = v3().copy(T.chest).addScaledVector(T.fwd, 0.3).addScaledVector(T.up, -0.04).addScaledVector(T.left, -0.06);
+        const lipOff = j.lipOff || v3().copy(T.left).multiplyScalar(0.05).addScaledVector(T.up, 0.07), ctrOff = j.ctrOff || v3().copy(T.left).multiplyScalar(0.05);
+        const sipAt = v3().copy(mouth).addScaledVector(T.fwd, 0.025).addScaledVector(T.up, 0.045).addScaledVector(T.left, 0.03);   // the lower lip (mouth above is where a forkful goes in)
+        if (j.phase === 'reach') { gr = j.from ? v3().copy(j.from).addScaledVector(T.up, 0.045).sub(ctrOff) : v3().copy(hold).sub(ctrOff); if (j.t > (j.from ? 0.8 : 0.3)) { j.phase = 'loop'; j.t = 0; } }
         else {
           const cyc = 2.6, p = (j.t % cyc) / cyc;
-          if (p < 0.35) gr = v3().copy(hold).lerp(mouth, ease(p / 0.35)); else if (p < 0.6) { gr = mouth; biteAt = true; } else gr = v3().copy(mouth).lerp(hold, ease((p - 0.6) / 0.4));
+          let lp;
+          if (p < 0.35) lp = v3().copy(hold).lerp(sipAt, ease(p / 0.35)); else if (p < 0.6) { lp = sipAt; biteAt = true; } else lp = v3().copy(sipAt).lerp(hold, ease((p - 0.6) / 0.4));
+          gr = lp.sub(lipOff);
           if (!biteAt) j.bit = false;
-          j.tilt = p < 0.35 ? p / 0.35 : p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
+          j.tilt = p < 0.35 ? ease(p / 0.35) : p < 0.6 ? 1 : 1 - ease((p - 0.6) / 0.4);
         }
       }
       // smooth the hand targets so nothing snaps, then solve both arms (elbows down and out)
@@ -149,22 +175,48 @@ window.TriundHands = {
       curL.lerp(gl, 0.25); curR.lerp(gr, 0.3);
       twoBone(b.upperarm_l, b.lowerarm_l, b.hand_l, curL, v3().copy(T.chest).addScaledVector(T.up, -0.6).addScaledVector(T.left, 0.5));
       twoBone(b.upperarm_r, b.lowerarm_r, b.hand_r, curR, v3().copy(T.chest).addScaledVector(T.up, -0.6).addScaledVector(T.left, -0.5));
-      // right hand closes round the fork / glass / snack: fingers forward and up, thumb on top; the left hand under
-      // the plate stays open, palm up
-      const holdDir = v3().copy(T.fwd).multiplyScalar(0.75).addScaledVector(T.up, 0.45).addScaledVector(T.left, 0.35).normalize();
-      grip(b, 'r', holdDir, T.up, j.kind === 'eat' ? 0.9 : 1.0);
-      if (j.kind === 'eat' && j.phase !== 'reach') grip(b, 'l', v3().copy(T.fwd).addScaledVector(T.left, -0.4).normalize(), T.left, 0);
+      // right hand: closes round the glass / bottle / snack / fork. A glass is held upright (knuckles stacked, fingers
+      // round its front, thumb behind) and tipped toward the lips by turning the wrist; the left hand under the
+      // plate stays open, palm up
+      let G = null;
+      if (j.kind === 'eat') {
+        // fist round the handle, the thumb side (where the tines come out) turned toward the food or the mouth
+        const fd = j.fd || T.up, fg = v3().copy(T.up).multiplyScalar(0.7).addScaledVector(T.fwd, 0.5).addScaledVector(T.left, 0.3);
+        fg.addScaledVector(fd, -fg.dot(fd)).normalize();
+        orient(b, 'r', fg, fd);
+        G = wrapGrip(b, 'r', 0.012);
+        if (j.phase !== 'reach') orient(b, 'l', v3().copy(T.fwd).addScaledVector(T.left, -0.4).normalize(), T.left);
+      } else {
+        const a = 0.12 + (j.tilt || 0) * 1.0, ca = Math.cos(a), sa = Math.sin(a);
+        orient(b, 'r', v3().copy(T.fwd).multiplyScalar(ca).addScaledVector(T.up, sa).addScaledVector(T.left, 0.3).normalize(),
+          v3().copy(T.up).multiplyScalar(ca).addScaledVector(T.fwd, -sa));
+        G = wrapGrip(b, 'r', j.dish ? 0.034 : j.icon === '💧' ? 0.035 : 0.022);
+      }
       const HL = wpos(b.hand_l, v3()), HR = wpos(b.hand_r, v3());
-      const palmR = b.middle_01_r ? wpos(b.middle_01_r, v3()).lerp(HR, 0.35) : HR.clone();
+      const C = G ? G.C : HR.clone(), ax = G ? G.ax : T.up;
+      // where the held thing touches the lips (the near rim of a glass, the top of a bottle or snack): remember its
+      // offset from the wrist so the next frame's arm target brings that point, not the wrist, to the mouth
+      if (j.kind !== 'eat') {
+        const half = j.dish ? 0.045 : j.icon === '💧' ? 0.11 : 0.06;
+        const toFace = v3().copy(T.fwd).negate(); toFace.addScaledVector(ax, -toFace.dot(ax)).normalize();
+        const lip = v3().copy(C).addScaledVector(ax, half).addScaledVector(toFace, j.dish ? 0.03 : 0);
+        j.lipOff = v3().copy(lip).sub(HR); j.ctrOff = v3().copy(C).sub(HR);
+      }
       // the plate rides in the left hand, a glass in the right; the fork or snack in the right
       if (j.dish && j.phase !== 'reach') {
-        j.dish.scale.setScalar(1.0); j.dish.rotation.set(0, ry, 0);
-        if (j.kind === 'eat') j.dish.position.copy(HL).addScaledVector(T.fwd, 0.08).addScaledVector(T.left, -0.04).addScaledVector(T.up, 0.035);   // resting on the open palm
-        else { j.dish.position.copy(palmR).addScaledVector(T.up, -0.05); j.dish.rotateX(-(j.tilt || 0) * 1.0); }
+        j.dish.scale.setScalar(1.0);
+        if (j.kind === 'eat') { j.dish.rotation.set(0, ry, 0); j.dish.position.copy(HL).addScaledVector(T.fwd, 0.08).addScaledVector(T.left, -0.04).addScaledVector(T.up, 0.035); }   // resting on the open palm
+        else { j.dish.quaternion.setFromUnitVectors(T.up, ax); j.dish.position.copy(C).addScaledVector(ax, -0.045); }   // the glass's base sits 4.5 cm below its middle
       }
-      if (j.small) { j.small.position.copy(palmR); j.small.rotation.set(-(j.tilt || 0) * 1.2, ry, 0); }
-      // the fork sits in the closed fist and points where the fingers point, tines toward the food or the mouth
-      if (fork.visible) { fork.position.copy(palmR).addScaledVector(holdDir, -0.02); fork.lookAt(v3().copy(palmR).addScaledVector(holdDir, 1)); }
+      if (j.small) {
+        if (j.icon === '💧') j.small.quaternion.setFromUnitVectors(T.up, ax); else j.small.quaternion.setFromUnitVectors(v3().set(0, 0, 1), ax);
+        j.small.position.copy(C);
+      }
+      // the fork's handle runs through the closed fist and comes out on the thumb side, tines toward the food or mouth
+      if (fork.visible) {
+        const fd = v3().copy(ax); fork.position.copy(C).addScaledVector(fd, 0.02); fork.lookAt(v3().copy(fork.position).add(fd));
+        j.tipOff = v3().copy(C).addScaledVector(fd, 0.17).sub(HR);   // the food on the tines, 17 cm out along the handle
+      }
       // a bite or sip lands
       if (biteAt && !j.bit) { j.bit = true; j.bites++; if (fork.userData.bite) fork.userData.bite.visible = false; if (j.onBite) j.onBite(j.bites); }
       if (j.bites >= j.need && !biteAt && j.phase === 'loop') finish(false);

@@ -167,7 +167,7 @@ window.TriundCrowd = {
     const agents = [];
     const seatSpots = [];
     // stall layouts (see places.js stall() and index.html stall()): 'stall' stops sit 2.4 m in front of the stall
-    // centre with benches either side; the three big hand-built stalls have benches 4.6 m out; 'building' cafes have none
+    // centre with benches either side; the three big hand-built stalls have benches 4.9 m out; 'building' cafes have none
     for (const st of stops) {
       const sx = -st.tz, sz = st.tx, kind = st.kind || 'big';
       // stalls built by places.js list their real benches and chairs
@@ -201,7 +201,7 @@ window.TriundCrowd = {
     for (const a of agents.slice(14, 26)) { a.tr = trails.galu; a.s = a.tr.total - 5; a.state = 'top'; a.t = 30 + R() * 200; topSpot(a); const p = trailAt(a.tr, a.s, 0); a.x = a.tx + (R() - 0.5) * 2; a.z = a.tz + (R() - 0.5) * 2; }
     // shopkeepers (one per stall) and the trail talkers
     const kOff = st => ({ stall: -1.9, building: 0.6 }[st.kind] != null ? { stall: -1.9, building: 0.6 }[st.kind] : 2.35);
-    const keepers = stops.map((st, i) => ({ id: 'keeper' + i, kind: 'keeper', x: st.x + st.tx * kOff(st), z: st.z + st.tz * kOff(st), yaw: Math.atan2(st.tx, st.tz), state: 'keeper',
+    const keepers = stops.map((st, i) => ({ id: 'keeper' + i, kind: 'keeper', x: st.keeper ? st.keeper.x : st.x + st.tx * kOff(st), z: st.keeper ? st.keeper.z : st.z + st.tz * kOff(st), yaw: Math.atan2(st.tx, st.tz), state: 'keeper',
       look: Object.assign(look(R() < 0.8 ? 'm' : 'f'), { pack: null, head: R() < 0.5 ? 'cap' : 'hair' }), anim: 'Idle', animSpeed: 1, t: R() * 10 }));
     const fixed = keepers.concat((talkers || []).map((t, i) => ({ id: 'talker' + i, kind: 'talker', x: t.x, z: t.z, yaw: t.yaw, state: 'talker', look: look(i % 2 ? 'f' : 'm'), anim: 'Idle_Talking', animSpeed: 1 })));
     for (const k of fixed) k.y = H(k.x, k.z);
@@ -344,7 +344,7 @@ window.TriundCrowd = {
         // walk round benches, tables and walls instead of through them (the stall itself is left by its side)
         // (not near the counter: the shopkeeper's own place is inside the stall footprint)
         const ox = k.x - dx / d * m, oz = k.z - dz / d * m;
-        if (collide && Math.hypot(k.x - T.home.x, k.z - T.home.z) > 3.5) { const r = collide.resolve(k.x, k.z, 0.3); k.x = r.x; k.z = r.z; }
+        if (collide && Math.hypot(k.x - T.home.x, k.z - T.home.z) > (st.aside || 3.3) + 0.2) { const r = collide.resolve(k.x, k.z, 0.3); k.x = r.x; k.z = r.z; }
         // stuck against something: count it, so the caller can skip ahead
         T.stuck = Math.hypot(k.x - ox, k.z - oz) < m * 0.25 ? (T.stuck || 0) + dt : 0;
         k.y = H(k.x, k.z); k.yaw = Math.atan2(dx, dz);
@@ -355,7 +355,7 @@ window.TriundCrowd = {
         if (T.t <= 0) {
           // out of the stall round its side (the counter is in front), then into the open toward the customer
           const px = -st.tz, pz = st.tx, tg = T.target(), side = tg && ((tg.x - k.x) * px + (tg.z - k.z) * pz) < 0 ? -1 : 1;
-          const w1 = { x: T.home.x + px * 3.3 * side, z: T.home.z + pz * 3.3 * side }, w2 = { x: w1.x + st.tx * 3.2, z: w1.z + st.tz * 3.2 };
+          const as = st.aside || 3.3, w1 = { x: T.home.x + px * as * side, z: T.home.z + pz * as * side }, w2 = { x: w1.x + st.tx * 3.2, z: w1.z + st.tz * 3.2 };
           T.path = [w1, w2]; T.phase = 'walk'; if (T.mesh) T.mesh.visible = true;
         }
       } else if (T.phase === 'walk') {
@@ -373,7 +373,7 @@ window.TriundCrowd = {
         k.anim = 'Interact'; k.animSpeed = 1; T.t -= dt; carry();
         if (T.t < 0.7 && !T.given) { T.given = true; if (T.mesh) T.mesh.visible = false; T.mesh = null; T.onGive('hand'); }   // the dish is the customer's now
         if (T.t <= 0) { T.phase = 'back'; const px = -st.tz, pz = st.tx, sd = ((k.x - T.home.x) * px + (k.z - T.home.z) * pz) < 0 ? -1 : 1;
-          const w1 = { x: T.home.x + px * 3.3 * sd, z: T.home.z + pz * 3.3 * sd }; T.path = [{ x: w1.x + st.tx * 3.2, z: w1.z + st.tz * 3.2 }, w1]; }
+          const as = st.aside || 3.3, w1 = { x: T.home.x + px * as * sd, z: T.home.z + pz * as * sd }; T.path = [{ x: w1.x + st.tx * 3.2, z: w1.z + st.tz * 3.2 }, w1]; }
       } else {   // back to the counter
         if (T.path.length) { if (stepTo(T.path[0].x, T.path[0].z, 1.15) < 0.2 || T.stuck > 1.2) { T.path.shift(); T.stuck = 0; } }
         else if (stepTo(T.home.x, T.home.z, 1.0) < 0.05 || T.stuck > 3) { k.x = T.home.x; k.z = T.home.z; k.y = H(k.x, k.z); k.yaw = T.home.yaw; k.anim = 'Idle'; k.animSpeed = 1; k.task = null; }

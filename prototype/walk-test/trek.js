@@ -124,7 +124,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
         const o = orders[0];
         if (!cr || !cr.deliver) { o.wait = (o.wait == null ? o.cook : o.wait) - 1 / 60; if (o.wait > 0) return; orders.shift(); receive(o, 'hand'); continue; }
         const ok = cr.deliver(o.stop, { mesh: o.dish, cookSec: o.cook, target: serveTarget,
-          onGive: how => { const j = inflight.indexOf(o); if (j >= 0) inflight.splice(j, 1); if (how === 'hand') receive(o, 'hand'); else { const st = o.stop, H = ctx.H; o.dish.position.set(st.spot.x - st.tx * 0.9, H(st.spot.x, st.spot.z) + 1.02, st.spot.z - st.tz * 0.9); o.dish.visible = true; pending.push(o); ctx.toast(`Your ${o.it.name} is ready on the counter at ${st.label}.`); } } });
+          onGive: how => { const j = inflight.indexOf(o); if (j >= 0) inflight.splice(j, 1); if (how === 'hand') receive(o, 'hand'); else { const st = o.stop, H = ctx.H, c = st.counter; if (c) o.dish.position.set(c.x, c.y, c.z); else o.dish.position.set(st.spot.x - st.tx * 0.9, H(st.spot.x, st.spot.z) + 1.02, st.spot.z - st.tz * 0.9); o.dish.visible = true; pending.push(o); ctx.toast(`Your ${o.it.name} is ready on the counter at ${st.label}.`); } } });
         if (!ok) return; orders.shift(); o.sent = performance.now(); inflight.push(o);
       }
     }
@@ -246,7 +246,19 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       if (seat) { if (seat.ref) seat.ref.used = true; P.x = seat.x; P.z = seat.z; P.yaw = seat.ry + Math.PI; }
       P.vx = P.vz = 0; P.v = 0;
     }
-    function standUp() { if (sit && sit.ref) sit.ref.used = false; sit = null; }
+    // getting up from a bench or chair you step off it: in front of the seat if that is clear (a chair at a table:
+    // beside it), never left standing inside the furniture
+    function standUp() {
+      const s = sit; if (s && s.ref) s.ref.used = false; sit = null;
+      if (!s || !s.bench) return;
+      const C = ctx.collide, fx = Math.sin(s.ry), fz = Math.cos(s.ry), R = 0.3;
+      for (const [a, b] of [[1, 0], [0, 1], [0, -1], [-1, 0]]) {
+        const x = s.x + (fx * a + fz * b) * 0.7, z = s.z + (fz * a - fx * b) * 0.7;
+        const r = C ? C.resolve(x, z, R) : { x, z };
+        if (Math.hypot(r.x - x, r.z - z) < 0.02) { P.x = x; P.z = z; return; }
+      }
+      if (C) { const r = C.resolve(s.x + fx * 0.7, s.z + fz * 0.7, R); P.x = r.x; P.z = r.z; }
+    }
     function toggleSit() {
       if (!P) return;
       if (sit) { if (eating) { ctx.say('Finish eating first.', 2); return; } standUp(); return; }
@@ -402,6 +414,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       drinkAnim() { if (ctx.hands && !ctx.hands.busy) ctx.hands.start('drink', { icon: '💧', need: 1 }); }, speedFactor, sitting, toggleSit, eyeHeight, prompt, hud, renderKit, syncCoins,
       interact(p) { const st = nearStop(p, 3.6); if (st) { openShop(st); return true; } return false; },
       toggleBag() { if (panelOpen === bagP) closePanels(); else openBag(); },
+      qaEat(id) { const d = dishMesh(id); placeDish(d); return startEating(I[id], 'qa', d); },   // QA: eat or sip a served dish here
       closePanels, get panelOpen() { return !!panelOpen; }, get bag() { return bag; }, get lastStop() { return lastStop; }
     };
   }

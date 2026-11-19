@@ -42,13 +42,15 @@ window.TriundCollide = {
       }
       return { x: bx, z: bz, d: Math.sqrt(best) };
     }
-    // push a circle (x, z, r) out of every footprint it touches; two passes settle corners
-    function resolve(x, z, r) {
+    // push a circle (x, z, r) out of every footprint it touches; two passes settle corners.
+    // rLow (optional): a smaller radius against knee-high things (benches, tables), so a walker whose eye-height
+    // margin is wide for walls can still pass between two benches like a real body
+    function resolve(x, z, r0, rLow) {
       for (let pass = 0; pass < 2; pass++) {
         const l = grid.get(key(Math.floor(x / CELL), Math.floor(z / CELL))); if (!l) break;
         let moved = false;
         for (const id of l) {
-          const p = polys[id];
+          const p = polys[id], r = p.low && rLow != null ? rLow : r0;
           if (x < p.x0 - r || x > p.x1 + r || z < p.z0 - r || z > p.z1 + r) continue;
           const n = nearest(p.pts, x, z), inn = inside(p.pts, x, z);
           if (!inn && n.d >= r) continue;

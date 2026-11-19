@@ -5,11 +5,38 @@
    World axes: x = east, z = south (z = -north), y = altitude.
    Everything static is merged into a handful of meshes; only the name boards are separate (and hidden when far). */
 window.TriundPlaces = {
+  // the wall of footprint P that a walk from (x, z) along (tx, tz) leaves through: the crossing point and the
+  // wall's outward normal
+  wallAt(P, x, z, tx, tz) {
+    let best = null;
+    for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+      const ax = P[j][0], az = P[j][1], ex = P[i][0] - ax, ez = P[i][1] - az, den = tx * ez - tz * ex;
+      if (Math.abs(den) < 1e-9) continue;
+      const t = ((ax - x) * ez - (az - z) * ex) / den, u = ((ax - x) * tz - (az - z) * tx) / den;
+      if (t < 0 || u < 0 || u > 1 || (best && t >= best.t)) continue;
+      const l = Math.hypot(ex, ez); let nx = ez / l, nz = -ex / l; if (nx * tx + nz * tz < 0) { nx = -nx; nz = -nz; }
+      best = { t, x: x + tx * t, z: z + tz * t, nx, nz };
+    }
+    return best;
+  },
+  // Two stall POIs a few metres apart (OSM often has both a cafe and a shop node) would build one stall inside the
+  // other. Keep the first where it is and slide later ones along the trail (9 m steps, either way) to free ground,
+  // still facing the trail and clear of it; null when there is no room. Shared by pads() and build().
+  stallSpot(x, z, tx, tz, placed, nearestTrail, clear) {
+    const ax = -tz, az = tx;
+    for (const o of [0, 9, -9, 18, -18]) {
+      const px = x + ax * o, pz = z + az * o;
+      if (placed.some(q => Math.hypot(q.x - px, q.z - pz) < 8.5)) continue;
+      if (o && nearestTrail(px, pz).d < clear - 0.5) continue;
+      placed.push({ x: px, z: pz }); return { x: px, z: pz };
+    }
+    return null;
+  },
   // Level ground in front of every cafe and shop, where its benches, table and chairs stand (as on the real ridge,
   // where each dhaba has a levelled patio). Called before the terrain is built, so it repeats the placement rules
   // of build() below for cafes and shops: keep the two in step. Returns pads {x, z, r0, r1} centred on the seating.
   pads(o) {
-    const { data, trails, skip } = o, out = [];
+    const { data, trails, skip } = o, out = [], placed = [];
     const TS = [];
     for (const tr of trails) for (let s = 0; s <= tr.total; s += 4) { const p = tr.pointAtS(s); TS.push({ x: p.x, z: p.z, s, tr }); }
     const nearestTrail = (x, z) => { let b = TS[0], bd = Infinity; for (const t of TS) { const d = (t.x - x) ** 2 + (t.z - z) ** 2; if (d < bd) { bd = d; b = t; } } return { x: b.x, z: b.z, s: b.s, tr: b.tr, d: Math.sqrt(bd) }; };
@@ -25,13 +52,15 @@ window.TriundPlaces = {
         const b = data.buildings[poi.b]; if (!b || !poi.name || poi.kind !== 'cafe' || nt.d >= 30) continue;
         const P = []; for (let k = 0; k < b.p.length; k += 2) P.push([b.p[k], -b.p[k + 1]]);
         let bx = x, bz = z; for (let k = 0; k < 40 && inPoly(P, bx, bz); k++) { bx += tx * 0.5; bz += tz * 0.5; }
-        const sx = bx + tx * 1.6, sz = bz + tz * 1.6;            // storefront centre (1.3 m + 0.3 m out from the wall)
-        out.push({ x: sx + tx * 1.6, z: sz + tz * 1.6, r0: 3.7, r1: 5.6 });
+        const w = window.TriundPlaces.wallAt(P, x, z, tx, tz), fx = w ? w.nx : tx, fz = w ? w.nz : tz;
+        const sx = w ? w.x + fx * 1.25 : bx + tx * 1.25, sz = w ? w.z + fz * 1.25 : bz + tz * 1.25;   // storefront centre, square to the wall
+        out.push({ x: sx + fx * 1.6, z: sz + fz * 1.6, r0: 3.7, r1: 5.6 });
         continue;
       }
       const clear = poi.kind === 'cafe' ? 6 : 5;
       if (nt.d < clear) { x = nt.x - tx * clear; z = nt.z - tz * clear; }
-      out.push({ x: x + tx * 1.5, z: z + tz * 1.5, r0: 4.1, r1: 6.2 });
+      const sp = window.TriundPlaces.stallSpot(x, z, tx, tz, placed, nearestTrail, clear); if (!sp) continue;
+      out.push({ x: sp.x + tx * 1.5, z: sp.z + tz * 1.5, r0: 4.1, r1: 6.2 });
     }
     return out;
   },
@@ -397,7 +426,7 @@ window.TriundPlaces = {
     let menuMat = null;
     const SNACK = [0xd8322b, 0xf2c230, 0x2f6fd6, 0x2f9a52, 0xf08a24, 0x7a2fa0, 0x1fa0a0];
     /* ---------- POIs ---------- */
-    const stops = [];
+    const stops = [], stallsPlaced = [];
     const KIND_SUB = { cafe: 'chai · maggi', shop: '', lodge: 'rooms', camp: 'camp', temple: '', monastery: '', shelter: '', toilets: '', info: '' };
     for (const poi of data.pois) {
       let x = poi.e, z = -poi.n;
@@ -413,21 +442,28 @@ window.TriundPlaces = {
         // walk from the building centre toward the trail until outside the footprint
         let bx = x, bz = z; for (let k = 0; k < 40 && inPoly(P, bx, bz); k++) { bx += tx * 0.5; bz += tz * 0.5; }
         bx += tx * 0.3; bz += tz * 0.3;
-        nameBoard(bx, H(bx, bz) + 3.1, bz, face, poi.name, KIND_SUB[poi.kind], poi.kind === 'lodge' ? '#1f3b2e' : '#f2c230', poi.kind === 'lodge' ? '#f1ead8' : '#2a1a04', 2.8);
+        const w = window.TriundPlaces.wallAt(P, x, z, tx, tz), fx = w ? w.nx : tx, fz = w ? w.nz : tz, f2 = Math.atan2(fx, fz);   // square to the wall
+        if (w) { bx = w.x + fx * 0.3; bz = w.z + fz * 0.3; }
+        nameBoard(bx, H(bx, bz) + 3.1, bz, f2, poi.name, KIND_SUB[poi.kind], poi.kind === 'lodge' ? '#1f3b2e' : '#f2c230', poi.kind === 'lodge' ? '#f1ead8' : '#2a1a04', 2.8);
         bump('board');
         if (poi.kind === 'cafe' && nt.d < 30) {
-          // the storefront stands 1.3 m out from the wall; the shopkeeper behind the counter, the customer in front
-          const seats = storefront(bx + tx * 1.3, bz + tz * 1.3, face, poi);
-          stops.push(Object.assign(stopAt(poi, bx + tx * 1.0, bz + tz * 1.0, tx, tz, nt, 'building'), { seats }));
+          // the storefront is built square against the wall the walk came out through (its back 5 cm off the wall),
+          // facing straight out of it; the shopkeeper stands between the shelves and the counter, the customer in front
+          const wx = w ? w.x : bx - tx * 0.3, wz = w ? w.z : bz - tz * 0.3;
+          const sx = wx + fx * 1.25, sz = wz + fz * 1.25;                                   // storefront centre (depth 2.4 m)
+          const seats = storefront(sx, sz, f2, poi);
+          const cp = lw(sx, sz, f2, 0.5, 0.8);
+          stops.push(Object.assign(stopAt(poi, sx - fx * 0.3, sz - fz * 0.3, fx, fz, nt, 'building'), { seats, keeper: { x: sx - fx * 0.15, z: sz - fz * 0.15 }, counter: { x: cp.x, z: cp.z, y: H(sx, sz) + 1.03 } }));
         }
         continue;
       }
       // keep standalone props off the walking line
       const clear = { cafe: 6, shop: 5, lodge: 9, camp: 10, temple: 5, monastery: 6, church: 6, shelter: 5, toilets: 4, info: 3, viewpoint: 3.5, bench: 2.2, bin: 2, drinking_water: 2 }[poi.kind] || 4;
       if (nt.d < clear) { x = nt.x - tx * clear; z = nt.z - tz * clear; }
+      if (poi.kind === 'cafe' || poi.kind === 'shop') { const sp = window.TriundPlaces.stallSpot(x, z, tx, tz, stallsPlaced, nearestTrail, clear); if (!sp) continue; x = sp.x; z = sp.z; }
       const y = H(x, z);
       switch (poi.kind) {
-        case 'cafe': case 'shop': { const seats = stall(x, y, z, face, poi); if (poi.kind === 'cafe' && nt.d < 30) stops.push(Object.assign(stopAt(poi, x + tx * 2.4, z + tz * 2.4, tx, tz, nt, 'stall'), { seats })); break; }
+        case 'cafe': case 'shop': { const seats = stall(x, y, z, face, poi); if (poi.kind === 'cafe' && nt.d < 30) stops.push(Object.assign(stopAt(poi, x + tx * 2.4, z + tz * 2.4, tx, tz, nt, 'stall'), { seats, keeper: { x: x + tx * seats.keeperZ, z: z + tz * seats.keeperZ }, counter: seats.counter })); break; }
         case 'lodge': building(rectPoly(x, z, face, 7, 9), 2, 'lodge', poi.name, 7 + boards.length);
           if (poi.name) nameBoard(x + tx * 3.9, y + 3.1, z + tz * 3.9, face, poi.name, 'rooms', '#1f3b2e', '#f1ead8', 2.8); break;
         case 'temple': shrine(x, y, z, face, poi); break;
@@ -462,7 +498,7 @@ window.TriundPlaces = {
     }
     // what a Triund chai stall actually holds: snack packets, Maggi, bottles on shelves, chips strips hanging at the
     // front, a gas stove with a big kettle and steel glasses, an LPG cylinder, plastic chairs, a menu board
-    function goods(x, y, z, ry, w, d, hh, r, inside) {
+    function goods(x, y, z, ry, w, d, hh, r, inside, counterZ) {   // counterZ: the counter's local z, when it is not d/2 - 0.4
       const wood = C(0x6e4b2e), steel = C(0xb9bcbf), seats = [];
       if (inside) {
         for (const sy of [1.0, 1.5]) {
@@ -481,7 +517,7 @@ window.TriundPlaces = {
         lbox(props, x, y, z, ry, w / 2 - 0.45, 0.52, -d / 2 + 0.4, 0.45, 0.32, 0.32, C(0x2f6fd6));
       }
       // counter: stove, kettle, glasses, biscuit jars
-      const cz = d / 2 - 0.4, cy = 1.0;
+      const cz = counterZ != null ? counterZ : d / 2 - 0.4, cy = 1.0;
       lbox(props, x, y, z, ry, -w * 0.18, cy + 0.04, cz, 0.42, 0.07, 0.3, C(0x2a2a2a));
       { const cc = Math.cos(ry), ss = Math.sin(ry), at = (lx, lz) => [x + lx * cc + lz * ss, z - lx * ss + lz * cc];
         let [px, pz] = at(-w * 0.18, cz); props.geo(CYL, mtx(px, y + cy + 0.19, pz, 0, 0.26, 0.22, 0.26), steel);                                   // kettle
@@ -489,9 +525,9 @@ window.TriundPlaces = {
         for (let i = 0; i < 2; i++) { [px, pz] = at(w * 0.25 + i * 0.2, cz - 0.05); props.geo(CYL, mtx(px, y + cy + 0.12, pz, 0, 0.15, 0.24, 0.15), C([0xd9b36a, 0xc8662a][i])); }  // biscuit jars
         [px, pz] = at(-w / 2 - 0.35, d / 2 - 0.5); props.geo(CYL, mtx(px, y + 0.3, pz, 0, 0.3, 0.6, 0.3), C(0xb8261f));                            // LPG cylinder
       }
-      // chips strips hanging from the roof edge at the front
-      for (let k = 0; k < 3; k++) {
-        const lx = -w * 0.3 + k * w * 0.3;
+      // chips strips hanging from the roof edge at the front, by the corner posts (clear of the name board)
+      for (let k = 0; k < 2; k++) {
+        const lx = (k ? 1 : -1) * (w / 2 - 0.3);
         lbox(props, x, y, z, ry, lx, hh + 0.05, d / 2 + 0.05, 0.02, 0.1, 0.02, C(0x333333));
         for (let i = 0; i < 6; i++) lbox(props, x, y, z, ry, lx, hh - 0.12 - i * 0.2, d / 2 + 0.06, 0.14, 0.18, 0.012, C(SNACK[(k * 3 + i) % SNACK.length]));
       }
@@ -541,6 +577,8 @@ window.TriundPlaces = {
       nameBoard(fx, y + hh + 0.1, fz, ry, poi.name || (poi.kind === 'cafe' ? 'Tea Stall' : 'General Store'), poi.kind === 'cafe' ? 'chai · maggi · omelette' : '', '#f2c230', '#2a1a04', Math.min(w, 3.2));
       occupyDisc(x, z, Math.max(w, d) / 2 + 2.5); colRect(x, z, ry, 0, 0, w + 0.4, d + 0.4);
       bump(poi.kind);
+      seats.keeperZ = d / 2 - 1.05;   // the shopkeeper: 35 cm behind the counter's back edge, clear of the shelves
+      seats.counter = Object.assign(lw(x, z, ry, w * 0.2, d / 2 - 0.4), { y: y + 1.03 });
       return seats;
     }
     // a cafe inside a house still sells from the front: a tin lean-to on posts against the house wall, a counter,
@@ -721,7 +759,7 @@ window.TriundPlaces = {
     // dress the hand-built stalls in index.html (they are closed boxes: counter-side goods only)
     function dress(list) {
       const before = props.p.length;
-      for (const q of list) goods(q.x, q.y, q.z, q.ry, q.w, q.d, q.hh, rng(q.seed || 5), false);
+      for (const q of list) goods(q.x, q.y, q.z, q.ry, q.w, q.d, q.hh, rng(q.seed || 5), false, q.cz);
       const B = new Batch(); B.p = props.p.slice(before); B.n = props.n.slice(before); B.c = props.c.slice(before); B.uv = props.uv.slice(before);
       B.mesh(propMat);
     }
