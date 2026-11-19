@@ -232,7 +232,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <!-- start -->
 <section class="screen" id="start">
   <div class="card">
-    <div class="eyebrow">ECP feel test · build 1.6</div>
+    <div class="eyebrow">ECP feel test · build 1.7</div>
     <h1>Triund Walk Test</h1>
     <p class="lede">The real Triund trails above McLeod Ganj, up to the meadow at 2,838 m facing the Dhauladhar range. Take the classic 5 km path from Gallu Devi temple through oak and deodar forest, past Magic View Cafe and up the switchbacks, or the steeper, quieter climb from Bhagsu past the waterfall, Shiva Cafe and Karthani. There is no health bar. Your breathing, your heartbeat and the smartwatch on your wrist tell you how your body is holding up.</p>
     <div class="field">
@@ -509,7 +509,7 @@ function besideTrail(s,refX,refZ,off,tr){const p=pointAtS(s,tr),d=dirAtS(s,10,tr
   if((refX-p.x)*rx+(refZ-p.z)*rz<0){rx=-rx;rz=-rz;}
   return{x:p.x+rx*off,z:p.z+rz*off,h:p.h,tx:-rx,tz:-rz};}   // tx,tz: unit vector back toward the trail
 const PADS=[];
-function addPad(x,z,h,r0,r1,dirt){PADS.push({x,z,h,r0,r1,dirt:dirt||0});}
+function addPad(x,z,h,r0,r1,dirt,keepTrail){PADS.push({x,z,h,r0,r1,dirt:dirt||0,keepTrail:!!keepTrail});}
 const STOPS=[];
 function addStop(key,label,short,off){const m=mk(key),b=besideTrail(m.s,m.x,m.z,off,m.tr);
   STOPS.push({key,label,short,trail:m.tr.id,s:m.s,x:b.x,z:b.z,h:b.h,tx:b.tx,tz:b.tz,spot:{x:b.x+b.tx*4.2,z:b.z+b.tz*4.2},taken:false,seen:false});
@@ -529,10 +529,17 @@ function H(x,z){
   let h=demH(x,z)+fbm(x*0.045,z*0.045)*1.1+fbm(x*0.21,z*0.21)*0.22;lastW=0;lastSurf=1;
   trailQ(x,z);if(TQ.k>0){h+=(TQ.h-h)*TQ.k;lastW=1-smooth(0.6,1.8,TQ.d);lastSurf=TQ.surf;
     h-=0.15*(1-smooth(0.4,1.6,TQ.d));}   // worn trail bed, slightly sunk with soft shoulders
-  for(let i=0;i<PADS.length;i++){const p=PADS[i],d=Math.hypot(x-p.x,z-p.z);
-    if(d<p.r1){h+=(p.h-h)*(1-smooth(p.r0,p.r1,d));if(p.dirt){const w=(1-smooth(p.r0*0.7,p.r0+1,d))*p.dirt;if(w>lastW){lastW=w;lastSurf=1;}}}}
+  const td=TQ.d;
+  for(let i=0;i<PADS.length;i++){const p=PADS[i];if(Math.abs(x-p.x)>p.r1||Math.abs(z-p.z)>p.r1)continue;const d=Math.hypot(x-p.x,z-p.z);
+    // a stall's patio leaves the trail (and its steps) as they are: it fades out 1.6-3.2 m from the centreline
+    if(d<p.r1){h+=(p.h-h)*(1-smooth(p.r0,p.r1,d))*(p.keepTrail?smooth(1.6,3.2,td):1);if(p.dirt){const w=(1-smooth(p.r0*0.7,p.r0+1,d))*p.dirt;if(w>lastW){lastW=w;lastSurf=1;}}}}
   return h;
 }
+// levelled patios in front of the OSM cafes and shops (places.js builds the stalls on them later)
+if(TD.places&&window.TriundPlaces&&window.TriundPlaces.pads){
+  const skip=[{x:GALU.x,z:GALU.z,r:16},{x:BHT.x,z:BHT.z,r:14},{x:KARTHANI.x,z:KARTHANI.z,r:14}].concat(STOPS.map(st=>({x:st.x,z:st.z,r:18})));
+  try{const pads=window.TriundPlaces.pads({data:TD.places,trails:[GT,ST],skip});for(const q of pads)addPad(q.x,q.z,H(q.x,q.z),q.r0,q.r1,0.35,true);window.__stallPads=pads.length;}
+  catch(e){console.error('stall pads failed',e);}}
 const tobler=g=>6*Math.exp(-3.5*Math.abs(g+0.05))/3.6; // m/s, Tobler hiking function
 
 /* ================= renderer + scene ================= */
@@ -785,6 +792,18 @@ const avatar=new THREE.Group();let pack;const limbs={};
   const roll=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.42,10),lam(0x3c6b45));roll.rotation.z=Math.PI/2;roll.position.set(0,0.92,0.27);
   avatar.add(body,neck,head,beanie,pack,roll);avatar.visible=false;scene.add(avatar);
 })();
+// sitting on the grass: the chair-sitting clip with the lower legs swung forward flat on the ground and the toes up
+const LO={k:new THREE.Vector3(),f:new THREE.Vector3(),b:new THREE.Vector3(),d:new THREE.Vector3(),t:new THREE.Vector3(),q:new THREE.Quaternion(),p:new THREE.Quaternion(),c:new THREE.Quaternion()};
+function aimBone(bone,from,to,dir){bone.parent.updateWorldMatrix(true,false);bone.updateWorldMatrix(false,false);
+  LO.d.subVectors(to,from).normalize();LO.q.setFromUnitVectors(LO.d,dir);bone.parent.getWorldQuaternion(LO.p);bone.getWorldQuaternion(LO.c);
+  bone.quaternion.copy(LO.p.invert().multiply(LO.q.multiply(LO.c)));}
+function legsOut(root){root.updateMatrixWorld(true);const fx=Math.sin(root.rotation.y),fz=Math.cos(root.rotation.y);
+  for(const sd of ['l','r']){const calf=root.getObjectByName('calf_'+sd),foot=root.getObjectByName('foot_'+sd),ball=root.getObjectByName('ball_'+sd);if(!calf||!foot||!ball)continue;
+    calf.getWorldPosition(LO.k);foot.getWorldPosition(LO.f);aimBone(calf,LO.k,LO.f,LO.t.set(fx,-0.12,fz).normalize());
+    root.updateMatrixWorld(true);foot.getWorldPosition(LO.f);ball.getWorldPosition(LO.b);aimBone(foot,LO.f,LO.b,LO.t.set(fx*0.35,1,fz*0.35).normalize());}
+  root.updateMatrixWorld(true);}
+// the ground under one of the player's feet, including a step tread (same rule as the player's own height)
+function playerFeetGround(x,z){if(!STEPS)return H(x,z);const d=dirAtS(P.s,6);return STEPS.ground(x,z,ACT.id,P.s+(x-P.x)*d.dx+(z-P.z)*d.dz,P.trailD||0);}
 // local (lx,lz) offset inside a rotated group -> world x,z
 const toWorld=(ox,oz,rot,lx,lz)=>({x:ox+lx*Math.cos(rot)+lz*Math.sin(rot),z:oz-lx*Math.sin(rot)+lz*Math.cos(rot)});
 // photo-textured surfaces for the hand-built stalls (textures come from places.js; plain colours if it failed)
@@ -825,8 +844,11 @@ function stall(st,wall,lines){
     for(const z of [-3.1,3.1]){const pl=mbox(0.08,2.92,0.08,'wood',0x7a5a3a,1);pl.position.set(-3.92,1.46,z);g.add(pl);}}
   const kettle=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.2,0.32,10),lam(0xb8b8b4));kettle.position.set(-2.8,1.16,-0.8);g.add(kettle);
   // plank benches on short legs
+  st.seats=[];
   for(const bz of [-1.6,1.8]){const seat=mbox(0.42,0.06,2.4,'wood',0x9a7a5a,1);seat.position.set(-4.6,0.45,bz);g.add(seat);
     if(COLLIDE){const w=toWorld(st.x,st.z,rot,-4.6,bz);COLLIDE.rect(w.x,w.z,rot,0.45,2.4,true);}
+    // two places on each bench, facing the trail; y is the seat top
+    for(const o of [-0.6,0.6]){const w=toWorld(st.x,st.z,rot,-4.6,bz+o);st.seats.push({x:w.x,z:w.z,ry:Math.atan2(st.tx,st.tz),h:0.45,y:st.h+0.48});}
     for(const lz of [-1.05,0,1.05])for(const lx of [-0.16,0.16]){const leg=mbox(0.06,0.42,0.06,'wood',0x7a5a3a,1);leg.position.set(-4.6+lx,0.21,bz+lz);g.add(leg);}}
   const sign=textPlane(lines,3.4,1.6,'#f2c230','#2a1a04');sign.position.set(-2.32,2.3,0);sign.rotation.y=-Math.PI/2;g.add(sign);
   scene.add(g);grounded(g);
@@ -924,7 +946,7 @@ function resetPlayer(){
 resetPlayer();
 // QA hook: jump along the trail (used by automated screenshots; harmless for players)
 window.__triund={setRoute(id){startFrom=id;resetPlayer();enterPlay();},look(x,y,z,tx,ty,tz){state='qa';show('start',false);show('droneHud',false);camera.position.set(x,y,z);camera.lookAt(tx,ty,tz);DR.look.set(tx,ty,tz);},H:(x,z)=>H(x,z),drone(id,s,top,alt){startFrom=id;enterDrone();DR.s=s||0;DR.top=!!top;if(alt)DR.alt=alt;DR.pause=true;DR.snap=true;},teleport(s,third){const p=pointAtS(s),d=dirAtS(s+10,20);P.x=p.x;P.z=p.z;P.y=H(p.x,p.z);P.yaw=Math.atan2(-d.dx,-d.dz);P.pitch=-0.05;P.s=s;P.maxS=Math.max(P.maxS,s);P.firstPerson=!third;},
-  get P(){return P;},get total(){return ACT.total;},get route(){return ACT.id;},stops:STOPS.map(st=>({label:st.label,trail:st.trail,s:st.s})),buildMs:0,get flora(){return FLORA&&FLORA.counts;},get places(){return PLACES&&PLACES.counts;},get atmos(){return ATMOS&&ATMOS.counts;},get fauna(){return FAUNA&&FAUNA.counts;},get crowd(){return CROWD&&CROWD.counts;},get steps(){return STEPS&&STEPS.counts;},autopilot:false,get trek(){return TREK;},get camp(){return CAMP;},get crowdObj(){return CROWD;},get collide(){return COLLIDE;},toStop(label){const st=STOPS.find(x=>x.label.startsWith(label));if(!st)return null;P.x=st.spot.x;P.z=st.spot.z;P.y=H(P.x,P.z);P.yaw=Math.atan2(st.tx,st.tz);P.pitch=-0.15;P.firstPerson=true;return{x:st.x,z:st.z,spot:st.spot,tx:st.tx,tz:st.tz,h:st.h};},stepTop:s=>STEPS?STEPS.topAt(ACT.id,s):null,crowdInfo(){if(!CROWD)return null;const f=p=>p&&{x:+p.x.toFixed(1),y:+p.y.toFixed(1),z:+p.z.toFixed(1),yaw:+p.yaw.toFixed(2),st:p.state,anim:p.anim};const sit=CROWD.agents.find(a=>a.state==='sit');const walk=CROWD.agents.find(a=>a.state==='walk'&&a.tr===GT);const topA=CROWD.agents.find(a=>a.state==='top');return {sit:f(sit),walk:f(walk),top:f(topA),keeper:f(CROWD.keepers.find(k=>Math.hypot(k.x-stopOf('magic').x,k.z-stopOf('magic').z)<6)),keeper2:f(CROWD.keepers[5])};},get dogStates(){return FAUNA&&FAUNA.dogs.map(d=>d.state);},animals(){if(!FAUNA)return null;const p=g=>[+g.position.x.toFixed(1),+g.position.y.toFixed(1),+g.position.z.toFixed(1)];return {dog:p(FAUNA.dogs[0].a.g),mule:p(FAUNA.mules[0].members[0].g),langur:p(FAUNA.troops[0].members[0].l.g),bird:p(FAUNA.birds[0].m)};},get satOK(){return !!SAT.px;},get stats(){return {calls:RI.calls,tris:RI.triangles,fps:Math.round(fps),q:QL.get()};},
+  get P(){return P;},get total(){return ACT.total;},get route(){return ACT.id;},stops:STOPS.map(st=>({label:st.label,trail:st.trail,s:st.s})),buildMs:0,get flora(){return FLORA&&FLORA.counts;},get places(){return PLACES&&PLACES.counts;},get atmos(){return ATMOS&&ATMOS.counts;},get fauna(){return FAUNA&&FAUNA.counts;},get crowd(){return CROWD&&CROWD.counts;},get steps(){return STEPS&&STEPS.counts;},autopilot:false,get trek(){return TREK;},get camp(){return CAMP;},get crowdObj(){return CROWD;},get collide(){return COLLIDE;},toStop(label){const st=STOPS.find(x=>x.label.startsWith(label));if(!st)return null;P.x=st.spot.x;P.z=st.spot.z;P.y=H(P.x,P.z);P.yaw=Math.atan2(st.tx,st.tz);P.pitch=-0.15;P.firstPerson=true;return{x:st.x,z:st.z,spot:st.spot,tx:st.tx,tz:st.tz,h:st.h};},stepTop:s=>STEPS?STEPS.topAt(ACT.id,s):null,groundAt:(id,x,z,s,lat)=>STEPS?STEPS.ground(x,z,id,s,lat):H(x,z),trailDir:(id,s)=>{const tr=TRAILS[id];const p=pointAtS(s,tr),d=dirAtS(s,6,tr);return{x:p.x,z:p.z,dx:d.dx,dz:d.dz};},crowdInfo(){if(!CROWD)return null;const f=p=>p&&{x:+p.x.toFixed(1),y:+p.y.toFixed(1),z:+p.z.toFixed(1),yaw:+p.yaw.toFixed(2),st:p.state,anim:p.anim};const sit=CROWD.agents.find(a=>a.state==='sit');const walk=CROWD.agents.find(a=>a.state==='walk'&&a.tr===GT);const topA=CROWD.agents.find(a=>a.state==='top');return {sit:f(sit),walk:f(walk),top:f(topA),keeper:f(CROWD.keepers.find(k=>Math.hypot(k.x-stopOf('magic').x,k.z-stopOf('magic').z)<6)),keeper2:f(CROWD.keepers[5])};},get dogStates(){return FAUNA&&FAUNA.dogs.map(d=>d.state);},animals(){if(!FAUNA)return null;const p=g=>[+g.position.x.toFixed(1),+g.position.y.toFixed(1),+g.position.z.toFixed(1)];return {dog:p(FAUNA.dogs[0].a.g),mule:p(FAUNA.mules[0].members[0].g),langur:p(FAUNA.troops[0].members[0].l.g),bird:p(FAUNA.birds[0].m)};},get satOK(){return !!SAT.px;},get stats(){return {calls:RI.calls,tris:RI.triangles,fps:Math.round(fps),q:QL.get()};},
   breakdown(){const out={};scene.traverse(o=>{if(!o.isMesh||!o.visible)return;const g=o.geometry,t=(g.index?g.index.count:g.attributes.position.count)/3*(o.isInstancedMesh?o.count:1);
     const k=(o.isInstancedMesh?'inst:':'mesh:')+(o.material.map?'map':'')+(o.castShadow?'+cast':'')+':'+Math.round(t/(o.isInstancedMesh?Math.max(o.count,1):1));out[k]=(out[k]||0)+Math.round(t);});return out;}};
 
@@ -1223,8 +1245,15 @@ function update(dt){
   // eating and drinking: the hiker is shown from a close camera and their own arms do it (hands.js)
   const eatView=!!(HANDS&&HANDS.busy&&PCH);
   if(PCH){const seated=TREK&&TREK.sitting(),showC=!P.firstPerson||eatView;PCH.ch.root.visible=showC;if(showC){
-    PCH.ch.root.position.set(P.x,P.y-(seated&&!TREK.onBench()?0.42:0),P.z);PCH.ch.root.rotation.y=seated||eatView?P.yaw+Math.PI:Math.atan2(P.dirx,P.dirz);
-    PCH.play(TREK&&TREK.sitting()?'Sitting_Idle':P.crouch>0.5?'Idle':P.sprinting&&P.v>2.4?'Jog_Fwd':P.v>0.12?'Walk':'Idle',P.v>0.12?P.v:1);PCH.ch.mixer.update(dt);if(eatView)HANDS.pose();}}
+    // on a seat: hips on the seat top, feet on the ground in front (crowd.js sitRoot); on the grass: hips on the ground, legs stretched out
+    const st=seated&&TREK.seat(),onB=seated&&TREK.onBench();
+    if(onB&&CROWD){const r=CROWD.sitRoot(st,PCH.ch.root.scale.x);PCH.ch.root.position.set(r.x,r.y,r.z);}
+    else PCH.ch.root.position.set(P.x,P.y-(seated?0.4*PCH.ch.root.scale.x:0),P.z);
+    PCH.ch.root.rotation.y=onB?st.ry:seated||eatView?P.yaw+Math.PI:Math.atan2(P.dirx,P.dirz);
+    PCH.play(TREK&&TREK.sitting()?'Sitting_Idle':P.crouch>0.5?'Idle':P.sprinting&&P.v>2.4?'Jog_Fwd':P.v>0.12?'Walk':'Idle',P.v>0.12?P.v:1);PCH.ch.mixer.update(dt);
+    // feet on the slope and the steps
+    if(seated&&!onB)legsOut(PCH.ch.root);else if(!seated)window.TriundAnim.legIK(THREE,PCH.ch.root,playerFeetGround,P.y);
+    if(eatView)HANDS.pose();}}
   if(eatView&&HANDS.frame(camera,dt)){avatar.visible=false;}
   else if(P.firstPerson){
     avatar.visible=false;

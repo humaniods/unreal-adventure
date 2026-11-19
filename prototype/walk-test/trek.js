@@ -105,7 +105,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       if (!dish) return;
       const H = ctx.H; let x, z, y;
       if (sit && sit.bench) {   // on the bench beside you; turn to it
-        const r = sit.ry; x = P.x + Math.cos(r) * 0.45; z = P.z - Math.sin(r) * 0.45; y = H(P.x, P.z) + 0.48;
+        const r = sit.ry; x = P.x + Math.cos(r) * 0.45; z = P.z - Math.sin(r) * 0.45; y = (sit.y != null ? sit.y : H(P.x, P.z) + 0.47) + 0.01;
         if (!empty) { P.yaw = Math.atan2(-(x - P.x), -(z - P.z)) * 0.35 + P.yaw * 0.65; P.pitch = -0.55; }
       } else {                  // on the ground in front of you; look down at it
         const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); x = P.x + fx * 0.6; z = P.z + fz * 0.6; y = H(x, z) + 0.02; if (!empty) P.pitch = -0.7;
@@ -223,8 +223,8 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     /* ---------- seats ---------- */
     function seats() {
       const out = [], cr = ctx.crowd, pl = ctx.places;
-      if (cr && cr.seatSpots) for (const s of cr.seatSpots) out.push({ x: s.x, z: s.z, ry: s.ry, h: s.h || 0.45, ref: s });
-      if (pl && pl.benches) for (const b of pl.benches) out.push({ x: b.x, z: b.z, ry: b.ry, h: 0.45 });
+      if (cr && cr.seatSpots) for (const s of cr.seatSpots) out.push({ x: s.x, z: s.z, ry: s.ry, h: s.h || 0.45, y: s.y, ref: s });
+      if (pl && pl.benches) for (const b of pl.benches) out.push({ x: b.x, z: b.z, ry: b.ry, h: 0.45, y: b.y });
       return out;
     }
     function nearSeat(p, r, takeOver) {
@@ -255,7 +255,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       sitDown(s);
       ctx.say(s ? (s.h ? 'You take a seat at the stall and catch your breath.' : 'You sit on the bench and catch your breath.') : 'You sit down on the grass by the trail.', 2.5);
     }
-    const eyeHeight = () => sit ? (sit.bench ? 1.15 : 0.85) : 1.65;
+    const eyeHeight = () => sit ? (sit.bench ? (sit.y != null ? sit.y - ctx.H(P.x, P.z) + 0.78 : 1.2) : 0.82) : 1.65;
     function hudSit() {
       const h = $('sitHud'), show = !!sit;
       if (h.hidden === show) h.hidden = !show;
@@ -398,7 +398,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     }
     $('resBag').addEventListener('click', () => { if (ctx.getState() === 'play' || panelOpen === bagP) { if (panelOpen === bagP) closePanels(); else openBag(); } });
     return {
-      TIME, reset, update, openTopUp, onBench: () => !!(sit && sit.bench),
+      TIME, reset, update, openTopUp, onBench: () => !!(sit && sit.bench), seat: () => sit,
       drinkAnim() { if (ctx.hands && !ctx.hands.busy) ctx.hands.start('drink', { icon: '💧', need: 1 }); }, speedFactor, sitting, toggleSit, eyeHeight, prompt, hud, renderKit, syncCoins,
       interact(p) { const st = nearStop(p, 3.6); if (st) { openShop(st); return true; } return false; },
       toggleBag() { if (panelOpen === bagP) closePanels(); else openBag(); },

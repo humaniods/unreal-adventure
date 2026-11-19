@@ -121,8 +121,9 @@ window.TriundCrowd = {
       const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.34, 10), accMat(0x3c6b45)); roll.rotation.z = Math.PI / 2; roll.position.set(0, -0.28, 0.02); pack.add(roll);
       const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.2, 8), accMat(0x8fb3c8)); bottle.position.set(0.2, -0.1, 0); pack.add(bottle);
       attach(spine, pack, new THREE.Matrix4().makeTranslation(sp.x, sp.y - 0.05, sp.z - 0.2)); acc.pack = pack; acc.packMat = pb.material;
-      const beanie = new THREE.Mesh(new THREE.SphereGeometry(0.112, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), accMat(0xb8432f)); beanie.castShadow = true;
-      attach(head, beanie, new THREE.Matrix4().makeTranslation(hp.x, hp.y + 0.075, hp.z + 0.0)); acc.beanie = beanie;
+      // a beanie sits on the crown and stops above the eyebrows (lower, it reads as a blindfold)
+      const beanie = new THREE.Mesh(new THREE.SphereGeometry(0.112, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.52), accMat(0xb8432f)); beanie.castShadow = true;
+      attach(head, beanie, new THREE.Matrix4().makeTranslation(hp.x, hp.y + 0.095, hp.z + 0.008).multiply(new THREE.Matrix4().makeScale(1.12, 1.12, 1.2))); acc.beanie = beanie;
       const cap = new THREE.Group(); const cc = new THREE.Mesh(new THREE.SphereGeometry(0.108, 14, 6, 0, Math.PI * 2, 0, Math.PI * 0.5), accMat(0x2f4f7f));
       const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.012, 12, 1, false, -Math.PI / 2, Math.PI), cc.material); brim.position.set(0, 0.0, 0.07); cap.add(cc, brim);
       attach(head, cap, new THREE.Matrix4().makeTranslation(hp.x, hp.y + 0.08, hp.z)); acc.cap = cap; acc.capMat = cc.material;
@@ -147,7 +148,12 @@ window.TriundCrowd = {
     // speed: ground speed in m/s for locomotion clips (Walk, Jog_Fwd), playback rate for everything else
     function play(ch, name, speed) {
       const a = ch.actions[name] || ch.actions.Idle;
-      if (ch.cur !== a) { a.reset().play(); if (ch.cur) a.crossFadeFrom(ch.cur, 0.35, false); ch.cur = a; }
+      if (ch.cur !== a) {
+        // a character handed to a new person starts clean: whatever the last person was doing (walking, sitting)
+        // must not keep playing underneath, or the two poses blend into a half-sitting, knees-in-the-ground body
+        if (!ch.cur) ch.mixer.stopAllAction();
+        a.reset().play(); if (ch.cur) a.crossFadeFrom(ch.cur, 0.35, false); ch.cur = a;
+      }
       const L = LOCO[name];
       a.timeScale = L ? Math.min(L.hi, Math.max(L.lo, (speed || 0) / (L.v * ch.root.scale.x))) : (speed || 1);
     }
@@ -165,7 +171,7 @@ window.TriundCrowd = {
     for (const st of stops) {
       const sx = -st.tz, sz = st.tx, kind = st.kind || 'big';
       // stalls built by places.js list their real benches and chairs
-      if (st.seats) { for (const q of st.seats) seatSpots.push({ x: q.x, z: q.z, ry: q.ry, h: q.h, used: false, stop: st }); continue; }
+      if (st.seats) { for (const q of st.seats) seatSpots.push({ x: q.x, z: q.z, ry: q.ry, h: q.h, y: q.y, used: false, stop: st }); continue; }
       if (kind === 'building') continue;
       const out = kind === 'stall' ? -0.1 : 4.6, side = kind === 'stall' ? 2.6 : 1.7;
       for (const sd of [-1, 1]) seatSpots.push({ x: st.x + sx * sd * side + st.tx * out, z: st.z + sz * sd * side + st.tz * out, ry: Math.atan2(st.tx, st.tz), used: false, stop: st });
@@ -180,7 +186,7 @@ window.TriundCrowd = {
     const N = quality && quality.grassDensity < 0.7 ? 60 : 100;
     for (let i = 0; i < N; i++) agents.push(newAgent(i));
     // some start sitting at stalls, some on the top meadow
-    for (const a of agents.slice(0, 14)) { const sp = seatSpots[(R() * seatSpots.length) | 0]; if (sp && !sp.used) { sp.used = true; a.seat = sp; a.state = 'sit'; a.t = 20 + R() * 120; a.s = sp.stop.s; a.tr = trails[sp.stop.trail] || a.tr; } }
+    for (const a of agents.slice(0, 14)) { const sp = seatSpots[(R() * seatSpots.length) | 0]; if (sp && !sp.used) { sp.used = true; a.seat = sp; a.state = 'sit'; a.t = 20 + R() * 120; a.s = sp.stop.s; a.tr = trails[sp.stop.trail] || a.tr; const r = sitRoot(sp, a.look.scale); a.x = r.x; a.z = r.z; } }
     // a free spot on the top meadow, away from tents, buildings and other people already standing there
     const topSpots = [];
     function topSpot(a) {
@@ -200,6 +206,18 @@ window.TriundCrowd = {
     const fixed = keepers.concat((talkers || []).map((t, i) => ({ id: 'talker' + i, kind: 'talker', x: t.x, z: t.z, yaw: t.yaw, state: 'talker', look: look(i % 2 ? 'f' : 'm'), anim: 'Idle_Talking', animSpeed: 1 })));
     for (const k of fixed) k.y = H(k.x, k.z);
 
+    // The sitting clips (Quaternius) put the hips 0.33 m behind the character's origin and the underside of the
+    // thighs 0.46 m above it, feet flat at 0. So a sitter's origin goes 0.3 m in front of the seat centre and
+    // 0.46 m below the seat top: then the seat is under them and their feet are on the ground in front of it.
+    // (plain function with literals: it is hoisted and also used for the hikers who start the day seated)
+    function sitRoot(seat, scale) {
+      const SIT_FWD = 0.3, SIT_UP = 0.46, k = scale || 1, y = seat.y != null ? seat.y : H(seat.x, seat.z) + (seat.h || 0.45);
+      return { x: seat.x + Math.sin(seat.ry) * SIT_FWD * k, z: seat.z + Math.cos(seat.ry) * SIT_FWD * k, y: y - SIT_UP * k };
+    }
+    // get up and walk back to the trail (nobody teleports)
+    function leaveSeat(a) {
+      if (a.seat) a.seat.used = false; a.seat = null; a.state = 'leave'; a.t = 80 + R() * 200;
+    }
     function think(a, dt, P) {
       a.t -= dt;
       if (a.state === 'walk') {
@@ -229,12 +247,18 @@ window.TriundCrowd = {
         a.v = 0; a.anim = 'Idle'; a.animSpeed = 1;    // (the walk crossfade covers the stop)
         if (a.t < 0) { a.state = 'walk'; a.t = 60 + R() * 200; }
       } else if (a.state === 'toSeat') {
-        const ex = a.seat.x - a.x, ez = a.seat.z - a.z, el = Math.hypot(ex, ez);
-        if (el < 0.25) { a.state = 'sit'; a.yaw = a.seat.ry; }
-        else { a.x += ex / el * 0.9 * dt; a.z += ez / el * 0.9 * dt; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = 0.9; }
+        // walk up to the front of the seat, then turn and sit down on it
+        const sr = sitRoot(a.seat, a.look.scale), ex = sr.x - a.x, ez = sr.z - a.z, el = Math.hypot(ex, ez);
+        if (el < 0.12) { a.state = 'sit'; a.yaw = a.seat.ry; }
+        else { const m = Math.min(el, 0.9 * dt); a.x += ex / el * m; a.z += ez / el * m; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = 0.9; }
       } else if (a.state === 'sit') {
-        a.x = a.seat.x; a.z = a.seat.z; a.yaw = a.seat.ry; a.anim = R() < 0.002 ? (a.anim === 'Sitting_Idle' ? 'Sitting_Talking' : 'Sitting_Idle') : (a.anim.startsWith('Sitting') ? a.anim : 'Sitting_Idle'); a.animSpeed = 1;
-        if (a.t < 0) { a.seat.used = false; a.seat = null; a.state = 'walk'; a.t = 80 + R() * 200; const p = trailAt(a.tr, a.s, 0); a.x = p.x; a.z = p.z; }
+        const sr = sitRoot(a.seat, a.look.scale); a.x = sr.x; a.z = sr.z; a.yaw = a.seat.ry;
+        a.anim = R() < 0.002 ? (a.anim === 'Sitting_Idle' ? 'Sitting_Talking' : 'Sitting_Idle') : (a.anim.startsWith('Sitting') ? a.anim : 'Sitting_Idle'); a.animSpeed = 1;
+        if (a.t < 0) leaveSeat(a);
+      } else if (a.state === 'leave') {
+        const p = trailAt(a.tr, a.s, a.lat), ex = p.x - a.x, ez = p.z - a.z, el = Math.hypot(ex, ez);
+        if (el < 0.4 || (a.leaveT = (a.leaveT || 0) + dt) > 25) { a.state = 'walk'; a.leaveT = 0; }
+        else { a.x += ex / el * 0.9 * dt; a.z += ez / el * 0.9 * dt; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = 0.9; }
       } else if (a.state === 'top') {
         const ex = a.tx - a.x, ez = a.tz - a.z, el = Math.hypot(ex, ez);
         if (el > 0.4) { a.x += ex / el * 0.8 * dt; a.z += ez / el * 0.8 * dt; a.yaw = yawOf(ex, ez); a.anim = 'Walk'; a.animSpeed = 0.8; }
@@ -243,7 +267,7 @@ window.TriundCrowd = {
       }
       if (a.state === 'walk' || a.state === 'rest') {
         a.s = Math.max(0, Math.min(a.tr.total, a.s));
-        const p = trailAt(a.tr, a.s, a.lat); a.x = p.x; a.z = p.z;
+        const p = trailAt(a.tr, a.s, a.lat); a.x = p.x; a.z = p.z; a.tdx = p.dx; a.tdz = p.dz;
         if (a.state === 'walk') a.yaw = yawOf(p.dx * a.dir, p.dz * a.dir);
       }
       // solid world: hikers slide round stalls, benches, tables, tents and houses like the player does
@@ -251,7 +275,8 @@ window.TriundCrowd = {
       if (collide && a.state !== 'sit' && !(a.state === 'toSeat' && a.seat && Math.hypot(a.seat.x - a.x, a.seat.z - a.z) < 1.2)) {
         const r = collide.resolve(a.x, a.z, 0.3); a.x = r.x; a.z = r.z;
       }
-      a.y = ground && (a.state === 'walk' || a.state === 'rest') ? ground(a.x, a.z, a.tr.id, a.s, a.lat) : H(a.x, a.z);   // on the steps where there are steps
+      if (a.state === 'sit') a.y = sitRoot(a.seat, a.look.scale).y;   // on the seat, not on the ground under it
+      else a.y = ground && (a.state === 'walk' || a.state === 'rest') ? ground(a.x, a.z, a.tr.id, a.s, a.lat) : H(a.x, a.z);   // on the steps where there are steps
     }
 
     /* ---------- far proxies: one instanced low-poly figure (torso, legs, head, pack) ---------- */
@@ -379,6 +404,12 @@ window.TriundCrowd = {
       return { x, z };
     }
 
+    // the ground under a person's foot: on the trail that includes the step treads (the foot's own place along it)
+    const groundFn = p => (x, z) => {
+      if (ground && p.tr && (p.state === 'walk' || p.state === 'rest')) return ground(x, z, p.tr.id, p.s + (x - p.x) * (p.tdx || 0) + (z - p.z) * (p.tdz || 0), p.lat);
+      return H(x, z);
+    };
+    const IK_D2 = 90 * 90;      // every full character in view (the pool is small)
     let simT = 0;
     return {
       agents, keepers, seatSpots, pushOut, counts: { bots: agents.length, keepers: keepers.length, pool: POOL },
@@ -392,7 +423,8 @@ window.TriundCrowd = {
         if (mesh) mesh.visible = false; return true;
       },
       // the player needs this seat: whoever sits there gets up and walks on
-      freeSeat(spot) { for (const a of agents) if (a.seat === spot) { a.seat = null; a.state = 'walk'; a.t = 60 + R() * 120; const p = trailAt(a.tr, a.s, 0); a.x = p.x; a.z = p.z; } spot.used = false; },
+      freeSeat(spot) { for (const a of agents) if (a.seat === spot) leaveSeat(a); spot.used = false; },
+      sitRoot, groundFn,
       busy(stop) { const i = stops.indexOf(stop); return i >= 0 && !!keepers[i].task; },
       update(dt, cam, P, camera) {
         if (camera) FR.setFromProjectionMatrix(PM.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
@@ -415,7 +447,11 @@ window.TriundCrowd = {
             ch.animAcc += dt;
             const seen = !camera || FR.intersectsSphere(SPH.set(ch.root.position, 1.6));
             const step = !seen ? 0.25 : p.d2 > 35 * 35 ? 1 / 20 : 0;
-            if (ch.animAcc >= step) { ch.mixer.update(ch.animAcc); ch.animAcc = 0; }
+            if (ch.animAcc >= step) {
+              ch.mixer.update(ch.animAcc); ch.animAcc = 0;
+              // feet on the slope and on the steps instead of through them (near people in view only)
+              if (seen && p.d2 < IK_D2 && !(p.anim && p.anim.startsWith('Sitting'))) window.TriundAnim.legIK(THREE, ch.root, p.gfn || (p.gfn = groundFn(p)), p.y);
+            }
             continue;
           }
           const d2 = (p.x - cam.x) ** 2 + (p.z - cam.z) ** 2; if (d2 > 700 * 700) continue;
