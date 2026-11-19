@@ -19,7 +19,7 @@ window.TriundPost = {
       tScene: { value: rt.texture },
       uUv: { value: new THREE.Vector2(1, 1) },        // part of the target in use (viewport / size)
       uTexel: { value: new THREE.Vector2(0.25, 0.25) },
-      uSharp: { value: 0.35 },
+      uSharp: { value: 0.45 },
       uGrade: { value: 1 },
       uVig: { value: 0.14 },
       uTime: { value: 0 }
@@ -51,16 +51,17 @@ void main() {
   float lc = luma(c), ln = luma(n), ls = luma(s), le = luma(e), lw = luma(w);
   float lmin = min(lc, min(min(ln, ls), min(le, lw))), lmax = max(lc, max(max(ln, ls), max(le, lw))), range = lmax - lmin;
   // FXAA (reduced): blend along the edge where local contrast is high
-  if (range > max(0.04, lmax * 0.12)) {
+  if (range > max(0.0625, lmax * 0.166)) {   // FXAA 3.11 'quality' thresholds: real edges only, not texture detail
     vec2 grad = vec2(le - lw, ls - ln), dir = normalize(vec2(-grad.y, grad.x) + 1e-5);   // along the edge
     vec3 a = 0.5 * (tap(uv + dir * t * 0.5) + tap(uv - dir * t * 0.5));
     vec3 b = 0.5 * a + 0.25 * (tap(uv + dir * t * 1.5) + tap(uv - dir * t * 1.5));
     float lb = luma(b);
     c = (lb < lmin || lb > lmax) ? a : b;
   } else {
-    // contrast-adaptive sharpening on flat-ish areas (CAS-style weight: less where contrast is already high)
+    // contrast-adaptive sharpening everywhere that is not an edge (AMD CAS weight: strongest on soft detail, less
+    // where contrast is already high); it restores the texture detail that upscaling and mip filtering soften
     float amp = clamp(min(lmin, 1.0 - lmax) / max(lmax, 1e-3), 0.0, 1.0);
-    float wgt = -sqrt(amp) * uSharp * 0.2;
+    float wgt = -sqrt(amp) * mix(0.125, 0.2, uSharp);
     c = clamp((c + (n + s + e + w) * wgt) / (1.0 + 4.0 * wgt), 0.0, 1.0);
   }
   // filmic grade: gentle S-curve, a touch more saturation, warm highlights and cool shadows (Himalayan morning)
@@ -88,11 +89,11 @@ void main() {
       const w = Math.max(1, Math.round(size.x * scale)), h = Math.max(1, Math.round(size.y * scale));
       rt.viewport.set(0, 0, w, h); rt.scissor.set(0, 0, w, h); rt.scissorTest = scale < 1;
       U.uUv.value.set(w / size.x, h / size.y); U.uTexel.value.set(1 / size.x, 1 / size.y);
-      U.uSharp.value = 0.3 + 0.9 * (1 - scale);
+      U.uSharp.value = Math.min(1, 0.45 + 2.2 * (1 - scale));
     }
     return {
       rt, uniforms: U,
-      minScale: 0.75,     // below this the picture goes soft; the game prefers a few dropped frames
+      minScale: 0.85,     // below this the picture goes soft; the game prefers a few dropped frames
       get scale() { return scale; },
       // full drawing-buffer size; reallocates (only on window resize or a quality change)
       setSize(w, h) { w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h)); if (w === size.x && h === size.y) return; size.set(w, h); rt.setSize(w, h); applyViewport(); },
