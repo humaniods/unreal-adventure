@@ -95,21 +95,20 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       if (egg) for (let i = 0; i < 18; i++) { g.fillStyle = i % 2 ? '#fff6dc' : '#f2b72e'; g.beginPath(); g.arc(Math.random() * 256, Math.random() * 256, 9, 0, 6.3); g.fill(); }
       const t = new ctx.THREE.CanvasTexture(c); t.encoding = ctx.THREE.sRGBEncoding; return (noodles[egg] = t);
     }
-    // where the shopkeeper hands it over: in front of your seat, or in front of you
-    function serveTarget() {
+    // where a served dish is set down: on the bench beside you, or on the ground in front of you. The shopkeeper
+    // walks to within arm's reach of this point and puts it there with his hand.
+    function dropAt() {
       if (!P) return null;
-      if (sit && sit.ry != null) return { x: P.x + Math.sin(sit.ry) * 0.9, z: P.z + Math.cos(sit.ry) * 0.9 };
-      return { x: P.x, z: P.z };
+      const H = ctx.H;
+      if (sit && sit.bench) { const r = sit.ry, x = P.x + Math.cos(r) * 0.45, z = P.z - Math.sin(r) * 0.45; return { x, z, y: (sit.y != null ? sit.y : H(P.x, P.z) + 0.47) + 0.01, sx: x + Math.sin(r) * 0.62, sz: z + Math.cos(r) * 0.62 }; }   // sx, sz: where he stands, in front of the seat
+      const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), x = P.x + fx * 0.6, z = P.z + fz * 0.6; return { x, z, y: H(x, z) + 0.02 };
     }
+    const serveTarget = dropAt;
     function placeDish(dish, empty) {
       if (!dish) return;
-      const H = ctx.H; let x, z, y;
-      if (sit && sit.bench) {   // on the bench beside you; turn to it
-        const r = sit.ry; x = P.x + Math.cos(r) * 0.45; z = P.z - Math.sin(r) * 0.45; y = (sit.y != null ? sit.y : H(P.x, P.z) + 0.47) + 0.01;
-        if (!empty) { P.yaw = Math.atan2(-(x - P.x), -(z - P.z)) * 0.35 + P.yaw * 0.65; P.pitch = -0.55; }
-      } else {                  // on the ground in front of you; look down at it
-        const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); x = P.x + fx * 0.6; z = P.z + fz * 0.6; y = H(x, z) + 0.02; if (!empty) P.pitch = -0.7;
-      }
+      const { x, y, z } = dropAt();
+      if (sit && sit.bench) { if (!empty) { P.yaw = Math.atan2(-(x - P.x), -(z - P.z)) * 0.35 + P.yaw * 0.65; P.pitch = -0.55; } }   // turn to it
+      else if (!empty) P.pitch = -0.7;                                                                                             // look down at it
       dish.position.set(x, y, z); dish.rotation.y = P.yaw; dish.visible = true;
     }
     function receive(o, how) {
@@ -123,7 +122,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       while (orders.length) {
         const o = orders[0];
         if (!cr || !cr.deliver) { o.wait = (o.wait == null ? o.cook : o.wait) - 1 / 60; if (o.wait > 0) return; orders.shift(); receive(o, 'hand'); continue; }
-        const ok = cr.deliver(o.stop, { mesh: o.dish, cookSec: o.cook, target: serveTarget,
+        const ok = cr.deliver(o.stop, { mesh: o.dish, cookSec: o.cook, target: serveTarget, drop: dropAt,
           onGive: how => { const j = inflight.indexOf(o); if (j >= 0) inflight.splice(j, 1); if (how === 'hand') receive(o, 'hand'); else { const st = o.stop, H = ctx.H, c = st.counter; if (c) o.dish.position.set(c.x, c.y, c.z); else o.dish.position.set(st.spot.x - st.tx * 0.9, H(st.spot.x, st.spot.z) + 1.02, st.spot.z - st.tz * 0.9); o.dish.visible = true; pending.push(o); ctx.toast(`Your ${o.it.name} is ready on the counter at ${st.label}.`); } } });
         if (!ok) return; orders.shift(); o.sent = performance.now(); inflight.push(o);
       }
