@@ -46,46 +46,189 @@ window.TriundCrowd = {
       for (let i = 0; i < si.count; i++) for (let k = 0; k < 4; k++) { const w = WA[i * ws + k] / wn; if (w > 0) a[i * 4 + cls[SA[i * ss + k]]] += w; }
       g.setAttribute('cloth', new THREE.BufferAttribute(a, 4));
     }
+
+    /* ---------- an ordinary body from the base mesh ----------
+       The free Quaternius base body is a superhero (huge shoulders, arms and chest, every muscle sculpted). Once per
+       body, in its bind pose: each vertex is pulled toward the bone it hangs on (shoulders, arms, chest and legs
+       slimmer, by the bone weights so nothing tears), then the clothed parts are smoothed (Taubin smoothing, which
+       does not shrink) so the jacket and trousers hang as cloth instead of showing the muscles under them. Seam
+       copies of a vertex (UV seams) are welded for this, so they move together and the normals stay smooth. */
+    const SLIM = {
+      m: { clavicle: [1, 0.8], upperarm: [1, 0.78], lowerarm: [1, 0.85], spine_03: [0.85, 0.88], spine_02: [0.89, 0.9], spine_01: [0.94, 0.94], neck_01: [0.84, 0.86], thigh: [0.9, 0.9], calf: [0.92, 0.92] },
+      f: { clavicle: [1, 0.9], upperarm: [1, 0.87], lowerarm: [1, 0.9], spine_03: [0.93, 0.94], spine_02: [0.94, 0.95], spine_01: [0.96, 0.96], neck_01: [0.9, 0.9], thigh: [0.95, 0.95], calf: [0.95, 0.95] }
+    };
+    const CHAIN = { clavicle: 'upperarm', upperarm: 'lowerarm', lowerarm: 'hand', thigh: 'calf', calf: 'foot', spine_01: 'spine_02', spine_02: 'spine_03', spine_03: 'neck_01', neck_01: 'Head' };
+    function reshape(mesh, sex) {
+      const g = mesh.geometry; if (g.userData.reshaped) return; g.userData.reshaped = true;
+      const sk = mesh.skeleton, bones = sk.bones, idx = {}; bones.forEach((b, i) => { idx[b.name] = i; });
+      const bp = sk.boneInverses.map(m => new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().copy(m).invert()));
+      const F = SLIM[sex] || SLIM.m;
+      const seg = bones.map(b => {
+        const base = b.name.replace(/_[lr]$/, ''), f = F[base] || F[b.name]; if (!f) return null;
+        const sfx = /_[lr]$/.test(b.name) ? b.name.slice(-2) : '', ch = idx[CHAIN[base] + (CHAIN[base] === 'Head' || /^(spine|neck)/.test(CHAIN[base]) ? '' : sfx)];
+        if (ch == null) return null;
+        const A = bp[bones.indexOf(b)], B = bp[ch], u = B.clone().sub(A), L = u.length(); u.normalize();
+        return { A, u, L, kx: f[0], kz: f[1] };
+      });
+      const P = g.attributes.position, n = P.count, bm = mesh.bindMatrix, bmi = mesh.bindMatrixInverse;
+      const si = g.attributes.skinIndex.array, sw = g.attributes.skinWeight.array, cl = g.attributes.cloth.array;
+      const ss = g.attributes.skinIndex.itemSize, ws = g.attributes.skinWeight.itemSize;
+      const wn = g.attributes.skinWeight.normalized ? (sw instanceof Uint8Array ? 255 : sw instanceof Uint16Array ? 65535 : 1) : 1;
+      const X = new Float32Array(n * 3), v = new THREE.Vector3();
+      for (let i = 0; i < n; i++) { v.fromBufferAttribute(P, i).applyMatrix4(bm); X[i * 3] = v.x; X[i * 3 + 1] = v.y; X[i * 3 + 2] = v.z; }
+      // 1. slim: scale the offset across each bone (x across the body by kx, y and z by kz), weighted
+      for (let i = 0; i < n; i++) {
+        const x = X[i * 3], y = X[i * 3 + 1], z = X[i * 3 + 2]; let dx = 0, dy = 0, dz = 0;
+        for (let k = 0; k < 4; k++) {
+          const w = sw[i * ws + k] / wn; if (w <= 0) continue; const s = seg[si[i * ss + k]]; if (!s) continue;
+          const ox = x - s.A.x, oy = y - s.A.y, oz = z - s.A.z; let t = ox * s.u.x + oy * s.u.y + oz * s.u.z; t = Math.max(0, Math.min(s.L, t));
+          const px = ox - s.u.x * t, py = oy - s.u.y * t, pz = oz - s.u.z * t;     // offset from the bone line
+          dx += w * px * (s.kx - 1); dy += w * py * (s.kz - 1); dz += w * pz * (s.kz - 1);
+        }
+        X[i * 3] += dx; X[i * 3 + 1] += dy; X[i * 3 + 2] += dz;
+      }
+      // 2. weld seam copies, find neighbours from the triangles
+      const key = new Map(), gid = new Int32Array(n); let ng = 0;
+      for (let i = 0; i < n; i++) { const k = Math.round(X[i * 3] * 2e4) + ',' + Math.round(X[i * 3 + 1] * 2e4) + ',' + Math.round(X[i * 3 + 2] * 2e4); let id = key.get(k); if (id === undefined) { id = ng++; key.set(k, id); } gid[i] = id; }
+      const G = new Float32Array(ng * 3), cnt = new Float32Array(ng), mask = new Float32Array(ng);
+      for (let i = 0; i < n; i++) { const a = gid[i]; G[a * 3] += X[i * 3]; G[a * 3 + 1] += X[i * 3 + 1]; G[a * 3 + 2] += X[i * 3 + 2]; cnt[a]++;
+        const c = cl[i * 4 + 1] + cl[i * 4 + 2] + cl[i * 4 + 3]; mask[a] = Math.max(mask[a], Math.min(1, Math.max(0, (c - 0.55) / 0.35))); }
+      for (let a = 0; a < ng; a++) { G[a * 3] /= cnt[a]; G[a * 3 + 1] /= cnt[a]; G[a * 3 + 2] /= cnt[a]; }
+      const ix = g.index.array, nbs = Array.from({ length: ng }, () => new Set());
+      for (let t = 0; t < ix.length; t += 3) { const a = gid[ix[t]], b = gid[ix[t + 1]], c = gid[ix[t + 2]]; nbs[a].add(b).add(c); nbs[b].add(a).add(c); nbs[c].add(a).add(b); }
+      const NB = nbs.map(s => Int32Array.from(s));
+      // 3. Taubin smoothing of the clothed parts (shrink step, then inflate step)
+      const T = new Float32Array(ng * 3);
+      for (let it = 0; it < 16; it++) {
+        const lam = it % 2 ? -0.53 : 0.5;
+        for (let a = 0; a < ng; a++) {
+          const nb = NB[a], m = mask[a]; if (!m || !nb.length) { T[a * 3] = G[a * 3]; T[a * 3 + 1] = G[a * 3 + 1]; T[a * 3 + 2] = G[a * 3 + 2]; continue; }
+          let sx = 0, sy = 0, sz = 0; for (const b of nb) { sx += G[b * 3]; sy += G[b * 3 + 1]; sz += G[b * 3 + 2]; }
+          const k = lam * m / nb.length;
+          T[a * 3] = G[a * 3] + (sx - G[a * 3] * nb.length) * k; T[a * 3 + 1] = G[a * 3 + 1] + (sy - G[a * 3 + 1] * nb.length) * k; T[a * 3 + 2] = G[a * 3 + 2] + (sz - G[a * 3 + 2] * nb.length) * k;
+        }
+        G.set(T);
+      }
+      // 4. write back, normals averaged over the welded groups
+      const N = new Float32Array(ng * 3), e1 = new THREE.Vector3(), e2 = new THREE.Vector3(), fn = new THREE.Vector3();
+      for (let t = 0; t < ix.length; t += 3) {
+        const a = gid[ix[t]], b = gid[ix[t + 1]], c = gid[ix[t + 2]];
+        e1.set(G[b * 3] - G[a * 3], G[b * 3 + 1] - G[a * 3 + 1], G[b * 3 + 2] - G[a * 3 + 2]); e2.set(G[c * 3] - G[a * 3], G[c * 3 + 1] - G[a * 3 + 1], G[c * 3 + 2] - G[a * 3 + 2]);
+        fn.crossVectors(e1, e2); for (const q of [a, b, c]) { N[q * 3] += fn.x; N[q * 3 + 1] += fn.y; N[q * 3 + 2] += fn.z; }
+      }
+      const NA = g.attributes.normal, nmat = new THREE.Matrix3().getNormalMatrix(bmi);
+      for (let i = 0; i < n; i++) {
+        const a = gid[i]; v.set(G[a * 3], G[a * 3 + 1], G[a * 3 + 2]).applyMatrix4(bmi); P.setXYZ(i, v.x, v.y, v.z);
+        if (NA && mask[a] > 0) {   // keep the authored normals on skin (face, hands); new ones where the shape changed
+          v.set(N[a * 3], N[a * 3 + 1], N[a * 3 + 2]).applyMatrix3(nmat).normalize(); NA.setXYZ(i, v.x, v.y, v.z);
+        }
+      }
+      P.needsUpdate = true; if (NA) NA.needsUpdate = true;
+      g.computeBoundingSphere(); g.computeBoundingBox();
+      // measurements for clothes and accessories (bind pose, metres): kept with the geometry
+      const W = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) { const a = gid[i]; W[i * 3] = G[a * 3]; W[i * 3 + 1] = G[a * 3 + 1]; W[i * 3 + 2] = G[a * 3 + 2]; }
+      g.userData.bindPts = W;
+    }
+    // body measurements in the bind pose: the crown, a horizontal section, a surface point
+    function bodyInfo(mesh) {
+      const g = mesh.geometry; if (g.userData.info) return g.userData.info;
+      const W = g.userData.bindPts, n = W.length / 3;
+      let top = -1e9; for (let i = 0; i < n; i++) top = Math.max(top, W[i * 3 + 1]);
+      const section = (y, dy, xmax) => {   // centre and half-widths of the body around height y
+        let x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+        for (let i = 0; i < n; i++) { const x = W[i * 3], yy = W[i * 3 + 1], z = W[i * 3 + 2]; if (Math.abs(yy - y) > dy || Math.abs(x) > xmax) continue; x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
+        return { cx: (x0 + x1) / 2, cz: (z0 + z1) / 2, rx: (x1 - x0) / 2, rz: (z1 - z0) / 2, z0, z1 };
+      };
+      const surf = (x, y, front, r) => {    // the body's front (or back) surface z near (x, y)
+        r = r || 0.03; let best = front ? -1e9 : 1e9;
+        for (let i = 0; i < n; i++) { if (Math.abs(W[i * 3] - x) > r || Math.abs(W[i * 3 + 1] - y) > r) continue; const z = W[i * 3 + 2]; best = front ? Math.max(best, z) : Math.min(best, z); }
+        return best;
+      };
+      const ridge = (x, zr) => {            // highest point at lateral x (the top of the shoulder), below the head
+        let best = -1e9; for (let i = 0; i < n; i++) { if (Math.abs(W[i * 3] - x) > 0.025 || Math.abs(W[i * 3 + 2]) > zr || W[i * 3 + 1] > top - 0.28) continue; best = Math.max(best, W[i * 3 + 1]); }
+        return best;
+      };
+      return (g.userData.info = { top, section, surf, ridge });
+    }
+
     function clothMaterial(src, U) {
       const m = src.clone();
       m.onBeforeCompile = sh => {
         Object.assign(sh.uniforms, U);
-        // clothes have volume: push them out along the normal (puffer / fleece jacket, track pants, boots), which
-        // also hides the base body's muscle shapes
-        sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 cloth; varying vec4 vCloth; varying vec3 vOP; uniform vec3 uPuff;')
-          .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCloth = cloth; vOP = position;\ntransformed += objectNormal * dot(cloth.yzw, uPuff);');
-        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uTop; uniform vec3 uBottom; uniform vec3 uShoe; uniform float uQuilt; varying vec4 vCloth; varying vec3 vOP;')
+        // clothes have volume: push them out along the normal (puffer / fleece jacket or sweater, trousers, boots);
+        // a shawl over the shoulders adds its own thickness
+        sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
+attribute vec4 cloth; varying vec4 vCloth; varying vec3 vOP; varying float vShawl; uniform vec3 uPuff; uniform float uShawlOn, uH;
+float shawlMask(vec3 p, vec4 c) {
+  float y = p.y / uH, edge = (p.z > 0.0 ? 0.705 : 0.63) + abs(p.x) * 0.22;
+  return uShawlOn * smoothstep(0.4, 0.7, c.y) * (1.0 - smoothstep(0.28, 0.32, abs(p.x))) * smoothstep(edge, edge + 0.006, y);
+}`)
+          .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCloth = cloth; vOP = position; vShawl = shawlMask(position, cloth);\ntransformed += objectNormal * (dot(cloth.yzw, uPuff) + vShawl * 0.012);');
+        sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform vec3 uTop; uniform vec3 uBottom; uniform vec3 uShoe; uniform vec3 uShawl; uniform float uQuilt, uKnit, uZip, uH; varying vec4 vCloth; varying vec3 vOP; varying float vShawl;')
           .replace('#include <map_fragment>', `#include <map_fragment>
   {
-    float cw = vCloth.y + vCloth.z + vCloth.w;
+    float cw = vCloth.y + vCloth.z + vCloth.w, top = smoothstep(0.4, 0.7, vCloth.y), leg = smoothstep(0.4, 0.7, vCloth.z), yy = vOP.y / uH;
     vec3 cc = (uTop * vCloth.y + uBottom * vCloth.z + uShoe * vCloth.w) / max(cw, 1e-3);
     // fabric: fine weave + soft folds so it does not read as paint
     float weave = 0.93 + 0.07 * sin(vUv.x * 1400.0) * sin(vUv.y * 1400.0);
     float fold = 0.9 + 0.1 * sin(vUv.y * 90.0 + sin(vUv.x * 60.0) * 2.0);
     // puffer jacket quilting: horizontal baffles on the jacket only
     float q = abs(fract(vOP.y * 8.5) - 0.5) * 2.0;
-    float quilt = mix(1.0, 0.72 + 0.28 * smoothstep(0.0, 0.35, q), uQuilt * smoothstep(0.4, 0.7, vCloth.y));
-    diffuseColor.rgb = mix(diffuseColor.rgb, cc * weave * fold * quilt, smoothstep(0.3, 0.6, cw));
+    float quilt = mix(1.0, 0.72 + 0.28 * smoothstep(0.0, 0.35, q), uQuilt * top);
+    // hand-knitted wool sweater: vertical ribs and a fine stitch
+    float rib = 0.84 + 0.16 * smoothstep(0.15, 0.85, abs(fract((vOP.x + vOP.z * 0.6) * 95.0) - 0.5) * 2.0);
+    float knit = mix(1.0, rib * (0.94 + 0.06 * sin(vOP.y * 1100.0)), uKnit * top);
+    // jacket zip down the front; side pockets on trekking trousers; boot soles
+    float zip = uZip * top * step(0.035, vOP.z) * (1.0 - smoothstep(0.004, 0.007, abs(vOP.x))) * step(yy, 0.81);
+    float ax = abs(vOP.x), py = yy - 0.3;
+    float pocket = uZip * leg * step(-0.03, vOP.z) * step(0.0, py) * step(py, 0.085) * step(0.12, ax) * step(ax, 0.2);
+    float pedge = pocket * (1.0 - step(0.006, min(min(ax - 0.12, 0.2 - ax), min(py, 0.085 - py) * 1.8)));
+    float sole = smoothstep(0.4, 0.7, vCloth.w) * (1.0 - step(0.035, vOP.y));
+    vec3 col = cc * weave * fold * quilt * knit * (1.0 - 0.6 * zip) * (1.0 - 0.35 * pedge) * (1.0 - 0.6 * sole);
+    // a woollen shawl round the shoulders (Kullu weave: fine check, a coloured border along its edge)
+    if (vShawl > 0.0) {
+      float edge = (vOP.z > 0.0 ? 0.705 : 0.63) + abs(vOP.x) * 0.22, d = yy - edge;
+      float chk = 0.9 + 0.1 * step(0.5, fract(vOP.x * 60.0)) * step(0.5, fract(vOP.y * 60.0));
+      float border = step(d, 0.03) * step(0.008, d);
+      vec3 sc = uShawl * chk * weave;
+      sc = mix(sc, vec3(0.42, 0.06, 0.05) * (0.8 + 0.2 * step(0.5, fract(vOP.x * 40.0 + vOP.z * 40.0))), border);
+      col = mix(col, sc, vShawl);
+    }
+    diffuseColor.rgb = mix(diffuseColor.rgb, col, smoothstep(0.3, 0.6, cw));
   }`)
           // fabric hides the muscle detail of the base body's normal map
-          .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = normalize(mix(normal, geometryNormal, 0.9 * smoothstep(0.3, 0.6, vCloth.y + vCloth.z + vCloth.w)));')
+          .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\nnormal = normalize(mix(normal, geometryNormal, 0.97 * smoothstep(0.3, 0.6, vCloth.y + vCloth.z + vCloth.w)));')
           .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.92, smoothstep(0.3, 0.6, vCloth.y + vCloth.z + vCloth.w));');
       };
-      m.customProgramCacheKey = () => 'hikercloth';
+      m.customProgramCacheKey = () => 'hikercloth2';
       return m;
     }
 
-    /* ---------- palettes (what people wear on the trail in Oct/Nov: puffer and fleece jackets, track pants) ---------- */
+    /* ---------- palettes ----------
+       Hikers (Oct/Nov on the trail): puffer and fleece jackets, trekking trousers, boots, a rucksack.
+       Shopkeepers (Himachali chai-stall owners at 2,000-2,800 m): a Himachali topi, a thick hand-knitted sweater,
+       often a woollen shawl over it and a muffler, a kurta hanging below the sweater, loose pyjama trousers. */
     const TOPS = [0x2f4f7f, 0xb8432f, 0x2e2e33, 0x3f6b3a, 0xd9a321, 0x6a2c5a, 0x1f6f78, 0xe0e0dc, 0x8a2f2f, 0x4a5a6a, 0xf08a24, 0x274060];
     const BOTTOMS = [0x1f2228, 0x2b2f38, 0x3a3f4a, 0x23282e, 0x4b4a3e, 0x2d3540, 0x5a4a3a];
     const SHOES = [0x2a2420, 0x3a3a3a, 0x5a3d26, 0x6a6a6a, 0x1c1c1c];
     const PACKS = [0x9a3b2a, 0x2f4f7f, 0x3a3a3a, 0x3f6b3a, 0xd9a321, 0x5a4a3a];
+    const SWEATERS = [0x6b4a3a, 0x5a5f66, 0x7a2f35, 0x4a5240, 0x8a7a64, 0x3d3a44, 0x9a8f80];
+    const SHAWLS = [0xb8a88a, 0x6a5040, 0x8f8676, 0x5a4a3c, 0xcfc6b2];
+    const MUFFLERS = [0x7a2f35, 0x3f4a6a, 0x5a5a52, 0x8a6a2a, 0x2e3a2e];
     const pick = a => a[(R() * a.length) | 0];
     function look(sex) {
       return { sex, top: pick(TOPS), bottom: pick(BOTTOMS), shoe: pick(SHOES), pack: R() < 0.75 ? pick(PACKS) : null,
                head: sex === 'f' ? (R() < 0.5 ? 'hair' : 'beanie') : (R() < 0.4 ? 'cap' : R() < 0.7 ? 'beanie' : 'hair'),
                hairStyle: sex === 'f' ? 'Hair_Long' : (R() < 0.6 ? 'Hair_SimpleParted' : 'Hair_Buzzed'), beard: sex === 'm' && R() < 0.35,
-               capCol: pick([0xb8432f, 0x2e2e33, 0x2f4f7f, 0xd9a321, 0xe0e0dc, 0x3f6b3a]), puffer: R() < 0.6, scale: sex === 'f' ? 0.93 + R() * 0.05 : 0.9 + R() * 0.07 };
+               capCol: pick([0xb8432f, 0x2e2e33, 0x2f4f7f, 0xd9a321, 0xe0e0dc, 0x3f6b3a, 0x8a2f2f]), puffer: R() < 0.6, hiker: true,
+               scale: sex === 'f' ? 0.93 + R() * 0.05 : 0.9 + R() * 0.07 };
+    }
+    function keeperLook() {
+      return { sex: 'm', top: pick(SWEATERS), bottom: pick([0xd9d2c3, 0xcfc8b8, 0x8a8478, 0x5a5650]), shoe: pick([0x3a2a20, 0x2a2420, 0x4a4038]), pack: null,
+               head: 'topi', topi: (R() * 3) | 0, topiBody: pick([0x3a3a3a, 0x4a4540, 0xd8d2c4]), hairStyle: 'Hair_Buzzed', beard: R() < 0.5,
+               knit: true, puffer: false, hiker: false, shawl: R() < 0.55 ? pick(SHAWLS) : null, muffler: R() < 0.6 ? pick(MUFFLERS) : null,
+               kurta: R() < 0.7 ? pick([0xe8e2d4, 0xdcd4c0, 0xc8c0ae]) : null, scale: 0.9 + R() * 0.06 };
     }
 
     /* ---------- full character (skinned, animated) ---------- */
@@ -96,37 +239,159 @@ window.TriundCrowd = {
       bone.updateWorldMatrix(true, false);
       obj.matrixAutoUpdate = false; obj.matrix.copy(tmpM.copy(bone.matrixWorld).invert().multiply(worldMatrix)); bone.add(obj);
     }
-    const accMat = c => new THREE.MeshStandardMaterial({ color: lin(c), roughness: 0.85, metalness: 0 });
+    const accMat = (c, rough) => new THREE.MeshStandardMaterial({ color: lin(c), roughness: rough == null ? 0.85 : rough, metalness: 0 });
+    const T4 = (x, y, z) => new THREE.Matrix4().makeTranslation(x, y, z);
+    // a box with rounded edges (rucksack panels, pockets)
+    function roundedBox(w, h, d, r) {
+      const g = new THREE.BoxGeometry(w, h, d, 5, 6, 4), p = g.attributes.position, v = new THREE.Vector3(), c = new THREE.Vector3();
+      const hx = w / 2 - r, hy = h / 2 - r, hz = d / 2 - r;
+      for (let i = 0; i < p.count; i++) {
+        v.fromBufferAttribute(p, i); c.set(Math.max(-hx, Math.min(hx, v.x)), Math.max(-hy, Math.min(hy, v.y)), Math.max(-hz, Math.min(hz, v.z)));
+        v.sub(c); if (v.lengthSq() > 1e-12) v.setLength(r); v.add(c); p.setXYZ(i, v.x, v.y, v.z);
+      }
+      g.computeVertexNormals(); return g;
+    }
+    // merge parts into one geometry (one draw call): [{ g, m: Matrix4, c: colour (optional, vertex colours) }]
+    function mergeParts(parts, uv) {
+      const pos = [], nor = [], col = [], uvs = [], idx = []; let base = 0; const nm = new THREE.Matrix3(), v = new THREE.Vector3(), cc = new THREE.Color();
+      for (const { g: g0, m, c } of parts) {
+        const g = g0.index ? g0 : g0.toNonIndexed(); const P = g.attributes.position, N = g.attributes.normal, UV = g.attributes.uv;
+        nm.getNormalMatrix(m); if (c != null) cc.copy(lin(c));
+        for (let i = 0; i < P.count; i++) {
+          v.fromBufferAttribute(P, i).applyMatrix4(m); pos.push(v.x, v.y, v.z);
+          v.fromBufferAttribute(N, i).applyMatrix3(nm).normalize(); nor.push(v.x, v.y, v.z);
+          if (c != null) col.push(cc.r, cc.g, cc.b); if (uv) uvs.push(UV ? UV.getX(i) : 0, UV ? UV.getY(i) : 0);
+        }
+        if (g.index) for (const i of g.index.array) idx.push(i + base); else for (let i = 0; i < P.count; i++) idx.push(i + base);
+        base += P.count;
+      }
+      const out = new THREE.BufferGeometry();
+      out.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      if (col.length) out.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); if (uv) out.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+      out.setIndex(idx); out.computeBoundingSphere(); return out;
+    }
+    const M4c = (x, y, z, rx, rz) => new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rx || 0, 0, rz || 0)).setPosition(x, y, z);
+    // a flat padded strap along a curve, lying against the body (its broad side faces out from the spine's axis)
+    function ribbon(curve, w, t, axis) {
+      const N = 28, pos = [], idx = [], o = new THREE.Vector3(), tg = new THREE.Vector3(), side = new THREE.Vector3(), p = new THREE.Vector3();
+      for (let i = 0; i <= N; i++) {
+        curve.getPointAt(i / N, p); curve.getTangentAt(i / N, tg);
+        const k = Math.max(0, Math.min(1, (p.y - axis.y - 0.1) / 0.08));        // over the shoulder the strap faces up
+        o.set(p.x * (1 - k), k, (p.z - axis.z) * (1 - k)).normalize(); o.addScaledVector(tg, -o.dot(tg)).normalize();
+        side.crossVectors(tg, o).normalize().multiplyScalar(w / 2);
+        for (const [a, b] of [[1, 0], [-1, 0], [-1, 1], [1, 1]]) pos.push(p.x + side.x * a + o.x * t * b, p.y + side.y * a + o.y * t * b, p.z + side.z * a + o.z * t * b);
+      }
+      for (let i = 0; i < N; i++) for (let f = 0; f < 4; f++) {
+        const a = i * 4 + f, b = i * 4 + (f + 1) % 4, c = a + 4, d = b + 4; idx.push(a, c, b, b, c, d);
+      }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+    }
+    // canvas textures: knitted rib (beanies), the patterned front band of a Himachali topi
+    const ribTex = (() => { const c = document.createElement('canvas'); c.width = 128; c.height = 32; const x = c.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0, 0, 128, 32); for (let i = 0; i < 128; i += 4) { x.fillStyle = 'rgba(0,0,0,0.22)'; x.fillRect(i, 0, 1.5, 32); }
+      for (let j = 0; j < 32; j += 3) { x.fillStyle = 'rgba(0,0,0,0.06)'; x.fillRect(0, j, 128, 1); }
+      const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(6, 1); return t; })();
+    const TOPI_BANDS = [['#1f5a3a', '#e8c040', '#c0302a'], ['#7a1f2a', '#e8c040', '#2a7a4a'], ['#1f3a7a', '#e8a030', '#e8e0d0']].map(([bg, a, b]) => {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 32; const x = c.getContext('2d');
+      x.fillStyle = bg; x.fillRect(0, 0, 256, 32); x.fillStyle = a; x.fillRect(0, 2, 256, 3); x.fillRect(0, 27, 256, 3);
+      for (let i = 0; i < 256; i += 16) { x.fillStyle = b; x.beginPath(); x.moveTo(i + 8, 8); x.lineTo(i + 14, 16); x.lineTo(i + 8, 24); x.lineTo(i + 2, 16); x.closePath(); x.fill();
+        x.fillStyle = a; x.fillRect(i + 7, 14, 2, 4); }
+      const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.wrapS = THREE.RepeatWrapping; t.repeat.set(3, 1);
+      return new THREE.MeshStandardMaterial({ map: t, roughness: 0.75 });
+    });
+    // head-hugging shell from the band at height y0 up to the crown (beanie, cap crown)
+    function headShell(rx, rz, h, bulge) {
+      const pts = []; for (let i = 0; i <= 10; i++) { const t = i / 10, a = t * Math.PI / 2; pts.push(new THREE.Vector2(Math.max(0.001, Math.pow(Math.cos(a), 0.7) * (1 + bulge * Math.sin(a * 2))), Math.sin(a) * h)); }
+      const g = new THREE.LatheGeometry(pts, 24); g.scale(rx, 1, rz); return g;
+    }
     function makeChar(sex) {
       const g = SRC[sex], root = THREE.SkeletonUtils.clone(g.scene);
-      const U = { uTop: { value: new THREE.Color() }, uBottom: { value: new THREE.Color() }, uShoe: { value: new THREE.Color() }, uPuff: { value: new THREE.Vector3(0.04, 0.018, 0.012) }, uQuilt: { value: 1 } };
-      let body = null, head = null, spine = null;
+      const U = { uTop: { value: new THREE.Color() }, uBottom: { value: new THREE.Color() }, uShoe: { value: new THREE.Color() }, uShawl: { value: new THREE.Color() },
+                  uPuff: { value: new THREE.Vector3(0.04, 0.018, 0.012) }, uQuilt: { value: 1 }, uKnit: { value: 0 }, uZip: { value: 1 }, uShawlOn: { value: 0 }, uH: { value: 1.8 } };
+      let body = null, head = null, spine = null, neck = null, pelvis = null;
       root.traverse(n => {
         if (n.isSkinnedMesh) {
+          if (/Superhero/i.test(n.material.name)) { clothAttr(n); reshape(n, sex); n.material = clothMaterial(n.material, U); body = n; }
           // animations play in place, so the bind-pose bounds (padded for swinging arms) are safe to cull with
           if (!n.geometry.boundingSphere) n.geometry.computeBoundingSphere();
           if (!n.geometry.userData.padded) { n.geometry.boundingSphere.radius *= 1.35; n.geometry.userData.padded = true; }
           n.frustumCulled = true; n.castShadow = true; n.receiveShadow = true;
-          if (/Superhero/i.test(n.material.name)) { clothAttr(n); n.material = clothMaterial(n.material, U); body = n; }
         }
         if (n.isBone && n.name === 'Head') head = n;
         if (n.isBone && n.name === 'spine_03') spine = n;
+        if (n.isBone && n.name === 'neck_01') neck = n;
+        if (n.isBone && n.name === 'pelvis') pelvis = n;
       });
       root.updateMatrixWorld(true);
+      const B = bodyInfo(body); U.uH.value = B.top;
       const hp = new THREE.Vector3().setFromMatrixPosition(head.matrixWorld), sp = new THREE.Vector3().setFromMatrixPosition(spine.matrixWorld);
-      // accessories (rebuilt per look)
-      const acc = { pack: null, cap: null, beanie: null, hair: {} };
-      const pack = new THREE.Group();
-      const pb = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.46, 0.2), accMat(0x9a3b2a)); pb.castShadow = true; pack.add(pb);
-      const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.34, 10), accMat(0x3c6b45)); roll.rotation.z = Math.PI / 2; roll.position.set(0, -0.28, 0.02); pack.add(roll);
-      const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.2, 8), accMat(0x8fb3c8)); bottle.position.set(0.2, -0.1, 0); pack.add(bottle);
-      attach(spine, pack, new THREE.Matrix4().makeTranslation(sp.x, sp.y - 0.05, sp.z - 0.2)); acc.pack = pack; acc.packMat = pb.material;
-      // a beanie sits on the crown and stops above the eyebrows (lower, it reads as a blindfold)
-      const beanie = new THREE.Mesh(new THREE.SphereGeometry(0.112, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.52), accMat(0xb8432f)); beanie.castShadow = true;
-      attach(head, beanie, new THREE.Matrix4().makeTranslation(hp.x, hp.y + 0.095, hp.z + 0.008).multiply(new THREE.Matrix4().makeScale(1.12, 1.12, 1.2))); acc.beanie = beanie;
-      const cap = new THREE.Group(); const cc = new THREE.Mesh(new THREE.SphereGeometry(0.108, 14, 6, 0, Math.PI * 2, 0, Math.PI * 0.5), accMat(0x2f4f7f));
-      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.012, 12, 1, false, -Math.PI / 2, Math.PI), cc.material); brim.position.set(0, 0.0, 0.07); cap.add(cc, brim);
-      attach(head, cap, new THREE.Matrix4().makeTranslation(hp.x, hp.y + 0.08, hp.z)); acc.cap = cap; acc.capMat = cc.material;
+      const np = new THREE.Vector3().setFromMatrixPosition(neck.matrixWorld);
+      const acc = { pack: null, cap: null, beanie: null, topi: null, muffler: null, kurta: null, collar: null, hair: {} };
+      const puffT = 0.045;   // the jacket's thickness over the body (uPuff.x for a puffer)
+
+      // rucksack: rounded main bag against the back, a lid, a front pocket, side bottles, a sleeping mat under it,
+      // shoulder straps over the shoulders and down the chest, a chest strap, trekking poles strapped on the side
+      // (two draw calls: the bag in its colour, everything else merged with vertex colours; only the bag casts a shadow)
+      const pack = new THREE.Group(), packMat = accMat(0x9a3b2a, 0.8);
+      const backZ = B.surf(0, sp.y - 0.08, false, 0.05) - puffT, py = sp.y - 0.1;
+      const bagG = mergeParts([{ g: roundedBox(0.31, 0.5, 0.2, 0.06), m: M4c(0, py, backZ - 0.105) }, { g: roundedBox(0.29, 0.09, 0.2, 0.035), m: M4c(0, py + 0.27, backZ - 0.115) }]);
+      const bag = new THREE.Mesh(bagG, packMat); bag.castShadow = true; pack.add(bag);
+      const STRAP = 0x34373c, rest = [
+        { g: roundedBox(0.2, 0.18, 0.05, 0.02), m: M4c(0, py - 0.1, backZ - 0.215), c: STRAP },
+        { g: new THREE.CylinderGeometry(0.032, 0.032, 0.2, 10), m: M4c(0.175, py - 0.1, backZ - 0.11), c: 0x8fb3c8 },
+        { g: new THREE.CylinderGeometry(0.032, 0.032, 0.2, 10), m: M4c(-0.175, py - 0.1, backZ - 0.11), c: 0x3a6a4a },
+        { g: new THREE.CylinderGeometry(0.07, 0.07, 0.36, 12), m: M4c(0, py - 0.31, backZ - 0.1, 0, Math.PI / 2), c: 0x3c6b45 }];
+      for (const s of [-1, 1]) rest.push({ g: new THREE.CylinderGeometry(0.009, 0.007, 0.62, 6), m: M4c(s * 0.18, py + 0.02, backZ - 0.16, 0, s * 0.12), c: 0x4a4f56 });
+      for (const s of [-1, 1]) {
+        const x = s * 0.105, sh = B.ridge(x, 0.08) + puffT + 0.012;
+        const f1 = B.surf(x, sp.y - 0.02, true) + puffT + 0.012, f2 = B.surf(s * 0.12, sp.y - 0.2, true) + puffT + 0.01;
+        const curve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(s * 0.09, py + 0.2, backZ - 0.02), new THREE.Vector3(x, sh - 0.01, (backZ + f1) * 0.5 - 0.03), new THREE.Vector3(x, sh - 0.06, f1 - 0.01),
+          new THREE.Vector3(x, sp.y - 0.04, f1), new THREE.Vector3(s * 0.12, sp.y - 0.2, f2), new THREE.Vector3(s * 0.19, sp.y - 0.27, (f2 + backZ) * 0.5), new THREE.Vector3(s * 0.13, py - 0.22, backZ - 0.03)]);
+        rest.push({ g: ribbon(curve, 0.05, 0.008, sp), m: new THREE.Matrix4(), c: STRAP });
+        if (s > 0) rest.push({ g: new THREE.BoxGeometry(0.22, 0.015, 0.01), m: M4c(0, sp.y - 0.07, f1 + 0.004), c: STRAP });
+      }
+      pack.add(new THREE.Mesh(mergeParts(rest), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 })));
+      attach(spine, pack, new THREE.Matrix4()); acc.pack = pack; acc.packMat = packMat;
+
+      // head wear sits on a band just above the eyebrows and follows the real head shape
+      const bandY = B.top - 0.075, hs = B.section(bandY + 0.01, 0.012, 0.2);
+      const beanie = new THREE.Group(), beanieMat = new THREE.MeshStandardMaterial({ color: lin(0x8a2f2f), roughness: 1, map: ribTex });
+      beanie.add(new THREE.Mesh(mergeParts([{ g: headShell(hs.rx + 0.012, hs.rz + 0.012, B.top - bandY + 0.03, 0.05), m: M4c(0, 0.02, 0) },
+        { g: new THREE.CylinderGeometry(1, 1, 0.045, 24, 1, true), m: M4c(0, 0.022, 0).scale(new THREE.Vector3(hs.rx + 0.019, 1, hs.rz + 0.019)) }], true), beanieMat));
+      beanie.traverse(n => { if (n.isMesh) n.castShadow = true; });
+      attach(head, beanie, T4(hs.cx, bandY - 0.005, hs.cz)); acc.beanie = beanie; acc.beanieMat = beanieMat;
+      const cap = new THREE.Group(), capMat = accMat(0x2f4f7f, 0.8);
+      cap.add(new THREE.Mesh(mergeParts([{ g: headShell(hs.rx + 0.01, hs.rz + 0.01, B.top - bandY + 0.015, 0.02), m: new THREE.Matrix4() },
+        { g: new THREE.CylinderGeometry(0.085, 0.085, 0.008, 16, 1, false, -Math.PI / 2, Math.PI), m: M4c(0, 0.008, hs.rz * 0.85, 0.12).scale(new THREE.Vector3(1, 1, 0.8)) }]), capMat));
+      cap.traverse(n => { if (n.isMesh) n.castShadow = true; });
+      attach(head, cap, T4(hs.cx, bandY + 0.005, hs.cz)); acc.cap = cap; acc.capMat = capMat;
+      // Himachali topi: a round felt cap with a flat top, its patterned band showing all round
+      const topi = new THREE.Group(), topiMat = accMat(0x3a3a3a, 0.9);
+      const tb = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.09, 24), topiMat); tb.scale.set(hs.rx + 0.016, 1, hs.rz + 0.016); tb.position.y = 0.05; topi.add(tb);
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.042, 24, 1, true), TOPI_BANDS[0]); band.scale.set(hs.rx + 0.019, 1, hs.rz + 0.019); band.position.y = 0.026; topi.add(band);
+      topi.traverse(n => { if (n.isMesh) n.castShadow = true; });
+      attach(head, topi, T4(hs.cx, bandY - 0.004, hs.cz).multiply(new THREE.Matrix4().makeRotationX(-0.06))); acc.topi = topi; acc.topiMat = topiMat; acc.topiBand = band;
+      // muffler round the neck, one end hanging down the chest
+      const ns = B.section(np.y + 0.035, 0.012, 0.085), mufMat = new THREE.MeshStandardMaterial({ color: lin(0x7a2f35), roughness: 1, map: ribTex });
+      const muffler = new THREE.Group();
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.42, 8, 20), mufMat); ring.rotation.x = Math.PI / 2; ring.scale.set(ns.rx + 0.03, ns.rz + 0.03, 0.075); muffler.add(ring);
+      attach(neck, muffler, T4(ns.cx, np.y + 0.005, ns.cz)); acc.muffler = muffler; acc.mufMat = mufMat;
+      const tz = B.surf(0.06, sp.y - 0.02, true, 0.04) + 0.032 + 0.012;
+      const tail = new THREE.Mesh(roundedBox(0.075, 0.3, 0.018, 0.008), mufMat);
+      attach(spine, tail, T4(0.06, sp.y + 0.02, tz).multiply(new THREE.Matrix4().makeRotationX(-0.12))); acc.mufTail = tail;
+      // the kurta's skirt below the sweater, hanging from the hips to above the knee
+      const hipY = B.top * 0.53, hip = B.section(hipY, 0.03, 0.3), kurMat = new THREE.MeshStandardMaterial({ color: lin(0xe8e2d4), roughness: 0.9, side: THREE.DoubleSide });
+      const kg = new THREE.CylinderGeometry(1, 1.16, 0.34, 20, 1, true);
+      const kurta = new THREE.Mesh(kg, kurMat); kurta.scale.set(hip.rx + 0.035, 1, hip.rz + 0.035); kurta.castShadow = true;
+      const pp = new THREE.Vector3().setFromMatrixPosition(pelvis.matrixWorld);
+      attach(pelvis, kurta, T4(hip.cx, hipY - 0.15, hip.cz)); acc.kurta = kurta; acc.kurMat = kurMat; void pp;
+      // a jacket's stand-up collar and the folded hood behind it
+      const collar = new THREE.Group(), colMat = accMat(0x2f4f7f, 0.85);
+      colMat.side = THREE.DoubleSide;
+      collar.add(new THREE.Mesh(mergeParts([{ g: new THREE.CylinderGeometry(1, 1.08, 0.06, 20, 1, true), m: new THREE.Matrix4().makeScale(ns.rx + 0.03, 1, ns.rz + 0.03) },
+        { g: new THREE.TorusGeometry(1, 0.38, 8, 14, Math.PI), m: M4c(0, -0.03, -0.01, -Math.PI / 2 - 0.35).scale(new THREE.Vector3(ns.rx + 0.05, ns.rz + 0.06, 0.09)) }]), colMat));   // the hood lies folded round the back of the neck
+      attach(neck, collar, T4(ns.cx, np.y - 0.02, ns.cz)); acc.collar = collar; acc.colMat = colMat;
       for (const k in HAIR) { const hm = HAIR[k].clone(); hm.castShadow = true; attach(head, hm, new THREE.Matrix4()); acc.hair[k] = hm; }
       const mixer = new THREE.AnimationMixer(root), actions = {};
       for (const c of g.animations) actions[c.name] = mixer.clipAction(c);
@@ -135,14 +400,21 @@ window.TriundCrowd = {
       return { root, U, acc, mixer, actions, cur: null, sex, agent: null, casters, shadow: true, animAcc: 0 };
     }
     function dress(ch, lk) {
-      ch.U.uTop.value.copy(lin(lk.top)); ch.U.uBottom.value.copy(lin(lk.bottom)); ch.U.uShoe.value.copy(lin(lk.shoe));
-      ch.U.uQuilt.value = lk.puffer ? 1 : 0; ch.U.uPuff.value.set(lk.puffer ? 0.045 : 0.026, 0.018, 0.014);
-      ch.acc.pack.visible = !!lk.pack; if (lk.pack) ch.acc.packMat.color.copy(lin(lk.pack));
-      ch.acc.beanie.visible = lk.head === 'beanie'; ch.acc.cap.visible = lk.head === 'cap';
-      if (lk.head === 'beanie') ch.acc.beanie.material.color.copy(lin(lk.capCol));
-      if (lk.head === 'cap') ch.acc.capMat.color.copy(lin(lk.capCol));
-      for (const k in ch.acc.hair) ch.acc.hair[k].visible = (lk.head === 'hair' && k === lk.hairStyle) || (k === 'Hair_Beard' && lk.beard) ||
-        (lk.head !== 'hair' && k === 'Hair_Long' && lk.sex === 'f');          // long hair shows under a beanie
+      const A = ch.acc, U = ch.U;
+      U.uTop.value.copy(lin(lk.top)); U.uBottom.value.copy(lin(lk.bottom)); U.uShoe.value.copy(lin(lk.shoe));
+      U.uQuilt.value = lk.puffer ? 1 : 0; U.uKnit.value = lk.knit ? 1 : 0; U.uZip.value = lk.hiker === false ? 0 : 1;
+      U.uPuff.value.set(lk.puffer ? 0.045 : lk.knit ? 0.032 : 0.026, lk.knit ? 0.03 : 0.027, 0.014);   // a thick sweater; loose pyjamas; trekking trousers, not tights
+      U.uShawlOn.value = lk.shawl ? 1 : 0; if (lk.shawl) U.uShawl.value.copy(lin(lk.shawl));
+      A.pack.visible = !!lk.pack; if (lk.pack) A.packMat.color.copy(lin(lk.pack));
+      A.beanie.visible = lk.head === 'beanie'; A.cap.visible = lk.head === 'cap'; A.topi.visible = lk.head === 'topi';
+      if (lk.head === 'beanie') A.beanieMat.color.copy(lin(lk.capCol));
+      if (lk.head === 'cap') A.capMat.color.copy(lin(lk.capCol));
+      if (lk.head === 'topi') { A.topiMat.color.copy(lin(lk.topiBody)); A.topiBand.material = TOPI_BANDS[lk.topi || 0]; }
+      A.muffler.visible = A.mufTail.visible = !!lk.muffler; if (lk.muffler) A.mufMat.color.copy(lin(lk.muffler));
+      A.kurta.visible = !!lk.kurta; if (lk.kurta) A.kurMat.color.copy(lin(lk.kurta));
+      A.collar.visible = lk.hiker !== false && !lk.muffler; A.colMat.color.copy(lin(lk.top));
+      for (const k in A.hair) A.hair[k].visible = (lk.head === 'hair' && k === lk.hairStyle) || (k === 'Hair_Beard' && lk.beard) ||
+        (lk.head === 'topi' && k === 'Hair_Buzzed') || (lk.head !== 'hair' && k === 'Hair_Long' && lk.sex === 'f');          // long hair shows under a beanie
       ch.root.scale.setScalar(lk.scale);
     }
     // speed: ground speed in m/s for locomotion clips (Walk, Jog_Fwd), playback rate for everything else
@@ -202,7 +474,7 @@ window.TriundCrowd = {
     // shopkeepers (one per stall) and the trail talkers
     const kOff = st => ({ stall: -1.9, building: 0.6 }[st.kind] != null ? { stall: -1.9, building: 0.6 }[st.kind] : 2.35);
     const keepers = stops.map((st, i) => ({ id: 'keeper' + i, kind: 'keeper', x: st.keeper ? st.keeper.x : st.x + st.tx * kOff(st), z: st.keeper ? st.keeper.z : st.z + st.tz * kOff(st), yaw: Math.atan2(st.tx, st.tz), state: 'keeper',
-      look: Object.assign(look(R() < 0.8 ? 'm' : 'f'), { pack: null, head: R() < 0.5 ? 'cap' : 'hair' }), anim: 'Idle', animSpeed: 1, t: R() * 10 }));
+      look: keeperLook(), anim: 'Idle', animSpeed: 1, t: R() * 10 }));
     const fixed = keepers.concat((talkers || []).map((t, i) => ({ id: 'talker' + i, kind: 'talker', x: t.x, z: t.z, yaw: t.yaw, state: 'talker', look: look(i % 2 ? 'f' : 'm'), anim: 'Idle_Talking', animSpeed: 1 })));
     for (const k of fixed) k.y = H(k.x, k.z);
 
@@ -333,11 +605,40 @@ window.TriundCrowd = {
     const SHADOW_CASTERS = 4;
     const FR = new THREE.Frustum(), PM = new THREE.Matrix4(), SPH = new THREE.Sphere();
 
+    // a round steel serving tray with a rolled rim (what every chai stall uses)
+    const trayMesh = (() => {
+      const g = new THREE.Group(), m = new THREE.MeshStandardMaterial({ color: 0xc9ccd0, roughness: 0.32, metalness: 0.85 });
+      const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.19, 0.008, 28), m); g.add(plate);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.007, 6, 32), m); rim.rotation.x = Math.PI / 2; rim.position.y = 0.006; g.add(rim);
+      g.traverse(n => { if (n.isMesh) n.castShadow = true; });
+      return g;
+    })();
     /* ---------- a shopkeeper cooks an order and walks it out to the customer ---------- */
     // phases: cook (at the stove) -> walk (out round the side of the stall, then to the customer) -> give -> back
     function keeperTask(k, dt) {
       const T = k.task, st = T.stop;
-      const carry = () => { if (!T.mesh || !T.mesh.visible) return; const fx = Math.sin(k.yaw), fz = Math.cos(k.yaw); T.mesh.position.set(k.x + fx * 0.38, (k.y || H(k.x, k.z)) + 1.02, k.z + fz * 0.38); };
+      // the order rides on a round steel tray held in both hands at the waist; when handing it over the tray moves
+      // to the left hand and the right hand takes the glass or plate off it and sets it down at the drop point
+      const carry = (reach) => {
+        const tr = k.tray; if (!tr) return;
+        tr.visible = true;
+        const fx = Math.sin(k.yaw), fz = Math.cos(k.yaw), lx = Math.cos(k.yaw), lz = -Math.sin(k.yaw), sc = (k.look && k.look.scale) || 0.93;
+        const y = (k.y || H(k.x, k.z)) + 0.97 * sc;
+        const C = T.trayC || (T.trayC = new THREE.Vector3()), hl = T.hl || (T.hl = new THREE.Vector3()), hr = T.hr || (T.hr = new THREE.Vector3());
+        if (reach == null) {
+          C.set(k.x + fx * 0.33, y, k.z + fz * 0.33);
+          hl.set(C.x + lx * 0.15, y - 0.03, C.z + lz * 0.15); hr.set(C.x - lx * 0.15, y - 0.03, C.z - lz * 0.15);
+        } else {
+          hl.set(k.x + fx * 0.3 + lx * 0.14, y + 0.02, k.z + fz * 0.3 + lz * 0.14); C.set(hl.x, hl.y + 0.03, hl.z);
+          const home = { x: C.x - lx * 0.1, y: C.y + 0.05, z: C.z - lz * 0.1 }, d = T.dropAt || home;
+          hr.set(home.x + (d.x - home.x) * reach, home.y + (d.y + 0.06 - home.y) * reach, home.z + (d.z - home.z) * reach);
+        }
+        tr.position.copy(C); tr.rotation.y = k.yaw;
+        if (T.mesh && T.mesh.visible) {
+          if (reach == null) T.mesh.position.set(C.x, C.y + 0.012, C.z); else T.mesh.position.set(hr.x, hr.y - 0.06, hr.z);
+          T.mesh.rotation.set(0, k.yaw, 0);
+        }
+      };
       const stepTo = (x, z, v) => {
         const dx = x - k.x, dz = z - k.z, d = Math.hypot(dx, dz); if (d < 1e-3) return 0;
         const m = Math.min(d, v * dt); k.x += dx / d * m; k.z += dz / d * m;
@@ -357,32 +658,40 @@ window.TriundCrowd = {
           const px = -st.tz, pz = st.tx, tg = T.target(), side = tg && ((tg.x - k.x) * px + (tg.z - k.z) * pz) < 0 ? -1 : 1;
           const as = st.aside || 3.3, w1 = { x: T.home.x + px * as * side, z: T.home.z + pz * as * side }, w2 = { x: w1.x + st.tx * 3.2, z: w1.z + st.tz * 3.2 };
           T.path = [w1, w2]; T.phase = 'walk'; if (T.mesh) T.mesh.visible = true;
+          T.dropAt = T.drop ? T.drop() : null;
         }
       } else if (T.phase === 'walk') {
         const tg = T.target();
         if (!tg || Math.hypot(tg.x - T.home.x, tg.z - T.home.z) > 28) { if (T.mesh) T.mesh.visible = false; T.mesh = null; T.onGive('counter'); T.phase = 'back'; T.path.reverse(); return; }
+        if (T.drop) T.dropAt = T.drop();
         if (T.path.length) { if (stepTo(T.path[0].x, T.path[0].z, 1.25) < 0.2 || T.stuck > 1.2) { T.path.shift(); T.stuck = 0; } }
         else {
           const dx = tg.x - k.x, dz = tg.z - k.z, d = Math.hypot(dx, dz);
-          if (d > 0.95 && !(T.stuck > 1.5 && d < 2.2)) stepTo(tg.x - dx / d * 0.9, tg.z - dz / d * 0.9, 1.25);
+          // within arm's reach of where it goes: in front of the seat when there is one (never over the bench)
+          const ax = tg.sx != null ? tg.sx : tg.x - dx / d * 0.55, az = tg.sz != null ? tg.sz : tg.z - dz / d * 0.55;
+          if (Math.hypot(ax - k.x, az - k.z) > 0.06 && !(T.stuck > 1.5 && d < 2.2)) stepTo(ax, az, 1.25);
           else { T.phase = 'give'; T.t = 1.4; T.done = [T.path[1] || T.home]; }
         }
         carry();
       } else if (T.phase === 'give') {
         const tg = T.target(); if (tg) k.yaw = Math.atan2(tg.x - k.x, tg.z - k.z);
-        k.anim = 'Interact'; k.animSpeed = 1; T.t -= dt; carry();
-        if (T.t < 0.7 && !T.given) { T.given = true; if (T.mesh) T.mesh.visible = false; T.mesh = null; T.onGive('hand'); }   // the dish is the customer's now
+        k.anim = 'Idle'; k.animSpeed = 1; T.t -= dt;
+        const u = 1 - T.t / 1.4;                                        // right hand: off the tray (0) to the drop point (1) and back
+        carry(u < 0.5 ? Math.min(1, u / 0.4) : Math.max(0, 1 - (u - 0.5) / 0.4));
+        if (u >= 0.5 && !T.given) { T.given = true; T.mesh = null; T.onGive('hand'); }   // set down: the dish is the customer's now
         if (T.t <= 0) { T.phase = 'back'; const px = -st.tz, pz = st.tx, sd = ((k.x - T.home.x) * px + (k.z - T.home.z) * pz) < 0 ? -1 : 1;
           const as = st.aside || 3.3, w1 = { x: T.home.x + px * as * sd, z: T.home.z + pz * as * sd }; T.path = [{ x: w1.x + st.tx * 3.2, z: w1.z + st.tz * 3.2 }, w1]; }
       } else {   // back to the counter
         if (T.path.length) { if (stepTo(T.path[0].x, T.path[0].z, 1.15) < 0.2 || T.stuck > 1.2) { T.path.shift(); T.stuck = 0; } }
-        else if (stepTo(T.home.x, T.home.z, 1.0) < 0.05 || T.stuck > 3) { k.x = T.home.x; k.z = T.home.z; k.y = H(k.x, k.z); k.yaw = T.home.yaw; k.anim = 'Idle'; k.animSpeed = 1; k.task = null; }
+        else if (stepTo(T.home.x, T.home.z, 1.0) < 0.05 || T.stuck > 3) { k.x = T.home.x; k.z = T.home.z; k.y = H(k.x, k.z); k.yaw = T.home.yaw; k.anim = 'Idle'; k.animSpeed = 1; k.task = null; if (k.tray) k.tray.visible = false; return; }
+        carry();
       }
     }
 
     // hikers near the camera keep a body's width apart: trail walkers step aside (their lateral offset),
     // everyone else is nudged apart directly
     const near = [];
+    const TV = { f: new THREE.Vector3(), l: new THREE.Vector3(), r: new THREE.Vector3(), u: new THREE.Vector3(0, 1, 0) };
     function separate(cam, dt) {
       near.length = 0;
       for (const a of agents) if ((a.x - cam.x) ** 2 + (a.z - cam.z) ** 2 < 70 * 70 && a.state !== 'sit') near.push(a);
@@ -417,9 +726,10 @@ window.TriundCrowd = {
       serve(stop) { const i = stops.indexOf(stop); if (i >= 0 && !keepers[i].task) keepers[i].serveT = 2.2; },
       // cook an order for cookSec seconds, then carry `mesh` to target() and call onGive('hand' | 'counter').
       // Returns false while this shopkeeper is still busy with an earlier order.
-      deliver(stop, { mesh, cookSec, target, onGive }) {
+      deliver(stop, { mesh, cookSec, target, drop, onGive }) {
         const i = stops.indexOf(stop); if (i < 0) return false; const k = keepers[i]; if (k.task) return false;
-        k.serveT = 0; k.task = { stop, mesh, target, onGive, phase: 'cook', t: cookSec, home: { x: k.x, z: k.z, yaw: k.yaw }, path: [] };
+        if (!k.tray) { k.tray = trayMesh.clone(); k.tray.visible = false; scene.add(k.tray); }
+        k.serveT = 0; k.task = { stop, mesh, target, drop, onGive, phase: 'cook', t: cookSec, home: { x: k.x, z: k.z, yaw: k.yaw }, path: [] };
         if (mesh) mesh.visible = false; return true;
       },
       // the player needs this seat: whoever sits there gets up and walks on
@@ -451,6 +761,12 @@ window.TriundCrowd = {
               ch.mixer.update(ch.animAcc); ch.animAcc = 0;
               // feet on the slope and on the steps instead of through them (near people in view only)
               if (seen && p.d2 < IK_D2 && !(p.anim && p.anim.startsWith('Sitting'))) window.TriundAnim.legIK(THREE, ch.root, p.gfn || (p.gfn = groundFn(p)), p.y);
+              // a shopkeeper with a tray holds it: palms up under its rim (and the right hand taking the dish off it)
+              if (p.kind === 'keeper' && p.task && p.tray && p.tray.visible && p.task.hl && window.TriundAnim.armIK) {
+                const T = p.task, fx = Math.sin(p.ryaw), fz = Math.cos(p.ryaw), lx = Math.cos(p.ryaw), lz = -Math.sin(p.ryaw);
+                const fwd = TV.f.set(fx, 0, fz), lft = TV.l.set(lx, 0, lz), rgt = TV.r.set(-lx, 0, -lz);
+                window.TriundAnim.armIK(THREE, ch.root, { l: { p: T.hl, dir: fwd, thumb: lft }, r: { p: T.hr, dir: fwd, thumb: T.phase === 'give' ? TV.u : rgt } }, p.ryaw);
+              }
             }
             continue;
           }
@@ -463,7 +779,16 @@ window.TriundCrowd = {
         proxy.count = n; proxy.instanceMatrix.needsUpdate = true; if (proxy.instanceColor) proxy.instanceColor.needsUpdate = true;
       },
       // the player's own third-person body
-      playerChar() { const ch = makeChar('m'); dress(ch, { sex: 'm', top: 0x2f6e8f, bottom: 0x2a3140, shoe: 0x4a3524, pack: 0x9a3b2a, head: 'beanie', capCol: 0xf2a93b, puffer: true, scale: 0.95, hairStyle: 'Hair_SimpleParted', beard: false }); return { ch, play: (n, s) => play(ch, n, s) }; }
+      // the player's own third-person body, and a copy of their rucksack that stands on the ground beside them
+      // while they sit (people take the bag off at a chai stall)
+      playerChar() {
+        const ch = makeChar('m'); dress(ch, { sex: 'm', top: 0x2a5d86, bottom: 0x3b4036, shoe: 0x5a3d26, pack: 0xa8452c, head: 'beanie', capCol: 0x8a2f2f, puffer: true, hiker: true, scale: 0.95, hairStyle: 'Hair_SimpleParted', beard: false });
+        const ground = new THREE.Group(), inner = new THREE.Group(), bb = new THREE.Box3();
+        for (const c of ch.acc.pack.children) { const m = c.clone(); m.castShadow = c.castShadow; inner.add(m); bb.expandByObject(m); }
+        const ctr = bb.getCenter(new THREE.Vector3()); inner.position.set(-ctr.x, -bb.min.y, -ctr.z); ground.add(inner);
+        ground.scale.setScalar(0.95); ground.visible = false; scene.add(ground);
+        return { ch, ground, play: (n, s) => play(ch, n, s) };
+      }
     };
   }
 };

@@ -232,7 +232,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <!-- start -->
 <section class="screen" id="start">
   <div class="card">
-    <div class="eyebrow">ECP feel test · build 1.8</div>
+    <div class="eyebrow">ECP feel test · build 1.9</div>
     <h1>Triund Walk Test</h1>
     <p class="lede">The real Triund trails above McLeod Ganj, up to the meadow at 2,838 m facing the Dhauladhar range. Take the classic 5 km path from Gallu Devi temple through oak and deodar forest, past Magic View Cafe and up the switchbacks, or the steeper, quieter climb from Bhagsu past the waterfall, Shiva Cafe and Karthani. There is no health bar. Your breathing, your heartbeat and the smartwatch on your wrist tell you how your body is holding up.</p>
     <div class="field">
@@ -1254,7 +1254,12 @@ function update(dt){
   const sway=Math.sin(P.brPh*Math.PI*2)*(0.004+0.022*hrN)*bob;
   // eating and drinking: the hiker is shown from a close camera and their own arms do it (hands.js)
   const eatView=!!(HANDS&&HANDS.busy&&PCH);
-  if(PCH){const seated=TREK&&TREK.sitting(),showC=!P.firstPerson||eatView;PCH.ch.root.visible=showC;if(showC){
+  if(PCH){const seated=TREK&&TREK.sitting(),showC=!P.firstPerson||eatView;PCH.ch.root.visible=showC;
+    // sitting down, the rucksack comes off and stands on the ground by your knees (away from where food is set down)
+    if(PCH.ground){const sg=seated&&TREK.seat();PCH.ch.acc.pack.visible=!seated;PCH.ground.visible=!!seated;
+      if(sg){const r=sg.ry!=null?sg.ry:P.yaw+Math.PI,gx=(sg.x!=null?sg.x:P.x)-Math.cos(r)*0.5+Math.sin(r)*0.4,gz=(sg.z!=null?sg.z:P.z)+Math.sin(r)*0.5+Math.cos(r)*0.4;
+        PCH.ground.position.set(gx,H(gx,gz),gz);PCH.ground.rotation.set(0,r+Math.PI*0.5,0.12);}}
+    if(showC){
     // on a seat: hips on the seat top, feet on the ground in front (crowd.js sitRoot); on the grass: hips on the ground, legs stretched out
     const st=seated&&TREK.seat(),onB=seated&&TREK.onBench();
     if(onB&&CROWD){const r=CROWD.sitRoot(st,PCH.ch.root.scale.x);PCH.ch.root.position.set(r.x,r.y,r.z);}

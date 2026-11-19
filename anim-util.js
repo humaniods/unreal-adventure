@@ -106,6 +106,45 @@ window.TriundAnim = {
     }
     return off;
   },
+  // Arms for carrying (a shopkeeper's tray): two-bone IK of each arm to a world target (null leaves that arm as
+  // the clip has it), elbows down and out, then the hand turned so its fingers point along `dir` with the thumb
+  // toward `thumb` (palm up under a tray: fingers forward, thumb outward). Call after the mixer update.
+  // targets: { l: {p, dir, thumb} | null, r: {...} | null }; yaw: the character's facing (root.rotation.y).
+  armIK(THREE, root, targets, yaw) {
+    const K = this._ak || (this._ak = { S: new THREE.Vector3(), E: new THREE.Vector3(), W: new THREE.Vector3(), d: new THREE.Vector3(), m: new THREE.Vector3(),
+      x: new THREE.Vector3(), y: new THREE.Vector3(), q: new THREE.Quaternion(), w: new THREE.Quaternion(), p: new THREE.Quaternion() });
+    let A = root.userData.arms;
+    if (!A) {
+      A = root.userData.arms = {};
+      for (const sd of ['l', 'r']) { const g = n => root.getObjectByName(n + '_' + sd); A[sd] = { up: g('upperarm'), lo: g('lowerarm'), ha: g('hand'), mid: g('middle_01'), th: g('thumb_01') }; }
+    }
+    root.updateMatrixWorld(true);
+    const wp = (o, v) => v.setFromMatrixPosition(o.matrixWorld);
+    const aim = (bone, from, child, dir) => {   // turn bone (world space) so from->child points along dir
+      K.x.copy(child).sub(from).normalize(); K.q.setFromUnitVectors(K.x, dir);
+      bone.getWorldQuaternion(K.w); K.w.premultiply(K.q); bone.parent.getWorldQuaternion(K.p); bone.quaternion.copy(K.p.invert().multiply(K.w)); bone.updateMatrixWorld(true);
+    };
+    const lx = Math.cos(yaw), lz = -Math.sin(yaw);
+    for (const sd of ['l', 'r']) {
+      const t = targets[sd], B = A[sd]; if (!t || !B.up || !B.lo || !B.ha) continue;
+      wp(B.up, K.S); wp(B.lo, K.E); wp(B.ha, K.W);
+      const a = K.S.distanceTo(K.E), b = K.E.distanceTo(K.W);
+      K.d.copy(t.p).sub(K.S); const c = Math.min(Math.max(K.d.length(), 0.05), a + b - 0.002); K.d.normalize();
+      const out = sd === 'l' ? 1 : -1;
+      K.m.set(lx * out * 0.5, -0.6, lz * out * 0.5); K.m.addScaledVector(K.d, -K.m.dot(K.d)).normalize();   // elbow: down and out
+      const ca = Math.min(1, Math.max(-1, (a * a + c * c - b * b) / (2 * a * c))), sa = Math.sqrt(1 - ca * ca);
+      K.y.copy(K.S).addScaledVector(K.d, a * ca).addScaledVector(K.m, a * sa).sub(K.S).normalize();
+      aim(B.up, K.S, K.E, K.y);
+      wp(B.lo, K.E); wp(B.ha, K.W); K.y.copy(t.p).sub(K.E).normalize(); aim(B.lo, K.E, K.W, K.y);
+      if (t.dir && B.mid && B.th) {
+        wp(B.ha, K.W); wp(B.mid, K.E); aim(B.ha, K.W, K.E, t.dir);
+        wp(B.th, K.S).sub(K.W); K.S.addScaledVector(t.dir, -K.S.dot(t.dir)).normalize();
+        K.y.copy(t.thumb).addScaledVector(t.dir, -t.thumb.dot(t.dir)).normalize();
+        K.q.setFromUnitVectors(K.S, K.y); B.ha.getWorldQuaternion(K.w); K.w.premultiply(K.q);
+        B.ha.parent.getWorldQuaternion(K.p); B.ha.quaternion.copy(K.p.invert().multiply(K.w)); B.ha.updateMatrixWorld(true);
+      }
+    }
+  },
   // shortest signed angle from a to b
   angDiff(a, b) { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; }
 };
