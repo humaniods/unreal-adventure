@@ -103,7 +103,7 @@ window.TriundFauna = {
       let tx = d.home.x, tz = d.home.z, run = 1.4, sitWant = 1;
       const following = dogs.filter(o => o.state === 'follow').length;
       if (d.state === 'home') {
-        if (dp < 9 && ACT === d.tr && P.s > d.s0 - 20 && P.s < d.s1 && following < 2) { d.state = 'follow'; d.lead = 7 + R() * 6; events.push({ type: 'bark', x: g.position.x, z: g.position.z }); }
+        if ((dp < 9 || (dp < 18 && (P.seated || P.stillT > 3))) && ACT === d.tr && P.s > d.s0 - 20 && P.s < d.s1 && following < 2) { d.state = 'follow'; d.lead = 7 + R() * 6; events.push({ type: 'bark', x: g.position.x, z: g.position.z }); }
         else if (dp < 35 && R() < dt * 0.04) events.push({ type: 'bark', x: g.position.x, z: g.position.z });
         else { const r = Math.hypot(g.position.x - d.home.x, g.position.z - d.home.z); sitWant = r < 2 ? 1 : 0; if (r < 2) { tx = g.position.x; tz = g.position.z; } }
       }
@@ -120,6 +120,18 @@ window.TriundFauna = {
             if (Math.hypot(tx - g.position.x, tz - g.position.z) < 0.8) { d.wait = 2 + R() * 5; d.lead = 7 + R() * 9; d.lat = (R() < 0.5 ? -1 : 1) * (0.8 + R() * 0.9); }
           }
           if (P.trailD > 12) { tx = P.x + 2; tz = P.z + 2; run = 3.4; sitWant = dp < 3 ? 1 : 0; }
+          // you sit down: it comes and sits right beside you (on the side away from your bag), facing the same way
+          if (P.seated) {
+            const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = -fz, rz = fx;
+            tx = P.x + rx * 0.6 + fx * 0.6; tz = P.z + rz * 0.6 + fz * 0.6; run = 2.2; d.wait = 0;   // by your knees, clear of a bench
+            const el2 = Math.hypot(tx - g.position.x, tz - g.position.z); sitWant = el2 < 0.35 ? 1 : 0;
+            if (el2 < 0.35) d.yaw = lerpAng(d.yaw, Math.atan2(fx, fz), Math.min(1, dt * 3));
+          } else if (P.stillT > 1.2) {
+            // you stop: it trots back and waits at your side instead of sitting far up the trail
+            const ux = (g.position.x - P.x) / (dp || 1), uz = (g.position.z - P.z) / (dp || 1);
+            tx = P.x + ux * 1.0; tz = P.z + uz * 1.0; run = 2.4; d.wait = 0;
+            sitWant = dp < 1.4 ? 1 : 0;
+          }
         }
       }
       if (d.state === 'edge') {
@@ -135,7 +147,7 @@ window.TriundFauna = {
       if (d.v > 0.05 && el > 0.05) {
         g.position.x += ex / el * d.v * dt; g.position.z += ez / el * d.v * dt;
         d.yaw = lerpAng(d.yaw, yawOf(ex, ez), Math.min(1, dt * 6));
-      } else if (dp < 12) d.yaw = lerpAng(d.yaw, yawOf(dpx, dpz), Math.min(1, dt * 2));
+      } else if (dp < 12 && !(P.seated && d.state === 'follow')) d.yaw = lerpAng(d.yaw, yawOf(dpx, dpz), Math.min(1, dt * 2));
       g.rotation.y = d.yaw; g.position.y = H(g.position.x, g.position.z);
       d.sit += ((d.v < 0.15 ? sitWant : 0) - d.sit) * Math.min(1, dt * 3);
       const wag = d.state === 'follow' || d.patted > 0 ? 9 : 3;

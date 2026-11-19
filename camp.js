@@ -101,7 +101,7 @@ window.TriundCamp = {
     }
     function startNight() {
       const P = ctx.P, at = pitch();
-      night = { t: 0, at, warm: has('sbag'), start: { gt: Math.max(P.gt, 10.5 * 3600) } };   // the clock shows 17:30 at sunset
+      night = { t: 0, at, warm: has('sbag'), start: { gt: Math.max(P.gt, (17.5 - (window.TRIUND_DAY0 || 9)) * 3600) } };   // the clock shows 17:30 at sunset
       ctx.setState('night'); document.body.classList.add('cinema');
       stars.visible = true;
       ctx.say(night.warm ? 'You pitch the tent, crawl into the sleeping bag, and watch the light go.' : 'You pitch the tent. No sleeping bag: it will be a cold night.', 5);

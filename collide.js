@@ -63,6 +63,8 @@ window.TriundCollide = {
       return { x, z };
     }
     // inside(x, z, tallOnly): tallOnly skips knee-high things a camera can look over
-    return { add, rect, resolve, inside: (x, z, tallOnly) => { const l = grid.get(key(Math.floor(x / CELL), Math.floor(z / CELL))) || []; return l.some(id => !(tallOnly && polys[id].low) && inside(polys[id].pts, x, z)); }, get count() { return polys.length; } };
+    // a round footprint (tree trunk, boulder): an octagon of radius r
+    function circle(x, z, r, low) { const pts = []; for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; pts.push([x + Math.cos(a) * r, z + Math.sin(a) * r]); } add(pts, low); }
+    return { add, rect, circle, resolve, inside: (x, z, tallOnly) => { const l = grid.get(key(Math.floor(x / CELL), Math.floor(z / CELL))) || []; return l.some(id => !(tallOnly && polys[id].low) && inside(polys[id].pts, x, z)); }, get count() { return polys.length; } };
   }
 };

@@ -180,8 +180,9 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       const tea = dish && (it === I.chai || it === I.lemontea);
       const kind = dish ? (tea ? 'sip' : 'eat') : it.icon === '🧃' ? 'drink' : 'snack';
       if (dish && !sit) sitDown(findSeat(P));
-      const need = kind === 'eat' ? Math.min(16, Math.max(6, Math.round(it.eat * 2))) : kind === 'sip' ? Math.max(4, Math.round(it.eat * 2)) : kind === 'snack' ? (it.eat > 2 ? 4 : 2) : 1;   // Maggi: 12 forkfuls, chai: 6 sips
+      const need = kind === 'eat' ? Math.min(16, Math.max(6, Math.round(it.eat * 2))) : kind === 'sip' ? Math.max(4, Math.round(it.eat * 2)) : kind === 'snack' ? (it.eat > 2 ? 4 : it.icon === '🍌' ? 4 : 2) : 1;   // Maggi: 12 forkfuls, chai: 6 sips
       const e = eating = { it, src, dish, need, done: 0, kind };
+      P.eatLog = P.eatLog || {}; const lid = Object.keys(I).find(k => I[k] === it); if (lid) P.eatLog[lid] = (P.eatLog[lid] || 0) + 1;   // the watch's day stats
       HN.start(kind, {
         dish, icon: it.icon, need,
         onBite: n => {
@@ -344,7 +345,19 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
           bag.food[id]--; closePanels(); if (!startEating(it, 'bag')) bag.food[id]++;
         });
       }
-      for (const g of bag.gear) add(ECON.GEAR[g].icon, ECON.GEAR[g].name, `${ECON.GEAR[g].kg} kg`, '', null);
+      // gear you can use on the way: the headlamp (T), a rain jacket or poncho, warm layers; camp gear is for the top
+      const G = ctx.gearState ? ctx.gearState() : {};
+      const USE = {
+        headlamp: () => G.headlamp ? ['Turn off', 'On · lights the trail ahead (T)'] : ['Turn on', 'For the dark: press T any time'],
+        rain: () => G.coat === 'rain' ? ['Take off', 'You are wearing it'] : ['Put on', 'Keeps you dry in rain and drizzle'],
+        poncho: () => G.coat === 'poncho' ? ['Take off', 'You are wearing it, over the bag too'] : ['Put on', 'Covers you and the bag in rain'],
+        fleece: () => G.fleece ? ['Take off', 'You are wearing it'] : ['Put on', 'Warm layer for the cold top and the evening']
+      };
+      for (const g of bag.gear) {
+        const u = USE[g] && USE[g]();
+        if (u) add(ECON.GEAR[g].icon, ECON.GEAR[g].name, `${u[1]} · ${ECON.GEAR[g].kg} kg`, u[0], () => { if (ctx.useGear) ctx.useGear(g); openBag(); });
+        else add(ECON.GEAR[g].icon, ECON.GEAR[g].name, `For the night at the camp at the top · ${ECON.GEAR[g].kg} kg`, '', null);
+      }
       for (const g of bag.rented) add(ECON.GEAR[g].icon, ECON.GEAR[g].name + ' (rented)', 'for tonight', '', null);
       syncCoins(); openPanel(bagP);
     }
