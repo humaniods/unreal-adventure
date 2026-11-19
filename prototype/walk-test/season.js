@@ -76,26 +76,36 @@ void main(){ gl_FragColor = vec4(vec3(0.85, 0.88, 0.92), 0.55 * vA * uAmt); }`
     weather: () => WEATHER[current],
     // apply the current season to everything that has a hook; safe to call again after a change
     create({ THREE, scene, SKY, terrainMat, post }) {
-      const rain = rainMesh(THREE); rain.mesh.visible = false; scene.add(rain.mesh);
+      const rain = rainMesh(THREE), rainObj = rain; rain.mesh.visible = false; scene.add(rain.mesh);
       let audio = null, flora = null;
       function apply() {
         const w = WEATHER[current];
         if (SKY.setWeather) SKY.setWeather(w);
         const tu = terrainMat && terrainMat.userData.uniforms; if (tu && tu.uWet) tu.uWet.value = w.wet;
+        if (tu && tu.uAutumn) tu.uAutumn.value = current === 'autumn' ? 1 : 0;
         if (flora && flora.tint) flora.tint(new THREE.Color(w.tint[0], w.tint[1], w.tint[2]));
         if (post) post.uniforms.uGrade.value = w.grade;
         rain.mesh.visible = w.rain > 0;
         if (audio) audio.set(w.rain);
       }
       apply();
+      let dyn = null;   // weather.js: the day's changing weather on top of the season (rain amount, wet ground)
       return {
         apply,
-        get speed() { return WEATHER[current].speed; },
+        // rain 0..1 (drizzle ~0.4), wet 0..1 (ground and rock darkened and shiny)
+        setDynamic(d) {
+          dyn = d; const w = WEATHER[current], rain = Math.max(w.rain, d.rain), wet = Math.max(w.wet, d.wet);
+          rainObj.mesh.visible = rain > 0.02; rainObj.U.uAmt.value = Math.min(1, rain * 1.4);
+          const tu = terrainMat && terrainMat.userData.uniforms; if (tu && tu.uWet) tu.uWet.value = wet;
+          if (audio) audio.set(rain);
+        },
+        get raining() { return Math.max(WEATHER[current].rain, dyn ? dyn.rain : 0) > 0.1; },
+        get speed() { return WEATHER[current].speed * (dyn && dyn.wet > 0.4 ? 0.95 : 1); },
         setFlora(f) { flora = f; apply(); },
         setAudio(AC, master, noise) { if (!audio && AC) { audio = rainAudio(AC, master, noise); audio.set(WEATHER[current].rain); } },
         update(dt, cam, time) {
           if (rain.mesh.visible) { rain.U.uTime.value = time % 1000; rain.U.uCam.value.copy(cam); }
-          if (audio) audio.tick(dt, WEATHER[current].rain > 0);
+          if (audio) audio.tick(dt, WEATHER[current].rain > 0 || (dyn && dyn.rain > 0.5));
         }
       };
     }

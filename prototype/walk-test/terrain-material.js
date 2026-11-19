@@ -15,6 +15,7 @@ window.TriundTerrain = {
       uBoxN: { value: new THREE.Vector4(nearBox.e0, nearBox.e1, nearBox.n0, nearBox.n1) },
       uBoxF: { value: new THREE.Vector4(farBox.e0, farBox.e1, farBox.n0, farBox.n1) },
       uSatOK: { value: 0 }, uSatGain: { value: 1.25 }, uSatSat: { value: 1.18 }, uTexOK: { value: 0 },
+      uAutumn: { value: 1 },   // late-autumn grass: the high meadows dry to gold and brown (season.js)
       uWet: { value: 0 }    // monsoon: wet, darker, greener ground and puddles on the trail (season.js)
     };
     // ground photo textures (CC0, polyhaven.com): uniform -> file
@@ -42,7 +43,7 @@ window.TriundTerrain = {
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>
 uniform sampler2D uSatN; uniform sampler2D uSatF; uniform vec4 uBoxN; uniform vec4 uBoxF;
-uniform float uSatOK; uniform float uSatGain; uniform float uSatSat; uniform float uTexOK; uniform float uWet;
+uniform float uSatOK; uniform float uSatGain; uniform float uSatSat; uniform float uTexOK; uniform float uWet; uniform float uAutumn;
 uniform sampler2D tGrass; uniform sampler2D tMeadow; uniform sampler2D tLitter; uniform sampler2D tRock; uniform sampler2D tTrail;
 uniform sampler2D tDirt; uniform sampler2D tPave; uniform sampler2D nLitter; uniform sampler2D nRock; uniform sampler2D nTrail;
 uniform sampler2D tNoise;
@@ -112,6 +113,27 @@ if (uTexOK > 0.5 && near > 0.001) {
   rockC = mix(rockC, rt, near);
 }
 base = mix(base, rockC, rock);
+// late autumn: the open meadows above the forest have dried to gold and brown (the imagery is a green summer)
+{
+  float hA = vW.y + (tf(p * 0.006) - 0.5) * 160.0;
+  float dry = uAutumn * (1.0 - rock) * (1.0 - canopy) * (0.35 * smoothstep(2650.0, 2900.0, hA) + 0.3 * smoothstep(3000.0, 3300.0, hA));
+  vec3 gold = vec3(0.30, 0.25, 0.13) * (0.8 + 0.4 * tf(p * 0.08));
+  base = mix(base, gold * (0.7 + 0.6 * lum(base) / max(lum(gold), 1e-3) * 0.5), clamp(dry, 0.0, 0.7));
+}
+// the high Dhauladhar in late November: above ~3,300 m the grass gives way to grey rock and scree, and above
+// ~3,850 m snow lies on every gentler slope, with streaks of it down the gullies of the steep faces. The line
+// wanders with the terrain (noise) so it never looks like a contour.
+{
+  float hAlt = vW.y + (tf(p * 0.0035) - 0.5) * 300.0 + (tf(p * 0.02) - 0.5) * 80.0;
+  float alpine = smoothstep(3250.0, 3650.0, hAlt);
+  vec3 scree = vec3(0.25, 0.24, 0.225) * (0.75 + 0.5 * tf(p * 0.045)) * (0.85 + 0.3 * tf(vec2(vW.x - vW.z, vW.y) * 0.08));
+  base = mix(base, scree, alpine * 0.9);
+  float gully = smoothstep(0.55, 0.85, tf(vec2((vW.x + vW.z) * 0.035, vW.y * 0.006)));
+  float snow = smoothstep(3780.0, 4020.0, hAlt) * (1.0 - smoothstep(0.5, 0.82, slope));
+  snow = max(snow, smoothstep(3950.0, 4350.0, hAlt) * gully * 0.85);
+  snow *= 0.85 + 0.15 * tf(p * 0.3);
+  base = mix(base, vec3(0.86, 0.89, 0.93), clamp(snow, 0.0, 1.0));
+}
 // trail surface (OSM surface tag)
 float tw = vT.x;
 if (tw > 0.002) {

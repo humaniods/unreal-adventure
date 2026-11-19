@@ -211,6 +211,9 @@ window.TriundFlora = {
       }
     }
 
+    // trunks are solid (radius from the trunk geometry below: base radius 0.022 / 0.035 / 0.04 of the height)
+    if (o.collide) for (const [sp, k] of [['deodar', 0.022], ['oak', 0.035], ['rhodo', 0.04]]) for (const t of trees[sp]) o.collide.circle(t.x, t.z, Math.max(0.12, k * t.h * t.w), false);
+
     /* ---------------- instanced meshes + LOD ---------------- */
     const dummy = new THREE.Object3D(), col = new THREE.Color();
     const tint = { deodar: [0x7c9a88, 0x93ad99], oak: [0x95a487, 0xb7c0a0], rhodo: [0x7d9673, 0x95a885], bush: [0x8c9b78, 0xa9b48d] };
@@ -465,7 +468,12 @@ window.TriundFlora = {
         const x = p.x - d.dz * off * side, z = p.z + d.dx * off * side;
         if (!accept(x, z) || trailD(x, z) < 1.1) continue;
         const sz = big ? 0.7 + rockR() * 1.6 : 0.12 + rockR() * rockR() * 0.55;
-        stones.push({ x, z, y: H(x, z), sx: sz * (1 + rockR() * 0.5), sy: sz * (0.45 + rockR() * 0.35), sz, rot: rockR() * 6.28, tilt: (rockR() - 0.5) * 0.4 });
+        // seated in the ground: on a slope the stone sits at the lowest ground under its footprint and a third of
+        // it is buried, so its downhill side never hangs in the air
+        const sx = sz * (1 + rockR() * 0.5), sy = sz * (0.45 + rockR() * 0.35), rr = Math.max(sx, sz) * 0.85;
+        const gy = Math.min(H(x, z), H(x + rr, z), H(x - rr, z), H(x, z + rr), H(x, z - rr));
+        stones.push({ x, z, y: gy - sy * 0.3, sx, sy, sz, rot: rockR() * 6.28, tilt: (rockR() - 0.5) * 0.4 });
+        if (o.collide && sz > 0.3) o.collide.circle(x, z, Math.max(sx, sz) * 0.8, sy < 0.55);   // you walk round anything bigger than a shoe
       }
       if (!o.noRisers) for (const run of tr.runs) {      // stone risers where the trail is steep (unless steps.js lays real steps)
         if (run.surf === 0 || run.surf === 3) continue;

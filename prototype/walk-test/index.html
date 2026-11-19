@@ -79,7 +79,12 @@ kbd{font-family:var(--f-display);font-weight:600;font-size:13px;border:1px solid
 /* smartwatch */
 #watch{position:fixed;z-index:7;left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));
   width:184px;transform:rotate(-5deg) scale(.78);transform-origin:bottom left;transition:transform .38s cubic-bezier(.2,.8,.2,1);cursor:pointer}
-#watch.up{transform:rotate(-3deg) scale(1.08)}
+#watch.up{transform:rotate(-2deg) scale(1.5)}
+.wbig{font-family:var(--f-display);font-weight:700;font-size:34px;line-height:1;color:var(--mist)}
+.wsub{font-size:11.5px;color:var(--muted);max-width:132px;line-height:1.2}
+.wcan{display:block;border-radius:50%}
+.wpill{font-family:var(--f-display);font-size:12px;font-weight:700;color:#1a1204;background:var(--marigold);border-radius:8px;padding:1px 7px}
+.wsos{font-family:var(--f-display);font-size:24px;font-weight:700;color:#ff6b5b;line-height:1}
 #watch .strap{position:absolute;left:50%;width:86px;margin-left:-43px;top:-46px;bottom:-60px;border-radius:20px;
   background:linear-gradient(90deg,#1a1d1c,#2c312f 50%,#1a1d1c);z-index:-1}
 .face{--zone:var(--ok);--hrp:30;position:relative;width:184px;height:184px;border-radius:50%;border:6px solid var(--steel);
@@ -162,6 +167,15 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
   #watch{transition:none}
   #watch.buzz .face{animation:none}
 }
+#selfieShot{position:fixed;right:18px;top:64px;z-index:30;pointer-events:auto}
+#selfieShot .ss-box{background:#14191a;border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:10px;width:min(46vw,520px);display:grid;gap:8px;box-shadow:0 12px 40px rgba(0,0,0,.5);transform:rotate(1.5deg)}
+#selfieShot img{width:100%;border-radius:8px;display:block}
+#selfieShot .ss-row{display:flex;gap:10px;align-items:center;color:#e8efe9;font:14px Hind,system-ui,sans-serif}
+#selfieShot .ss-row span{flex:1}
+#selfieShot a,#selfieShot button{background:#f2c230;color:#1a1204;border:0;border-radius:8px;padding:8px 14px;font:600 14px Hind,system-ui,sans-serif;text-decoration:none;cursor:pointer}
+#selfieShot button{background:#2a3436;color:#e8efe9}
+#flash{position:fixed;inset:0;z-index:29;background:#fff;pointer-events:none;animation:flash .45s ease-out forwards}
+@keyframes flash{from{opacity:.9}to{opacity:0}}
 </style>
 
 <canvas id="c" tabindex="-1" aria-label="3D trail view"></canvas>
@@ -174,7 +188,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
   <div class="strap"></div>
   <div class="face" id="face">
     <div class="wpage" id="wp0">
-      <div class="wclock" id="wClock">07:00</div>
+      <div class="wclock" id="wClock">09:00</div>
       <div class="whr"><span id="wHr">72</span><small>bpm</small></div>
       <div class="wzone" id="wZone">Z1 · Rest</div>
       <div class="wbr" title="Breathing"><i id="wLung"></i><span id="wBr">14/min · easy</span></div>
@@ -183,7 +197,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
         <div><b id="wHyd">100%</b><small>water</small></div>
         <div><b id="wAlt">2100</b><small>metre</small></div>
       </div>
-      <div class="wdots"><i class="on"></i><i></i><i></i></div>
+      <div class="wdots"></div>
     </div>
     <div class="wpage" id="wp1" hidden>
       <div class="wtitle">Route</div>
@@ -193,7 +207,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
         <div><span>Climb</span><b id="rClimb">0 m</b></div>
         <div><span>Next</span><b id="rNext">Stall</b></div>
       </div>
-      <div class="wdots"><i></i><i class="on"></i><i></i></div>
+      <div class="wdots"></div>
     </div>
     <div class="wpage" id="wp2" hidden>
       <div class="wtitle">Body</div>
@@ -204,7 +218,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
         <div><span>Bag</span><b id="bBag">12 kg</b></div>
         <div><span>Outside</span><b id="bAmb">9°C</b></div>
       </div>
-      <div class="wdots"><i></i><i></i><i class="on"></i></div>
+      <div class="wdots"></div>
     </div>
   </div>
 </div>
@@ -232,7 +246,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <!-- start -->
 <section class="screen" id="start">
   <div class="card">
-    <div class="eyebrow">ECP feel test · build 1.9</div>
+    <div class="eyebrow">ECP feel test · build 2.0</div>
     <h1>Triund Walk Test</h1>
     <p class="lede">The real Triund trails above McLeod Ganj, up to the meadow at 2,838 m facing the Dhauladhar range. Take the classic 5 km path from Gallu Devi temple through oak and deodar forest, past Magic View Cafe and up the switchbacks, or the steeper, quieter climb from Bhagsu past the waterfall, Shiva Cafe and Karthani. There is no health bar. Your breathing, your heartbeat and the smartwatch on your wrist tell you how your body is holding up.</p>
     <div class="field">
@@ -276,9 +290,10 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
       <dt><kbd>W A S D</kbd></dt><dd>walk · look with the mouse</dd>
       <dt><kbd>Shift</kbd></dt><dd>walk fast (drains stamina quicker)</dd>
       <dt><kbd>Space</kbd></dt><dd>hold to breathe in (during the mini-game)</dd>
-      <dt><kbd>Q</kbd> <kbd>F</kbd></dt><dd>raise watch · next watch screen</dd>
+      <dt><kbd>Q</kbd> <kbd>F</kbd></dt><dd>raise watch · next watch screen (also ← → or the mouse wheel while it is up, or click it)</dd>
       <dt><kbd>E</kbd> <kbd>R</kbd></dt><dd>stall menu, talk or pat a dog · sip water</dd>
       <dt><kbd>I</kbd> <kbd>C</kbd></dt><dd>open your bag and eat · sit down and rest (on a bench near a stall to eat a meal)</dd>
+      <dt><kbd>L</kbd> <kbd>P</kbd> <kbd>K</kbd></dt><dd>headlamp on/off · take a selfie (best at the selfie points) · save the photo</dd>
       <dt><kbd>V</kbd> <kbd>T</kbd> <kbd>Esc</kbd></dt><dd>camera · tuning panel · pause</dd>
       <dt>Drone flyover</dt><dd>fly over the whole chosen route from above</dd>
     </dl>
@@ -341,6 +356,8 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 </aside>
 
 <div id="toast" hidden></div>
+<div id="selfieShot" hidden><div class="ss-box"><img id="ssImg" alt="Your selfie on the Triund trail"><div class="ss-row"><span id="ssCap"></span><a id="ssSave" download="triund-selfie.jpg">Save photo</a><button type="button" id="ssClose">Close</button></div></div></div>
+<div id="flash" hidden></div>
 <div id="droneHud" hidden>
   <div class="dt"><b id="dRoute">Drone</b><span id="dProg"></span></div>
   <div class="dn" id="dNext"></div>
@@ -355,6 +372,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <script src="sky.js"></script>
 <script src="post.js"></script>
 <script src="season.js"></script>
+<script src="weather.js"></script>
 <script src="terrain-material.js"></script>
 <script src="flora.js"></script>
 <script src="steps.js"></script>
@@ -372,6 +390,7 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
 <script src="hands.js"></script>
 <script src="trek.js"></script>
 <script src="camp.js"></script>
+<script src="signs.js"></script>
 <script>
 (function(){
 'use strict';
@@ -629,6 +648,13 @@ const satReady=Promise.race([
 // season (autumn / monsoon): sky, haze, wet ground, rain, sound (season.js)
 if(window.TriundSeason&&QS.get('season'))window.TriundSeason.set(QS.get('season'));
 const SEASON=window.TriundSeason?window.TriundSeason.create({THREE,scene,SKY,terrainMat,post:POST}):null;
+// the day starts at 09:00, when most hikers set off (in late November the sun is up at 06:55 but still low behind the ridge)
+const DAY0=window.TRIUND_DAY0=9;
+// the clock moves the sun and the day's weather (weather.js); the shadow light turns with the sun
+const UPV=new THREE.Vector3(0,1,0);
+const WEATHER=window.TriundWeather?window.TriundWeather.create({THREE,SKY,SEASON,getAtmos:()=>ATMOS,
+  onSunDir:d=>{SUND.copy(d);SU.crossVectors(UPV,SUND).normalize();SV.crossVectors(SUND,SU).normalize();}}):null;
+let wxT=0;
 function syncSeason(){const v=window.TriundSeason?window.TriundSeason.get():'autumn';document.querySelectorAll('#seasonSeg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.season===v)));}
 $('seasonSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!window.TriundSeason)return;window.TriundSeason.set(b.dataset.season);if(SEASON)SEASON.apply();syncSeason();});
 syncSeason();
@@ -726,10 +752,10 @@ const inBox=(x,z)=>x>BOX.e0+20&&x<BOX.e1-20&&-z>BOX.n0+20&&-z<BOX.n1-20;
 })();
 
 /* ---- trees, bushes, grass, flowers, trail stones (flora.js); built once the imagery is in ---- */
-let FLORA=null,PLACES=null,ATMOS=null,FAUNA=null,CROWD=null,PCH=null,STEPS=null,CAMP=null;
+let FLORA=null,PLACES=null,ATMOS=null,FAUNA=null,CROWD=null,PCH=null,STEPS=null,CAMP=null,SIGNS=null;
 function buildFlora(){
   if(window.TriundSteps&&!QS.has('nosteps')){try{STEPS=window.TriundSteps.build({THREE,scene,H,trails:[GT,ST],rng,tex:PLACES&&PLACES.tex,sunAt});}catch(e){console.error('steps failed',e);}}
-  FLORA=window.TriundFlora.build({THREE,scene,H,rng,renderer,quality:QP,isMeadow,forest,groundTint,sunAt,aoAt,trails:[GT,ST],noRisers:!!STEPS,
+  FLORA=window.TriundFlora.build({THREE,scene,H,rng,renderer,quality:QP,isMeadow,forest,groundTint,sunAt,aoAt,trails:[GT,ST],noRisers:!!STEPS,collide:COLLIDE,
     trailD:(x,z)=>{trailQ(x,z);return TQ.d;},
     randomTrailPoint:R=>{const t=R()*(GT.total+ST.total);return t<GT.total?GT.pointAtS(t):ST.pointAtS(t-GT.total);},
     accept:(x,z)=>inBox(x,z)&&!nearPad(x,z)&&!(PLACES&&PLACES.blocked(x,z))});
@@ -829,7 +855,7 @@ function stall(st,wall,lines){
   const rot=Math.atan2(st.tz,-st.tx);   // the counter side (local -x) faces the trail
   const g=new THREE.Group();g.position.set(st.x,st.h,st.z);g.rotation.y=rot;
   // dry-stone plinth (the ground slopes under every stall on the ridge), painted plaster walls, tin roof
-  const plinth=mbox(4.8,1.6,6.3,'stone',0x9a958c,1.6);plinth.position.y=-0.55;g.add(plinth);
+  const plinth=mbox(4.5,1.6,6.1,'stone',0x9a958c,1.6);plinth.position.y=-0.55;g.add(plinth);   // flush with the walls: the shopkeeper's floor in front of the wall is the ground
   const walls=mbox(4.5,3.0,6,'plaster',wall,2.4);walls.position.y=1.5;g.add(walls);
   const trim=mbox(4.6,0.25,6.1,'plaster',0xf2efe6);trim.position.y=3.05;g.add(trim);
   const door=box(0.06,2.0,1.0,0x2a1f18);door.position.set(2.27,1.0,1.6);g.add(door);
@@ -934,9 +960,75 @@ function clearView(x0,z0,x1,z1){if(!COLLIDE)return 1;const d=Math.hypot(x1-x0,z1
   for(let i=1;i<=n;i++){const t=i/n,x=x0+(x1-x0)*t,z=z0+(z1-z0)*t;if(COLLIDE.inside(x,z,true))return Math.max(0.15,(i-1)/n-0.08);}return 1;}
 let HANDS=null;try{HANDS=window.TriundHands?window.TriundHands.create({THREE,scene,H,getChar:()=>PCH&&PCH.ch,clearView:(a,b,c,d)=>clearView(a,b,c,d)}):null;}catch(e){console.error('hands failed',e);}   // first-person hands for eating and drinking
 const TREK=window.TriundTrek&&window.TriundEconomy?window.TriundTrek.create({THREE,scene,H,hands:HANDS,ECON:window.TriundEconomy,stops:STOPS,
-  get crowd(){return CROWD;},get places(){return PLACES;},get collide(){return COLLIDE;},getState:()=>state,setState:s=>{state=s;},
+  get crowd(){return CROWD;},get places(){return PLACES;},get collide(){return COLLIDE;},gearState:()=>GEARS,useGear:g=>useGear(g),getState:()=>state,setState:s=>{state=s;},
   say:(t,d)=>say(t,d),toast:t=>toast(t),buzz:n=>buzz(n),lock:()=>lock(),drink:()=>drink(),onTopUp:()=>openTopUp()}):null;
 function openTopUp(){if(TREK)TREK.openTopUp();}
+
+/* ================= gear in use: headlamp, rain jacket / poncho, fleece ================= */
+// The headlamp is a spot light that always exists (intensity 0 when off), so switching it never recompiles shaders.
+const GEARS={headlamp:false,coat:null,fleece:false};
+const LAMP=new THREE.SpotLight(new THREE.Color(0xfff1d8).convertSRGBToLinear(),0,45,0.45,0.5,1.0);LAMP.castShadow=false;scene.add(LAMP);scene.add(LAMP.target);
+const hasGear=g=>!!(TREK&&TREK.bag&&TREK.bag.gear.includes(g));
+function useGear(g){
+  if(!hasGear(g)){toast(g==='headlamp'?'You have no headlamp in your bag.':'Not in your bag.');return;}
+  if(g==='headlamp'){GEARS.headlamp=!GEARS.headlamp;toast(GEARS.headlamp?'Headlamp on':'Headlamp off');}
+  else if(g==='rain'||g==='poncho'){GEARS.coat=GEARS.coat===g?null:g;toast(GEARS.coat?(g==='rain'?'You pull on your rain jacket and put the hood up.':'You throw the poncho over yourself and the bag.'):'You take it off and pack it away.');}
+  else if(g==='fleece'){GEARS.fleece=!GEARS.fleece;toast(GEARS.fleece?'You put on your fleece. Warmer.':'Fleece off, back in the bag.');}
+  if(PCH&&PCH.wear)PCH.wear(GEARS);
+}
+// the lamp sits on the forehead and points where you look (first person) or where you walk (third person)
+const _lf=new THREE.Vector3();
+function lampTick(){
+  const dark=WX?1-WX.daylight:0;LAMP.intensity=GEARS.headlamp?14*(0.3+0.7*Math.min(1,dark*1.5)):0;if(!GEARS.headlamp)return;
+  if(P.firstPerson){camera.getWorldDirection(_lf);LAMP.position.copy(camera.position).addScaledVector(_lf,0.15);LAMP.target.position.copy(camera.position).addScaledVector(_lf,10);}
+  else{const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);LAMP.position.set(P.x+fx*0.2,P.y+1.68,P.z+fz*0.2);LAMP.target.position.set(P.x+fx*9,P.y-0.4,P.z+fz*9);}
+  LAMP.target.updateMatrixWorld();
+}
+// rain without a jacket soaks you: colder, and the climb costs more; the watch tells you once per shower.
+// Dusk with a headlamp in the bag: the watch reminds you once.
+/* ================= selfies (P) ================= */
+// The camera comes round in front of you at arm's length and a bit high, you turn to it, the view you were looking
+// at is behind you; a flash, and the photo is yours to save. At a selfie point you step onto its stone first and
+// the view is the one the point was built for.
+const SELFIE={t:0,cam:new THREE.Vector3(),look:new THREE.Vector3(),yaw:0,shoot:false,where:''};let PHOTOS=0;
+function takeSelfie(){
+  if(SELFIE.t>0||(TREK&&(TREK.sitting()||TREK.panelOpen))||(HANDS&&HANDS.busy)){toast('Stand up and finish what you are doing first.');return;}
+  const sp=SIGNS&&SIGNS.selfieAt(P.x,P.z);let vx,vz;
+  if(sp){P.x=sp.x;P.z=sp.z;P.y=H(P.x,P.z);vx=sp.vx;vz=sp.vz;SELFIE.where='Selfie point, '+Math.round(P.y).toLocaleString('en-IN')+' m';}
+  else{vx=-Math.sin(P.yaw);vz=-Math.cos(P.yaw);SELFIE.where='Triund trail, '+Math.round(P.y).toLocaleString('en-IN')+' m';}
+  // camera on the near side, the view (v) beyond you; it rises a little so the horizon sits behind your shoulders
+  const cx=P.x-vx*1.9+vz*0.35,cz=P.z-vz*1.9-vx*0.35;
+  SELFIE.cam.set(cx,Math.max(P.y+1.75,H(cx,cz)+0.6),cz);SELFIE.look.set(P.x+vx*1.2,P.y+1.45,P.z+vz*1.2);
+  SELFIE.yaw=Math.atan2(cx-P.x,cz-P.z);SELFIE.t=1.6;P.vx=P.vz=P.v=0;
+}
+function selfieTick(dt){
+  if(SELFIE.showT>0){SELFIE.showT-=dt;if(SELFIE.showT<=0||P.v>0.4)show('selfieShot',false);}
+  if(SELFIE.t<=0)return false;
+  SELFIE.t-=dt;
+  if(SELFIE.t<0.6&&!SELFIE.done){SELFIE.done=true;SELFIE.shoot=true;show('flash',true);setTimeout(()=>show('flash',false),460);}
+  if(SELFIE.t<=0){SELFIE.done=false;}
+  return true;
+}
+function selfieAfterRender(){
+  if(!SELFIE.shoot)return;SELFIE.shoot=false;
+  let url='';try{url=canvas.toDataURL('image/jpeg',0.9);}catch(e){}
+  if(!url||url.length<5000){toast('The photo could not be saved.');return;}
+  PHOTOS++;$('ssImg').src=url;$('ssSave').href=url;$('ssSave').download='triund-selfie-'+PHOTOS+'.jpg';
+  $('ssCap').textContent=SELFIE.where+' · '+(WX?WX.clock:'')+' · K to save · walk on to close';show('selfieShot',true);SELFIE.showT=7;
+}
+// the photo stays up for a few seconds over the game (no pause): K saves it, walking on or P closes it
+function saveSelfie(){if(!$('selfieShot').hidden){$('ssSave').click();toast('Photo saved to your downloads');}}
+$('ssClose').addEventListener('click',()=>{show('selfieShot',false);});
+function gearTick(dt){
+  if(!WX)return;
+  const raining=WX.rain>0.1;
+  if(raining&&!GEARS.coat){P.soak=Math.min(1,(P.soak||0)+dt/90);if(!P.rainWarned){P.rainWarned=true;buzz(1);
+    say(hasGear('rain')||hasGear('poncho')?'It is starting to drizzle. Put on your rain jacket: I, then Put on.':'It is starting to drizzle and you have no rain jacket. A stall roof would keep you dry.',5);}}
+  else P.soak=Math.max(0,(P.soak||0)-dt/(GEARS.coat?240:400));
+  if(!raining)P.rainWarned=false;
+  if(WX.daylight<0.45&&!GEARS.headlamp&&!P.darkWarned){P.darkWarned=true;buzz(1);say(hasGear('headlamp')?'It is getting dark. Press L for your headlamp.':'It is getting dark and you have no headlamp. Stay on the trail.',5);}
+  if(WX.daylight>0.6)P.darkWarned=false;
+}
 function resetPlayer(){
   ACT=startFrom==='shiva'?ST:GT;
   START_S=startFrom==='magic'?stopOf('magic').s+4:0;
@@ -951,7 +1043,7 @@ function resetPlayer(){
 resetPlayer();
 // QA hook: jump along the trail (used by automated screenshots; harmless for players)
 window.__triund={setRoute(id){startFrom=id;resetPlayer();enterPlay();},look(x,y,z,tx,ty,tz){state='qa';show('start',false);show('droneHud',false);camera.position.set(x,y,z);camera.lookAt(tx,ty,tz);DR.look.set(tx,ty,tz);},H:(x,z)=>H(x,z),drone(id,s,top,alt){startFrom=id;enterDrone();DR.s=s||0;DR.top=!!top;if(alt)DR.alt=alt;DR.pause=true;DR.snap=true;},teleport(s,third){const p=pointAtS(s),d=dirAtS(s+10,20);P.x=p.x;P.z=p.z;P.y=H(p.x,p.z);P.yaw=Math.atan2(-d.dx,-d.dz);P.pitch=-0.05;P.s=s;P.maxS=Math.max(P.maxS,s);P.firstPerson=!third;},
-  get P(){return P;},get total(){return ACT.total;},get route(){return ACT.id;},stops:STOPS.map(st=>({label:st.label,trail:st.trail,s:st.s})),buildMs:0,get flora(){return FLORA&&FLORA.counts;},get places(){return PLACES&&PLACES.counts;},get atmos(){return ATMOS&&ATMOS.counts;},get fauna(){return FAUNA&&FAUNA.counts;},get crowd(){return CROWD&&CROWD.counts;},get steps(){return STEPS&&STEPS.counts;},autopilot:false,get trek(){return TREK;},get camp(){return CAMP;},get crowdObj(){return CROWD;},get collide(){return COLLIDE;},get hands(){return HANDS;},get pch(){return PCH;},toStop(label){const st=STOPS.find(x=>x.label.startsWith(label));if(!st)return null;P.x=st.spot.x;P.z=st.spot.z;P.y=H(P.x,P.z);P.yaw=Math.atan2(st.tx,st.tz);P.pitch=-0.15;P.firstPerson=true;return{x:st.x,z:st.z,spot:st.spot,tx:st.tx,tz:st.tz,h:st.h};},stepTop:s=>STEPS?STEPS.topAt(ACT.id,s):null,groundAt:(id,x,z,s,lat)=>STEPS?STEPS.ground(x,z,id,s,lat):H(x,z),trailDir:(id,s)=>{const tr=TRAILS[id];const p=pointAtS(s,tr),d=dirAtS(s,6,tr);return{x:p.x,z:p.z,dx:d.dx,dz:d.dz};},crowdInfo(){if(!CROWD)return null;const f=p=>p&&{x:+p.x.toFixed(1),y:+p.y.toFixed(1),z:+p.z.toFixed(1),yaw:+p.yaw.toFixed(2),st:p.state,anim:p.anim};const sit=CROWD.agents.find(a=>a.state==='sit');const walk=CROWD.agents.find(a=>a.state==='walk'&&a.tr===GT);const topA=CROWD.agents.find(a=>a.state==='top');return {sit:f(sit),walk:f(walk),top:f(topA),keeper:f(CROWD.keepers.find(k=>Math.hypot(k.x-stopOf('magic').x,k.z-stopOf('magic').z)<6)),keeper2:f(CROWD.keepers[5])};},get dogStates(){return FAUNA&&FAUNA.dogs.map(d=>d.state);},animals(){if(!FAUNA)return null;const p=g=>[+g.position.x.toFixed(1),+g.position.y.toFixed(1),+g.position.z.toFixed(1)];return {dog:p(FAUNA.dogs[0].a.g),mule:p(FAUNA.mules[0].members[0].g),langur:p(FAUNA.troops[0].members[0].l.g),bird:p(FAUNA.birds[0].m)};},get satOK(){return !!SAT.px;},get stats(){return {calls:RI.calls,tris:RI.triangles,fps:Math.round(fps),q:QL.get()};},
+  get P(){return P;},get total(){return ACT.total;},get route(){return ACT.id;},stops:STOPS.map(st=>({label:st.label,trail:st.trail,s:st.s})),buildMs:0,get flora(){return FLORA&&FLORA.counts;},get places(){return PLACES&&PLACES.counts;},get atmos(){return ATMOS&&ATMOS.counts;},get fauna(){return FAUNA&&FAUNA.counts;},get crowd(){return CROWD&&CROWD.counts;},get steps(){return STEPS&&STEPS.counts;},autopilot:false,get trek(){return TREK;},get camp(){return CAMP;},get crowdObj(){return CROWD;},get collide(){return COLLIDE;},get signs(){return SIGNS;},get faunaObj(){return FAUNA;},get wx(){return WX;},get fogD(){return scene.fog.density;},get gears(){return GEARS;},get hands(){return HANDS;},get pch(){return PCH;},toStop(label){const st=STOPS.find(x=>x.label.startsWith(label));if(!st)return null;P.x=st.spot.x;P.z=st.spot.z;P.y=H(P.x,P.z);P.yaw=Math.atan2(st.tx,st.tz);P.pitch=-0.15;P.firstPerson=true;return{x:st.x,z:st.z,spot:st.spot,tx:st.tx,tz:st.tz,h:st.h};},stepTop:s=>STEPS?STEPS.topAt(ACT.id,s):null,groundAt:(id,x,z,s,lat)=>STEPS?STEPS.ground(x,z,id,s,lat):H(x,z),trailDir:(id,s)=>{const tr=TRAILS[id];const p=pointAtS(s,tr),d=dirAtS(s,6,tr);return{x:p.x,z:p.z,dx:d.dx,dz:d.dz};},crowdInfo(){if(!CROWD)return null;const f=p=>p&&{x:+p.x.toFixed(1),y:+p.y.toFixed(1),z:+p.z.toFixed(1),yaw:+p.yaw.toFixed(2),st:p.state,anim:p.anim};const sit=CROWD.agents.find(a=>a.state==='sit');const walk=CROWD.agents.find(a=>a.state==='walk'&&a.tr===GT);const topA=CROWD.agents.find(a=>a.state==='top');return {sit:f(sit),walk:f(walk),top:f(topA),keeper:f(CROWD.keepers.find(k=>Math.hypot(k.x-stopOf('magic').x,k.z-stopOf('magic').z)<6)),keeper2:f(CROWD.keepers[5])};},get dogStates(){return FAUNA&&FAUNA.dogs.map(d=>d.state);},animals(){if(!FAUNA)return null;const p=g=>[+g.position.x.toFixed(1),+g.position.y.toFixed(1),+g.position.z.toFixed(1)];return {dog:p(FAUNA.dogs[0].a.g),mule:p(FAUNA.mules[0].members[0].g),langur:p(FAUNA.troops[0].members[0].l.g),bird:p(FAUNA.birds[0].m)};},get satOK(){return !!SAT.px;},get stats(){return {calls:RI.calls,tris:RI.triangles,fps:Math.round(fps),q:QL.get()};},
   breakdown(){const out={};scene.traverse(o=>{if(!o.isMesh||!o.visible)return;const g=o.geometry,t=(g.index?g.index.count:g.attributes.position.count)/3*(o.isInstancedMesh?o.count:1);
     const k=(o.isInstancedMesh?'inst:':'mesh:')+(o.material.map?'map':'')+(o.castShadow?'+cast':'')+':'+Math.round(t/(o.isInstancedMesh?Math.max(o.count,1):1));out[k]=(out[k]||0)+Math.round(t);});return out;}};
 
@@ -1005,6 +1097,7 @@ document.addEventListener('mousemove',e=>{if(state!=='play')return;if(locked()||
 canvas.addEventListener('mousedown',()=>{if(state==='play'){if(!locked()&&!dragLook)lock();dragging=true;}});
 window.addEventListener('mouseup',()=>{dragging=false;});
 window.addEventListener('keydown',e=>{
+  if(state==='play'&&$('watch').classList.contains('up')&&(e.code==='ArrowLeft'||e.code==='ArrowRight')){e.preventDefault();if(!e.repeat)cyclePage(e.code==='ArrowRight'?1:-1);return;}
   if(e.target&&e.target.tagName==='TEXTAREA')return;
   keys[e.code]=true;
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.code)&&state==='play')e.preventDefault();
@@ -1019,6 +1112,9 @@ window.addEventListener('keydown',e=>{
     case 'KeyI':if(state==='play'&&TREK)TREK.toggleBag();break;
     case 'KeyC':if(state==='play'&&TREK)TREK.toggleSit();break;
     case 'KeyV':if(state==='play')P.firstPerson=!P.firstPerson;break;
+    case 'KeyL':if(state==='play')useGear('headlamp');break;
+    case 'KeyP':if(state==='play'){if(!$('selfieShot').hidden)show('selfieShot',false);else takeSelfie();}break;
+    case 'KeyK':if(state==='play')saveSelfie();break;
     case 'KeyT':if(state==='play'||state==='tune')toggleTune();break;
     case 'Backquote':$('debug').hidden=!$('debug').hidden;break;
     case 'KeyM':muted=!muted;if(master)master.gain.value=muted?0:0.8;toast(muted?'Sound off':'Sound on');break;
@@ -1027,7 +1123,7 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('keyup',e=>{keys[e.code]=false;});
 window.addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
-$('watch').addEventListener('click',()=>{if(state==='play'){if($('watch').classList.contains('up'))cyclePage();else toggleWatch();}});
+$('watch').addEventListener('click',()=>{if($('watch').dataset.swiped){delete $('watch').dataset.swiped;return;}if(state==='play'){if($('watch').classList.contains('up'))cyclePage();else toggleWatch();}});
 
 // touch
 if(isTouch){
@@ -1052,7 +1148,25 @@ function say(t,secs){const s=$('subtitle');s.textContent=t;s.hidden=false;s.styl
 function toast(t){const el=$('toast');el.textContent=t;el.hidden=false;toastT=2.2;}
 let page=0;
 function toggleWatch(){$('watch').classList.toggle('up');}
-function cyclePage(){page=(page+1)%3;for(let i=0;i<3;i++)$('wp'+i).hidden=i!==page;if(!$('watch').classList.contains('up'))$('watch').classList.add('up');}
+/* ---- the watch's screens: vitals, route, body (in the markup) and seven built here ---- */
+const WPAGES=[
+  ['Map','<canvas class="wcan" id="wMap" width="300" height="300" style="width:150px;height:150px"></canvas>'],
+  ['Weather','<div class="wbig" id="xTemp">9°</div><div class="wzone" id="xWx">Clear</div><div class="wclock" id="xClock">09:00</div><div class="wsub" id="xSun">Sunset 17:25</div><div class="wsub" id="xNext"></div>'],
+  ['Compass','<div class="wbig" id="xHead">N 0°</div><div class="wsub" id="xAlt">2,100 m</div><canvas id="wProf" width="260" height="90" style="width:130px;height:45px"></canvas><div class="wsub" id="xProfTxt"></div>'],
+  ['Today','<div class="wlist"><div><span>Steps</span><b id="xSteps">0</b></div><div><span>Energy used</span><b id="xKcal">0 kcal</b></div><div><span>Walking</span><b id="xWalk">0 min</b></div><div><span>Resting</span><b id="xRest">0 min</b></div><div><span>Chai · food</span><b id="xFood">0 · 0</b></div><div><span>Photos</span><b id="xPics">0</b></div></div>'],
+  ['Next stop','<div class="wzone" id="xNxName">Stall</div><div class="wbig" id="xNxDist">0 m</div><div class="wsub" id="xNxEta"></div><div class="wsub" id="xTopEta"></div>'],
+  ['Bag','<div class="wlist"><div><span>Food</span><b id="xBagFood">0</b></div><div><span>Water</span><b id="xBagWater">0 sips</b></div><div><span>Headlamp</span><b id="xLamp">–</b></div><div><span>Rain gear</span><b id="xCoat">–</b></div></div><div class="wsub">Press I to open the bag</div>'],
+  ['SOS','<div class="wsos">112</div><div class="wsub">Emergency · Ambulance 108 · Police 100</div><div class="wsub" id="xShelter"></div><div class="wsub" id="xBack"></div>']];
+(function(){const face=$('face');WPAGES.forEach(([t,h],i)=>{const d=document.createElement('div');d.className='wpage';d.id='wp'+(i+3);d.hidden=true;d.innerHTML=(i?'<div class="wtitle">'+t+'</div>':'')+h+'<div class="wdots"></div>';face.appendChild(d);});})();
+const NPAGE=3+WPAGES.length,WUP={force:false};
+function setPage(n){page=(n+NPAGE)%NPAGE;for(let i=0;i<NPAGE;i++)$('wp'+i).hidden=i!==page;
+  document.querySelectorAll('#face .wdots').forEach(d=>{d.innerHTML=Array.from({length:NPAGE},(_,i)=>'<i'+(i===page?' class="on"':'')+'></i>').join('');});
+  if(!$('watch').classList.contains('up'))$('watch').classList.add('up');WUP.force=true;}
+function cyclePage(dir){setPage(page+(dir||1));}
+setPage(0);$('watch').classList.remove('up');
+// mouse wheel or a swipe on the raised watch turns the screens
+$('watch').addEventListener('wheel',e=>{if(!$('watch').classList.contains('up'))return;e.preventDefault();cyclePage(e.deltaY>0||e.deltaX>0?1:-1);},{passive:false});
+{let sx=null;$('watch').addEventListener('pointerdown',e=>{sx=e.clientX;});$('watch').addEventListener('pointerup',e=>{if(sx!=null&&Math.abs(e.clientX-sx)>30){cyclePage(e.clientX<sx?1:-1);$('watch').dataset.swiped='1';}sx=null;});}
 const ZONES=[[110,'Z1 · Rest',tok('--ok')],[130,'Z2 · Easy',tok('--ok')],[150,'Z3 · Steady',tok('--warn')],[165,'Z4 · Hard',tok('--warn')],[999,'Z5 · Breathless',tok('--bad')]];
 const zoneOf=hr=>{for(let i=0;i<ZONES.length;i++)if(hr<ZONES[i][0])return i+1;return 5;};
 function copyText(txt,okMsg){
@@ -1139,7 +1253,10 @@ $('wantSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(
 $('copyResults').addEventListener('click',()=>copyText(JSON.stringify(results(),null,2),'Results copied'));
 
 /* ================= simulation ================= */
+let WX=null;
 function update(dt){
+  wxT-=dt;if(WEATHER&&wxT<=0){wxT=0.25;WX=WEATHER.update(P.gt||0,P.y);}
+  gearTick(dt);
   P.time+=dt;
   let ix=0,iz=0;
   // QA: walk the trail on its own (window.__triund.autopilot = true) to find places where a hiker gets stuck
@@ -1154,7 +1271,8 @@ function update(dt){
   // movement keeps momentum: the velocity vector eases toward the wanted one (a body with a 12 kg pack does not
   // turn or stop on the spot), quicker when stopping than when setting off
   const h0=H(P.x,P.z);let target=0,tx=0,tz=0;P.scramble=false;   // grade from the ground itself (P.y may be raised onto a stone step)
-  if(mag>0.05&&!P.exh&&!(TREK&&TREK.sitting())){
+  const inSelfie=selfieTick(dt);
+  if(mag>0.05&&!P.exh&&!(TREK&&TREK.sitting())&&!inSelfie){
     const wl=Math.hypot(wx,wz);wx/=wl;wz/=wl;
     const g=H(P.x+wx,P.z+wz)-h0;
     trailQ(P.x,P.z);const onTrail=TQ.d<1.6;   // on the trail you can always go on (the steep bits have steps)
@@ -1186,7 +1304,7 @@ function update(dt){
 
   // physiology
   const L=loadMult(),spdR=P.v/1.4;
-  const effort=spdR*(1+T.gradeCost*Math.max(grade,0)+1.2*Math.max(-grade,0))*(P.sprinting&&P.v>0.5?1.35:1)*(P.scramble?1.5:1)*Math.sqrt(L);P.effort=effort;   // scrambling: hands and legs both work
+  const effort=spdR*(1+T.gradeCost*Math.max(grade,0)+1.2*Math.max(-grade,0))*(P.sprinting&&P.v>0.5?1.35:1)*(P.scramble?1.5:1)*(1+0.25*(P.soak||0))*Math.sqrt(L);P.effort=effort;   // scrambling: hands and legs both work
   let hrT=72+Math.max(0,P.y-2000)*0.02+(P.hyd<40?(40-P.hyd)*0.3:0)+110*(1-Math.exp(-effort/T.effortK));hrT=Math.min(hrT,190);
   P.hr+=(hrT-P.hr)*(1-Math.exp(-dt/(hrT>P.hr?T.hrRise:T.hrFall)));
 
@@ -1218,12 +1336,13 @@ function update(dt){
   P.hyd=clamp(P.hyd-(0.022+0.05*hrN)*dt,0,100);
   if(P.v<0.15){P.still+=dt;if(P.still>=4&&!P.restCounted){P.rest++;P.restCounted=true;}}else{P.still=0;P.restCounted=false;}
   P.chaiWarm=Math.max(0,P.chaiWarm-dt*0.002);
-  const chill=P.still>20?Math.min((P.still-20)/120,1)*0.6:0;
+  const chill=(P.still>20?Math.min((P.still-20)/120,1)*0.6:0)+(P.soak||0)*0.9+(WX&&WX.temp<4&&!GEARS.fleece?0.3:0)-(GEARS.fleece?0.2:0);   // wet clothes and cold air chill you; a fleece helps
   P.temp+=(36.7+0.8*hrN-chill+P.chaiWarm-P.temp)*(1-Math.exp(-dt/30));
 
   // route tracking
   const n=nearestTrail(P.x,P.z);P.s=n.s;P.trailD=n.d;if(n.d<12)P.maxS=Math.max(P.maxS,n.s);
   if(P.v>0.15){P.moveTime+=dt;if(n.d>6)P.offTrail+=dt;}
+  P.steps=(P.steps||0)+P.v*dt/0.72;P.kcal=(P.kcal||0)+P.v*dt*0.035+Math.max(0,P.grade||0)*P.v*dt*0.66;   // ~35 kcal per flat km, ~0.66 kcal per metre climbed (70 kg)
   P.offWarnT-=dt;if(n.d>16&&P.v>0.3&&P.offWarnT<=0){P.offWarnT=25;say('You have left the trail. Shortcuts are steep and will wind you fast.');}
   P.maxHR=Math.max(P.maxHR,P.hr);P.hrSum+=P.hr*dt;P.hrN+=dt;
   const z=zoneOf(P.hr);if(z!==P.zone){if(z>=4&&z>P.zone)buzz(1);P.zone=z;}
@@ -1234,6 +1353,7 @@ function update(dt){
     if(!st.seen&&d<16){st.seen=true;buzz(1);say(st.label+'. Walk up to the counter and press E for the menu.',4);}}
   if(TREK)pr=TREK.prompt(P);
   if(!pr&&CAMP)pr=CAMP.prompt(P);
+  if(!pr&&SIGNS&&SIGNS.selfieAt(P.x,P.z))pr='<kbd>P</kbd> Take a selfie here';
   if(!pr&&npcs.some(np=>Math.hypot(P.x-np.x,P.z-np.z)<5))pr='<kbd>E</kbd> Talk';
   if(!pr&&FAUNA&&FAUNA.nearDog(P))pr='<kbd>E</kbd> Pat the dog';
   const pe=$('prompt');if(pr){pe.innerHTML=pr;pe.hidden=false;}else pe.hidden=true;
@@ -1254,9 +1374,9 @@ function update(dt){
   const sway=Math.sin(P.brPh*Math.PI*2)*(0.004+0.022*hrN)*bob;
   // eating and drinking: the hiker is shown from a close camera and their own arms do it (hands.js)
   const eatView=!!(HANDS&&HANDS.busy&&PCH);
-  if(PCH){const seated=TREK&&TREK.sitting(),showC=!P.firstPerson||eatView;PCH.ch.root.visible=showC;
+  if(PCH){const seated=TREK&&TREK.sitting(),showC=!P.firstPerson||eatView||SELFIE.t>0;PCH.ch.root.visible=showC;
     // sitting down, the rucksack comes off and stands on the ground by your knees (away from where food is set down)
-    if(PCH.ground){const sg=seated&&TREK.seat();PCH.ch.acc.pack.visible=!seated;PCH.ground.visible=!!seated;
+    if(PCH.ground){const sg=seated&&TREK.seat();PCH.ch.acc.pack.visible=!seated;for(const st of PCH.ch.acc.straps||[])st.visible=!seated;PCH.ground.visible=!!seated;
       if(sg){const r=sg.ry!=null?sg.ry:P.yaw+Math.PI,gx=(sg.x!=null?sg.x:P.x)-Math.cos(r)*0.5+Math.sin(r)*0.4,gz=(sg.z!=null?sg.z:P.z)+Math.sin(r)*0.5+Math.cos(r)*0.4;
         PCH.ground.position.set(gx,H(gx,gz),gz);PCH.ground.rotation.set(0,r+Math.PI*0.5,0.12);}}
     if(showC){
@@ -1264,12 +1384,13 @@ function update(dt){
     const st=seated&&TREK.seat(),onB=seated&&TREK.onBench();
     if(onB&&CROWD){const r=CROWD.sitRoot(st,PCH.ch.root.scale.x);PCH.ch.root.position.set(r.x,r.y,r.z);}
     else PCH.ch.root.position.set(P.x,P.y-(seated?0.4*PCH.ch.root.scale.x:0),P.z);
-    PCH.ch.root.rotation.y=onB?st.ry:seated||eatView?P.yaw+Math.PI:Math.atan2(P.dirx,P.dirz);
+    PCH.ch.root.rotation.y=SELFIE.t>0?SELFIE.yaw:onB?st.ry:seated||eatView?P.yaw+Math.PI:Math.atan2(P.dirx,P.dirz);
     PCH.play(TREK&&TREK.sitting()?'Sitting_Idle':P.crouch>0.5?'Idle':P.sprinting&&P.v>2.4?'Jog_Fwd':P.v>0.12?'Walk':'Idle',P.v>0.12?P.v:1);PCH.ch.mixer.update(dt);
     // feet on the slope and the steps
     if(seated&&!onB)legsOut(PCH.ch.root);else if(!seated)window.TriundAnim.legIK(THREE,PCH.ch.root,playerFeetGround,P.y);
     if(eatView)HANDS.pose();}}
-  if(eatView&&HANDS.frame(camera,dt)){avatar.visible=false;}
+  if(SELFIE.t>0){avatar.visible=false;const k=Math.min(1,(1.6-SELFIE.t)/0.5),e=k*k*(3-2*k);camera.position.lerpVectors(camera.position,SELFIE.cam,e);camera.lookAt(SELFIE.look);}
+  else if(eatView&&HANDS.frame(camera,dt)){avatar.visible=false;}
   else if(P.firstPerson){
     avatar.visible=false;
     // lean into a climb: the head sits a little ahead of the feet on steep ground
@@ -1284,7 +1405,8 @@ function update(dt){
     const dist0=4.4,wx=P.x+sY*dist0*Math.cos(P.pitch*0.6),wz=P.z+cY*dist0*Math.cos(P.pitch*0.6),k=clearView(P.x,P.z,wx,wz),cx=P.x+(wx-P.x)*k,cz=P.z+(wz-P.z)*k;
     const cy=Math.max(P.y+2.1-P.pitch*3,H(cx,cz)+0.7);camera.position.set(cx,cy,cz);camera.lookAt(P.x,P.y+1.45,P.z);
   }
-  show('cross',P.firstPerson&&!eatView);
+  show('cross',P.firstPerson&&!eatView&&SELFIE.t<=0);
+  lampTick();
 }
 let menuT=0;
 function menuCam(dt){menuT+=dt;const a=0.45+Math.sin(menuT*0.03)*0.3;const x=TOP.x-60,z=TOP.z+120;camera.position.set(x,H(x,z)+28,z);camera.lookAt(x+Math.sin(a)*6000,3500,z-Math.cos(a)*6000);}
@@ -1299,6 +1421,61 @@ function drawBreath(){
   const inh=(P.brT%T.breathPeriod)<T.breathPeriod/2;const cue=$('breathCue');cue.textContent=inh?'IN':'OUT';cue.style.color=P.sync>0.78?COL.ok:COL.mist;
 }
 let uiT=0;
+/* ---- the seven extra watch screens: only the one showing is updated (map and profile are canvases) ---- */
+const TRPTS={};function trailPts(id){if(TRPTS[id])return TRPTS[id];const tr=TRAILS[id],a=[];for(let s=0;s<=tr.total;s+=10){const p=pointAtS(s,tr);a.push([p.x,p.z,p.h,s]);}return TRPTS[id]=a;}
+const CARD=['N','NE','E','SE','S','SW','W','NW'];
+const fdist=m=>m<1000?Math.round(m/10)*10+' m':(m/1000).toFixed(1)+' km';
+const gclock=h=>{h=((h%24)+24)%24;return String(Math.floor(h)).padStart(2,'0')+':'+String(Math.floor((h%1)*60)).padStart(2,'0');};
+function watchPages(){
+  if(!$('watch').classList.contains('up')&&!WUP.force)return;WUP.force=false;
+  const pg=page,hours=DAY0+(P.gt||0)/3600;
+  if(pg===3){   // map: 1.4 km across, north up, you in the middle
+    const c=$('wMap'),g=c.getContext('2d'),W=c.width,R=W/2,k=W/1400;g.clearRect(0,0,W,W);g.save();g.beginPath();g.arc(R,R,R,0,Math.PI*2);g.clip();
+    g.fillStyle='#0d1714';g.fillRect(0,0,W,W);
+    const X=x=>R+(x-P.x)*k,Y=z=>R+(z-P.z)*k;
+    for(const id of ['galu','shiva']){const a=trailPts(id),act=id===ACT.id;g.lineWidth=act?7:4;g.strokeStyle=act?'#e9f0ea':'rgba(200,210,205,0.45)';g.beginPath();a.forEach((q,i)=>i?g.lineTo(X(q[0]),Y(q[1])):g.moveTo(X(q[0]),Y(q[1])));g.stroke();
+      if(act){g.strokeStyle='#5fd18a';g.lineWidth=7;g.beginPath();let st=false;for(const q of a){if(q[3]<START_S)continue;if(q[3]>P.maxS)break;st?g.lineTo(X(q[0]),Y(q[1])):g.moveTo(X(q[0]),Y(q[1]));st=true;}g.stroke();}}
+    const dot=(x,z,col,r)=>{g.fillStyle=col;g.beginPath();g.arc(X(x),Y(z),r,0,Math.PI*2);g.fill();g.strokeStyle='#0d1714';g.lineWidth=2;g.stroke();};
+    for(const st of STOPS)dot(st.x,st.z,'#f2a93b',9);
+    if(SIGNS)for(const sp of SIGNS.spots)dot(sp.x,sp.z,'#ff5fa2',8);
+    if(CAMP){const x=X(CAMP.desk.x),y=Y(CAMP.desk.z);g.fillStyle='#ffd27a';g.beginPath();g.moveTo(x,y-13);g.lineTo(x+12,y+9);g.lineTo(x-12,y+9);g.closePath();g.fill();}
+    {const x=X(TOP.x),y=Y(TOP.z);g.strokeStyle='#fff';g.lineWidth=3;g.beginPath();g.moveTo(x,y+10);g.lineTo(x,y-14);g.stroke();g.fillStyle='#ff5b4a';g.beginPath();g.moveTo(x,y-14);g.lineTo(x+13,y-8);g.lineTo(x,y-2);g.fill();}
+    g.save();g.translate(R,R);g.rotate(-P.yaw);g.fillStyle='#ffd34d';g.beginPath();g.moveTo(0,-16);g.lineTo(11,12);g.lineTo(0,6);g.lineTo(-11,12);g.closePath();g.fill();g.restore();
+    g.fillStyle='rgba(233,240,234,0.9)';g.font='700 26px Rajdhani,sans-serif';g.textAlign='center';g.fillText('N',R,34);
+    g.font='600 20px Hind,sans-serif';g.fillStyle='#f2a93b';g.fillText('stall',R-70,W-46);g.fillStyle='#ff5fa2';g.fillText('selfie',R,W-46);g.fillStyle='#ffd27a';g.fillText('camp',R+70,W-46);
+    g.restore();
+  }else if(pg===4){
+    if(WX){$('xTemp').textContent=Math.round(WX.temp)+'°C';$('xWx').textContent=WX.name;$('xClock').textContent=WX.clock;$('xNext').textContent='Next: '+WX.next;}
+    $('xSun').textContent=hours<17.42?'Sunset 17:25 · '+Math.max(0,Math.round((17.42-hours)*60))+' min left':'After sunset · headlamp on';
+  }else if(pg===5){
+    const brg=((Math.atan2(-Math.sin(P.yaw),Math.cos(P.yaw))*180/Math.PI)+360)%360;$('xHead').textContent=CARD[Math.round(brg/45)%8]+' '+Math.round(brg)+'°';
+    $('xAlt').textContent=Math.round(P.y).toLocaleString('en-IN')+' m · top '+Math.round(ACT.topAlt).toLocaleString('en-IN')+' m';
+    const c=$('wProf'),g=c.getContext('2d'),a=trailPts(ACT.id),W=c.width,Hh=c.height;let lo=1e9,hi=-1e9;for(const q of a){lo=Math.min(lo,q[2]);hi=Math.max(hi,q[2]);}
+    g.clearRect(0,0,W,Hh);const X=s=>8+(W-16)*s/ACT.total,Y=h=>Hh-8-(Hh-16)*(h-lo)/(hi-lo||1);
+    g.fillStyle='rgba(95,209,138,0.25)';g.beginPath();g.moveTo(X(0),Hh);a.forEach(q=>g.lineTo(X(q[3]),Y(q[2])));g.lineTo(X(ACT.total),Hh);g.fill();
+    g.strokeStyle='#e9f0ea';g.lineWidth=3;g.beginPath();a.forEach((q,i)=>i?g.lineTo(X(q[3]),Y(q[2])):g.moveTo(X(q[3]),Y(q[2])));g.stroke();
+    g.fillStyle='#ffd34d';g.beginPath();g.arc(X(P.s),Y(P.y),7,0,Math.PI*2);g.fill();
+    $('xProfTxt').textContent=Math.max(0,Math.round(ACT.topAlt-P.y))+' m still to climb';
+  }else if(pg===6){
+    $('xSteps').textContent=Math.round(P.steps||0).toLocaleString('en-IN');$('xKcal').textContent=Math.round(P.kcal||0)+' kcal';
+    $('xWalk').textContent=Math.round((P.moveTime||0)*6/60)+' min';$('xRest').textContent=Math.round(Math.max(0,(P.gt||0)/60-(P.moveTime||0)*6/60))+' min';
+    const L=P.eatLog||{};$('xFood').textContent=((L.chai||0)+(L.lemontea||0))+' · '+Object.keys(L).filter(k=>k!=='chai'&&k!=='lemontea').reduce((n,k)=>n+L[k],0);$('xPics').textContent=PHOTOS;
+  }else if(pg===7){
+    const pace=Math.max(0.35,(P.maxS-START_S)/Math.max(60,P.moveTime||0));   // metres per real second, walking
+    const cands=STOPS.filter(st=>st.trail===ACT.id&&st.s>P.s+8).map(st=>({n:st.label,s:st.s}));
+    if(SIGNS)for(const sp of SIGNS.spots)if(sp.trail===ACT.id&&sp.s>P.s+8)cands.push({n:'Selfie point',s:sp.s});
+    cands.sort((a,b)=>a.s-b.s);const nx=cands[0]||{n:'Triund top',s:ACT.total};
+    $('xNxName').textContent=nx.n;$('xNxDist').textContent=fdist(nx.s-P.s);$('xNxEta').textContent='About '+Math.round((nx.s-P.s)/pace*6/60)+' min at your pace';
+    const arr=hours+(ACT.total-P.s)/pace*6/3600;$('xTopEta').textContent='Top by '+gclock(arr)+(arr>17.2&&hours<17.42?' · after sunset!':'');
+  }else if(pg===8){
+    const b=TREK&&TREK.bag;$('xBagFood').textContent=b?Object.values(b.food).reduce((a,c)=>a+c,0)+' items':'–';$('xBagWater').textContent=P.water+' sips';
+    $('xLamp').textContent=hasGear('headlamp')?(GEARS.headlamp?'On':'Off · L'):'None';
+    $('xCoat').textContent=GEARS.coat?(GEARS.coat==='rain'?'Jacket on':'Poncho on'):(hasGear('rain')||hasGear('poncho')?'Packed':'None');
+  }else if(pg===9){
+    let best=null;for(const st of STOPS){const d=Math.hypot(st.x-P.x,st.z-P.z);if(!best||d<best.d)best={d,n:st.label};}
+    $('xShelter').textContent=best?'Nearest stall: '+best.n+', '+fdist(best.d):'';$('xBack').textContent='Back to the start: '+fdist(Math.max(0,P.s))+' down this trail';
+  }
+}
 function hudTick(dt){
   if(subT>0){subT-=dt;if(subT<=0)$('subtitle').hidden=true;else if(subT<0.4)$('subtitle').style.opacity=String(subT/0.4);}
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
@@ -1310,7 +1487,7 @@ function hudTick(dt){
   if(showB){drawBreath();$('breathHelp').hidden=!!T.assist;}
   uiT-=dt;if(uiT>0)return;uiT=0.1;
   const z=P.zone,face=$('face');face.style.setProperty('--zone',ZONES[z-1][2]);face.style.setProperty('--hrp',String(clamp((P.hr-60)/130*100,0,100)));
-  const mins=(7*60+Math.floor((P.gt||0)/60))%(24*60);
+  const mins=(DAY0*60+Math.floor((P.gt||0)/60))%(24*60);
   $('wClock').textContent=String(Math.floor(mins/60)).padStart(2,'0')+':'+String(mins%60).padStart(2,'0');
   $('wHr').textContent=Math.round(P.hr);$('wZone').textContent=ZONES[z-1][1];
   const br=Math.round(12+30*clamp((P.hr-80)/100,0,1));
@@ -1321,6 +1498,7 @@ function hudTick(dt){
   $('rClimb').textContent=Math.max(0,Math.round(ACT.topAlt-P.y))+' m';
   const nx=STOPS.find(st=>st.trail===ACT.id&&st.s>P.s+8);$('rNext').textContent=nx?nx.short+' '+fd(nx.s-P.s):'Top';
   $('bEnergy').textContent=Math.round(P.stamina)+'%';$('bSpo').textContent=Math.round(97-Math.max(0,P.y-2000)*0.004-(P.hr>160?2:0))+'%';
+  watchPages();
   $('bBag').textContent=T.packKg+' kg';if($('wEn'))$('wEn').textContent=Math.round(P.energy||0)+'%';if(TREK)TREK.hud();$('bAmb').textContent=Math.round((window.TriundSeason&&window.TriundSeason.get()==='monsoon'?17:9)-(P.y-2100)*0.0065)+'°C';
   if(!$('debug').hidden){
     $('debug').textContent='stamina  '+P.stamina.toFixed(1)+'\nHR       '+P.hr.toFixed(1)+'\neffort   '+P.effort.toFixed(2)+'\ngrade    '+(P.grade*100).toFixed(1)+'%\nspeed    '+P.v.toFixed(2)+' m/s'+(P.sprinting?' (sprint)':'')+
@@ -1476,11 +1654,11 @@ function frame(now){
   else{const fx=state==='menu'?camera.position:P;followSun(fx.x,state==='menu'?H(fx.x,fx.z):P.y,fx.z);}
   pt('player',t0);
   t0=performance.now();SKY.update(camera);if(FLORA)FLORA.update(dt,camera.position,now/1000);if(STEPS)STEPS.update(camera.position);pt('flora',t0);
-  t0=performance.now();if(PLACES)PLACES.update(dt,camera.position,now/1000);if(ATMOS)ATMOS.update(dt,camera.position,now/1000);if(SEASON)SEASON.update(dt,camera.position,now/1000);pt('places+atmos',t0);
-  t0=performance.now();if(FAUNA)FAUNA.update(dt,camera.position,now/1000,P,ACT);pt('fauna',t0);
+  t0=performance.now();if(PLACES)PLACES.update(dt,camera.position,now/1000);if(SIGNS)SIGNS.update(camera.position);if(ATMOS)ATMOS.update(dt,camera.position,now/1000);if(SEASON)SEASON.update(dt,camera.position,now/1000);pt('places+atmos',t0);
+  t0=performance.now();if(FAUNA){P.seated=!!(TREK&&TREK.sitting());P.stillT=P.v<0.15?(P.stillT||0)+dt:0;FAUNA.update(dt,camera.position,now/1000,P,ACT);}pt('fauna',t0);
   t0=performance.now();if(CROWD){camera.updateMatrixWorld();CROWD.update(dt,camera.position,P,camera);}pt('crowd',t0);
   t0=performance.now();audioTick(dt);hudTick(dt);pt('hud+audio',t0);
-  t0=performance.now();renderer.info.reset();if(POST)POST.render(scene,camera,now/1000);else renderer.render(scene,camera);pt('render',t0);RI.calls=renderer.info.render.calls;RI.triangles=renderer.info.render.triangles;
+  t0=performance.now();renderer.info.reset();if(POST)POST.render(scene,camera,now/1000);else renderer.render(scene,camera);selfieAfterRender();pt('render',t0);RI.calls=renderer.info.render.calls;RI.triangles=renderer.info.render.triangles;
   requestAnimationFrame(frame);
 }
 const fontsReady=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]):Promise.resolve();
@@ -1489,6 +1667,9 @@ Promise.all([fontsReady,satReady]).then(()=>{
   buildPlaces();if(!QS.has('noflora'))buildFlora();buildProps();
   if(window.TriundCamp&&TREK){try{CAMP=window.TriundCamp.create({THREE,scene,H,SKY,ECON:window.TriundEconomy,top:TOP,get atmos(){return ATMOS;},textPlane,collide:COLLIDE,blocked:PLACES?PLACES.blocked:null,trek:TREK,
     get P(){return P;},getState:()=>state,setState:s=>{state=s;},say:(t,d)=>say(t,d),toast:t=>toast(t),buzz:n=>buzz(n),lock:()=>lock(),openTopUp:()=>openTopUp(),camped:()=>{P.camped=true;}});}catch(e){console.error('camp failed',e);}}
+  // trail signs: distance to the top every 500 m, motivation and clean-trail boards, the way to the camp, selfie points
+  if(window.TriundSigns){try{SIGNS=window.TriundSigns.build({THREE,scene,H,trails:{galu:GT,shiva:ST},collide:COLLIDE,blocked:PLACES?PLACES.blocked:null,camp:CAMP?CAMP.desk:null,
+    isStep:STEPS?(id,s)=>STEPS.topAt(id,s)!==null:null});}catch(e){console.error('signs failed',e);}}
   if(window.TriundCrowd&&!QS.has('nocrowd')&&THREE.GLTFLoader&&THREE.SkeletonUtils){
     window.TriundCrowd.build({THREE,scene,H,trails:{galu:GT,shiva:ST},stops:STOPS,top:TOP,rng,collide:COLLIDE,blocked:PLACES?PLACES.blocked:null,base:'chars/',quality:QP,ground:STEPS?STEPS.ground:null,onSteps:STEPS?(id,s)=>STEPS.topAt(id,s)!==null:null,
       talkers:npcs.map(n=>({x:n.x,z:n.z,yaw:n.yaw}))}).then(c=>{CROWD=c;npcs.forEach(n=>{if(n.g)n.g.visible=false;});PCH=c.playerChar();avatar.visible=false;prewarm('crowd');})

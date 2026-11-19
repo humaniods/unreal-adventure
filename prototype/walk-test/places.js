@@ -423,7 +423,7 @@ window.TriundPlaces = {
     const streamTex = flowTex.clone(); streamTex.needsUpdate = true; streamTex.wrapS = streamTex.wrapT = THREE.RepeatWrapping;
     const streamMat = new THREE.MeshLambertMaterial({ map: streamTex, color: lin(0x7f989c), transparent: true, opacity: 0.85, depthWrite: false });
     const mists = [];
-    let menuMat = null;
+
     const SNACK = [0xd8322b, 0xf2c230, 0x2f6fd6, 0x2f9a52, 0xf08a24, 0x7a2fa0, 0x1fa0a0];
     /* ---------- POIs ---------- */
     const stops = [], stallsPlaced = [];
@@ -491,10 +491,35 @@ window.TriundPlaces = {
       for (const [lx, lz] of [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]]) P.push([x + lx * c + lz * s, z - lx * s + lz * c]);
       return P;
     }
-    // one shared chalkboard menu (prices: trip reports say 50-100% above town because supplies come up by mule)
-    function menuBoard(x, y, z, ry) {
-      if (!menuMat) { const mm = textPlane([{ t: 'MENU', size: 56, w: 700 }, { t: 'Chai  30', size: 40 }, { t: 'Lemon tea  40', size: 40 }, { t: 'Maggi  80', size: 40 }, { t: 'Omelette  70', size: 40 }, { t: 'Paratha  90', size: 40 }], 0.8, 1.05, '#20302a', '#efe9da'); menuMat = mm.material; mm.geometry.dispose(); }
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.05), menuMat); m.position.set(x, y, z); m.rotation.y = ry; m.visible = false; scene.add(m); boards.push(m);
+    // chalkboard menus: each stall's own board, with that stall's prices (they rise with altitude, the same numbers
+    // as its menu panel). The board is drawn when you come near (and freed when you leave), so only a few textures
+    // exist at a time on a 1 GB GPU. Big, high-contrast chalk lettering so it reads from the trail.
+    const menus = [], blankMenu = new THREE.MeshLambertMaterial({ color: lin(0x22302a) });
+    function menuBoard(x, y, z, ry, w, h) {
+      w = w || 0.9; h = h || 1.2;
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), blankMenu); m.position.set(x, y, z); m.rotation.y = ry; m.visible = false; scene.add(m); boards.push(m);
+      const fr = new THREE.Mesh(new THREE.PlaneGeometry(w + 0.08, h + 0.08), new THREE.MeshLambertMaterial({ color: lin(0x5a3d26) }));
+      fr.position.set(-Math.sin(ry) * 0.005, 0, -Math.cos(ry) * 0.005); m.add(fr);   // wooden frame behind it
+      menus.push({ m, alt: y, w, h });
+    }
+    function drawMenu(b) {
+      const E = window.TriundEconomy; if (!E) return null;
+      const items = E.menuFor({ top: b.alt > 2780 }, b.alt).filter(it => ['chai', 'lemontea', 'maggi', 'eggmaggi', 'omelette', 'paratha', 'rajma', 'water', 'banana', 'parleg', 'snickers'].includes(it.id));
+      const W = 512, Hc = Math.round(512 * b.h / b.w), c = document.createElement('canvas'); c.width = W; c.height = Hc; const g = c.getContext('2d');
+      g.fillStyle = '#1f2b26'; g.fillRect(0, 0, W, Hc);
+      for (let i = 0; i < 900; i++) { g.fillStyle = `rgba(255,255,255,${Math.random() * 0.035})`; g.fillRect(Math.random() * W, Math.random() * Hc, 2 + Math.random() * 8, 1); }   // chalk dust
+      g.fillStyle = '#f6efd8'; g.textBaseline = 'middle';
+      g.font = '700 64px Rajdhani, Hind, sans-serif'; g.textAlign = 'center'; g.fillText('MENU', W / 2, 52);
+      g.fillRect(W * 0.2, 92, W * 0.6, 3);
+      const lh = Math.min(54, (Hc - 130) / items.length);
+      g.font = `600 ${Math.round(lh * 0.66)}px Hind, sans-serif`;
+      items.forEach((it, i) => {
+        const yy = 128 + i * lh + lh / 2;
+        g.textAlign = 'left'; g.fillStyle = '#f6efd8'; g.fillText(it.name.replace('Parle-G biscuits', 'Parle-G'), 34, yy);
+        g.textAlign = 'right'; g.fillStyle = '#ffd36a'; g.fillText('₹' + it.price, W - 34, yy);
+      });
+      const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+      return new THREE.MeshLambertMaterial({ map: t });
     }
     // what a Triund chai stall actually holds: snack packets, Maggi, bottles on shelves, chips strips hanging at the
     // front, a gas stove with a big kettle and steel glasses, an LPG cylinder, plastic chairs, a menu board
@@ -548,7 +573,10 @@ window.TriundPlaces = {
       }
       }
       // menu board on the side wall, blue tarp awning on some stalls
-      { const cc = Math.cos(ry), ss = Math.sin(ry), lx = w / 2 + 0.08, lz = d / 2 - 0.3; menuBoard(x + lx * cc + lz * ss, y + 1.5, z - lx * ss + lz * cc, ry); }
+      // the menu: big stalls (closed boxes, inside = false) on the front wall beside the name sign; open stalls on the
+      // corner post at the front, beside the counter
+      if (inside) { const cc = Math.cos(ry), ss = Math.sin(ry), lx = w / 2 + 0.1, lz = d / 2 - 0.45; menuBoard(x + lx * cc + lz * ss, y + 1.45, z - lx * ss + lz * cc, ry, 0.9, 1.2); }
+      else { const cc = Math.cos(ry), ss = Math.sin(ry), lx = w / 2 - 0.75, lz = 2.33; menuBoard(x + lx * cc + lz * ss, y + 1.75, z - lx * ss + lz * cc, ry, 0.95, 1.3); }
       if (r() < 0.45) { const m = new THREE.Matrix4().compose(T.set(0, 0, 0), new THREE.Quaternion().setFromEuler(new THREE.Euler(0.22, ry, 0, 'YXZ')), S.set(w + 0.6, 0.02, 1.8));
         const cc = Math.cos(ry), ss = Math.sin(ry), lz = d / 2 + 0.9; m.setPosition(x + lz * ss, y + hh - 0.15, z + lz * cc); props.geo(BOX, m, C(0x2a5fae)); }
       return seats;
@@ -755,6 +783,11 @@ window.TriundPlaces = {
       for (const m of mists) m.sp.material.opacity = 0.22 + 0.15 * Math.sin(time * 1.3 + m.ph);
       bt -= dt; if (bt > 0) return; bt = 0.4;
       for (const b of boards) { const dx = b.position.x - cam.x, dz = b.position.z - cam.z; b.visible = dx * dx + dz * dz < 160 * 160; }
+      for (const b of menus) {
+        const d2 = (b.m.position.x - cam.x) ** 2 + (b.m.position.z - cam.z) ** 2;
+        if (d2 < 22 * 22 && b.m.material === blankMenu) { const mm = drawMenu(b); if (mm) b.m.material = mm; }
+        else if (d2 > 45 * 45 && b.m.material !== blankMenu) { b.m.material.map.dispose(); b.m.material.dispose(); b.m.material = blankMenu; }
+      }
     }
     // dress the hand-built stalls in index.html (they are closed boxes: counter-side goods only)
     function dress(list) {

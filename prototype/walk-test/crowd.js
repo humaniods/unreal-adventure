@@ -332,7 +332,7 @@ float shawlMask(vec3 p, vec4 c) {
       // rucksack: rounded main bag against the back, a lid, a front pocket, side bottles, a sleeping mat under it,
       // shoulder straps over the shoulders and down the chest, a chest strap, trekking poles strapped on the side
       // (two draw calls: the bag in its colour, everything else merged with vertex colours; only the bag casts a shadow)
-      const pack = new THREE.Group(), packMat = accMat(0x9a3b2a, 0.8);
+      const pack = new THREE.Group(), packMat = accMat(0x9a3b2a, 0.8), strapMatU = accMat(0x34373c, 0.9); acc.straps = [];
       const backZ = B.surf(0, sp.y - 0.08, false, 0.05) - puffT, py = sp.y - 0.1;
       const bagG = mergeParts([{ g: roundedBox(0.31, 0.5, 0.2, 0.06), m: M4c(0, py, backZ - 0.105) }, { g: roundedBox(0.29, 0.09, 0.2, 0.035), m: M4c(0, py + 0.27, backZ - 0.115) }]);
       const bag = new THREE.Mesh(bagG, packMat); bag.castShadow = true; pack.add(bag);
@@ -345,10 +345,16 @@ float shawlMask(vec3 p, vec4 c) {
       for (const s of [-1, 1]) {
         const x = s * 0.105, sh = B.ridge(x, 0.08) + puffT + 0.012;
         const f1 = B.surf(x, sp.y - 0.02, true) + puffT + 0.012, f2 = B.surf(s * 0.12, sp.y - 0.2, true) + puffT + 0.01;
-        const curve = new THREE.CatmullRomCurve3([
-          new THREE.Vector3(s * 0.09, py + 0.2, backZ - 0.02), new THREE.Vector3(x, sh - 0.01, (backZ + f1) * 0.5 - 0.03), new THREE.Vector3(x, sh - 0.06, f1 - 0.01),
+        // the shoulder part rides on the collarbone (it moves with the shoulder when the arm comes up); the part
+        // down the chest and round to the bag's bottom stays with the chest
+        const upper = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(s * 0.09, py + 0.2, backZ - 0.02), new THREE.Vector3(x, sh - 0.01, (backZ + f1) * 0.5 - 0.03), new THREE.Vector3(x, sh - 0.06, f1 - 0.01), new THREE.Vector3(x, sp.y - 0.04, f1)]);
+        const lower = new THREE.CatmullRomCurve3([
           new THREE.Vector3(x, sp.y - 0.04, f1), new THREE.Vector3(s * 0.12, sp.y - 0.2, f2), new THREE.Vector3(s * 0.19, sp.y - 0.27, (f2 + backZ) * 0.5), new THREE.Vector3(s * 0.13, py - 0.22, backZ - 0.03)]);
-        rest.push({ g: ribbon(curve, 0.05, 0.008, sp), m: new THREE.Matrix4(), c: STRAP });
+        rest.push({ g: ribbon(lower, 0.05, 0.008, sp), m: new THREE.Matrix4(), c: STRAP });
+        const cl = root.getObjectByName(s > 0 ? 'clavicle_l' : 'clavicle_r');
+        if (cl) { const us = new THREE.Mesh(ribbon(upper, 0.05, 0.008, sp), strapMatU); attach(cl, us, new THREE.Matrix4()); acc.straps.push(us); }
+        else rest.push({ g: ribbon(upper, 0.05, 0.008, sp), m: new THREE.Matrix4(), c: STRAP });
         if (s > 0) rest.push({ g: new THREE.BoxGeometry(0.22, 0.015, 0.01), m: M4c(0, sp.y - 0.07, f1 + 0.004), c: STRAP });
       }
       pack.add(new THREE.Mesh(mergeParts(rest), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 })));
@@ -383,9 +389,9 @@ float shawlMask(vec3 p, vec4 c) {
       // the kurta's skirt below the sweater, hanging from the hips to above the knee
       const hipY = B.top * 0.53, hip = B.section(hipY, 0.03, 0.3), kurMat = new THREE.MeshStandardMaterial({ color: lin(0xe8e2d4), roughness: 0.9, side: THREE.DoubleSide });
       const kg = new THREE.CylinderGeometry(1, 1.16, 0.34, 20, 1, true);
-      const kurta = new THREE.Mesh(kg, kurMat); kurta.scale.set(hip.rx + 0.035, 1, hip.rz + 0.035); kurta.castShadow = true;
-      const pp = new THREE.Vector3().setFromMatrixPosition(pelvis.matrixWorld);
-      attach(pelvis, kurta, T4(hip.cx, hipY - 0.15, hip.cz)); acc.kurta = kurta; acc.kurMat = kurMat; void pp;
+      const kurta = new THREE.Mesh(kg, kurMat); kurta.castShadow = true;
+      // (attach() sets the matrix directly, so the size goes into it, not into .scale)
+      attach(pelvis, kurta, T4(hip.cx, hipY - 0.15, hip.cz).multiply(new THREE.Matrix4().makeScale(hip.rx + 0.035, 1, hip.rz + 0.035))); acc.kurta = kurta; acc.kurMat = kurMat;
       // a jacket's stand-up collar and the folded hood behind it
       const collar = new THREE.Group(), colMat = accMat(0x2f4f7f, 0.85);
       colMat.side = THREE.DoubleSide;
@@ -405,7 +411,7 @@ float shawlMask(vec3 p, vec4 c) {
       U.uQuilt.value = lk.puffer ? 1 : 0; U.uKnit.value = lk.knit ? 1 : 0; U.uZip.value = lk.hiker === false ? 0 : 1;
       U.uPuff.value.set(lk.puffer ? 0.045 : lk.knit ? 0.032 : 0.026, lk.knit ? 0.03 : 0.027, 0.014);   // a thick sweater; loose pyjamas; trekking trousers, not tights
       U.uShawlOn.value = lk.shawl ? 1 : 0; if (lk.shawl) U.uShawl.value.copy(lin(lk.shawl));
-      A.pack.visible = !!lk.pack; if (lk.pack) A.packMat.color.copy(lin(lk.pack));
+      A.pack.visible = !!lk.pack; for (const st of A.straps) st.visible = !!lk.pack; if (lk.pack) A.packMat.color.copy(lin(lk.pack));
       A.beanie.visible = lk.head === 'beanie'; A.cap.visible = lk.head === 'cap'; A.topi.visible = lk.head === 'topi';
       if (lk.head === 'beanie') A.beanieMat.color.copy(lin(lk.capCol));
       if (lk.head === 'cap') A.capMat.color.copy(lin(lk.capCol));
@@ -741,9 +747,18 @@ float shawlMask(vec3 p, vec4 c) {
         for (const a of agents) think(a, dt, P);
         separate(cam, dt);
         for (const k of keepers) { if (k.task) { keeperTask(k, dt); continue; }
-          const dp = Math.hypot(P.x - k.x, P.z - k.z);
+          // a shopkeeper stands quietly behind his counter: he looks up and greets you when you come close (a few
+          // seconds of talking), now and then works at the stove for a moment, otherwise just stands; he turns to
+          // you only while you are at the counter, slowly, and back to the front when you leave
+          const dp = Math.hypot(P.x - k.x, P.z - k.z), home = k.homeYaw != null ? k.homeYaw : (k.homeYaw = k.yaw);
           if (k.serveT > 0) { k.serveT -= dt; k.anim = 'Interact'; k.yaw = Math.atan2(P.x - k.x, P.z - k.z); continue; }   // handing over an order
-          k.anim = dp < 7 ? 'Idle_Talking' : (k.t = (k.t || 0) - dt) < 0 ? (k.t = 8 + R() * 10, R() < 0.3 ? 'Interact' : 'Idle') : k.anim; if (dp < 7) k.yaw = Math.atan2(P.x - k.x, P.z - k.z); }
+          if (dp < 5 && !k.greeted) { k.greeted = true; k.talkT = 2.6; } else if (dp > 9) k.greeted = false;
+          k.t = (k.t || 8 + R() * 10) - dt;
+          if (k.talkT > 0) { k.talkT -= dt; k.anim = 'Idle_Talking'; }
+          else if (k.workT > 0) { k.workT -= dt; k.anim = 'Interact'; }
+          else { k.anim = 'Idle'; if (k.t < 0) { k.t = 25 + R() * 30; if (dp > 3) k.workT = 2.2; } }
+          const want = dp < 4.5 ? Math.atan2(P.x - k.x, P.z - k.z) : home;
+          k.yaw += window.TriundAnim.angDiff(k.yaw, want) * Math.min(1, dt * 2.5); }
         assignT -= dt; if (assignT <= 0) { assignT = 0.4; assign(cam); }
         let n = 0;
         // people turn through switchbacks instead of snapping to the new heading (about 0.25 s)
@@ -782,12 +797,21 @@ float shawlMask(vec3 p, vec4 c) {
       // the player's own third-person body, and a copy of their rucksack that stands on the ground beside them
       // while they sit (people take the bag off at a chai stall)
       playerChar() {
-        const ch = makeChar('m'); dress(ch, { sex: 'm', top: 0x2a5d86, bottom: 0x3b4036, shoe: 0x5a3d26, pack: 0xa8452c, head: 'beanie', capCol: 0x8a2f2f, puffer: true, hiker: true, scale: 0.95, hairStyle: 'Hair_SimpleParted', beard: false });
-        const ground = new THREE.Group(), inner = new THREE.Group(), bb = new THREE.Box3();
+        const base = { sex: 'm', top: 0x2a5d86, bottom: 0x3b4036, shoe: 0x5a3d26, pack: 0xa8452c, head: 'beanie', capCol: 0x8a2f2f, puffer: true, hiker: true, scale: 0.95, hairStyle: 'Hair_SimpleParted', beard: false };
+        const ch = makeChar('m'); dress(ch, base);
+        // what the player has on: a rain jacket (red, hood up) or a poncho (yellow, over the bag too), a fleece
+        const wear = ({ coat, fleece }) => {
+          const lk = Object.assign({}, base);
+          if (fleece) Object.assign(lk, { top: 0x4a5a3a, puffer: false });
+          if (coat === 'rain') Object.assign(lk, { top: 0xb8322b, puffer: false, head: 'beanie', capCol: 0xb8322b });
+          if (coat === 'poncho') Object.assign(lk, { top: 0xe8b81e, puffer: false, head: 'beanie', capCol: 0xe8b81e, pack: 0xe8b81e });
+          dress(ch, lk); if (ground) ground.children[0].children.forEach(m => { if (m.material === ch.acc.packMat) m.material = ch.acc.packMat; });
+        };
+        var ground = new THREE.Group(); const inner = new THREE.Group(), bb = new THREE.Box3();
         for (const c of ch.acc.pack.children) { const m = c.clone(); m.castShadow = c.castShadow; inner.add(m); bb.expandByObject(m); }
         const ctr = bb.getCenter(new THREE.Vector3()); inner.position.set(-ctr.x, -bb.min.y, -ctr.z); ground.add(inner);
         ground.scale.setScalar(0.95); ground.visible = false; scene.add(ground);
-        return { ch, ground, play: (n, s) => play(ch, n, s) };
+        return { ch, ground, wear, play: (n, s) => play(ch, n, s) };
       }
     };
   }
