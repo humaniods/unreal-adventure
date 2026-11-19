@@ -1,14 +1,12 @@
 'use strict';
 /* Seasons for the Triund walk test.
    autumn  (default): the clear October/November morning the rest of the game is tuned for.
-   monsoon: a July/August day. Low cloud and grey haze close in, the light goes flat, rain falls, the meadows are
-            lush, soil and rock are soaked and the trail holds puddles, and the sound is rain with distant thunder.
-   Rain is one LineSegments mesh around the camera; every drop moves in the vertex shader, so it costs no CPU.
-   The choice is remembered per viewer (localStorage, optional). */
+   One season only (the user asked for it): the day's weather changes on top of it (weather.js), including light
+   snow up high on some afternoons. Snowflakes are one Points mesh round the camera, moved in the vertex shader. */
 window.TriundSeason = (function () {
   const KEY = 'triund-season';
   let current = 'autumn';
-  try { const v = localStorage.getItem(KEY); if (v === 'autumn' || v === 'monsoon') current = v; } catch (e) { /* storage blocked */ }
+  // one season now: late November (the monsoon option was dropped); the day's weather changes on top of it
 
   const WEATHER = {
     autumn: { turbidity: 3.4, rayleigh: 1.15, mie: 0.0045, haze: 0x9fb4c9, hazeSun: 0xd8cdbb, fog: 0.000042, sun: 3.1, hemi: 1.45, sky: 0xbcd3ff, exposure: 0.8,
@@ -51,6 +49,37 @@ void main(){ gl_FragColor = vec4(vec3(0.85, 0.88, 0.92), 0.55 * vA * uAmt); }`
     return { mesh, U };
   }
 
+  // snow: soft flakes drifting down and sideways round the camera, all moved in the vertex shader
+  function snowMesh(THREE) {
+    const N = 5000, seed = new Float32Array(N * 4), pos = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) seed.set([Math.random(), Math.random(), Math.random(), 0.6 + Math.random() * 0.8], i * 4);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('seed', new THREE.BufferAttribute(seed, 4));
+    const U = { uTime: { value: 0 }, uCam: { value: new THREE.Vector3() }, uAmt: { value: 0 }, uPR: { value: Math.min(2, window.devicePixelRatio || 1) }, uLight: { value: 1 } };
+    const m = new THREE.ShaderMaterial({
+      uniforms: U, transparent: true, depthWrite: false,
+      vertexShader: `
+uniform float uTime; uniform vec3 uCam; uniform float uAmt; uniform float uPR; attribute vec4 seed; varying float vA;
+void main(){
+  const vec3 BOX = vec3(30.0, 18.0, 30.0);
+  float fall = 0.9 * seed.w;                                          // flakes fall about 1 m/s
+  vec3 p = vec3(seed.x, fract(seed.y - uTime * fall / BOX.y), seed.z) * BOX;
+  float t = uTime * (0.6 + seed.w * 0.5) + seed.x * 40.0;
+  p.x += sin(t) * 0.5 + uTime * 0.35; p.z += cos(t * 0.8) * 0.5 + uTime * 0.12;   // drift and tumble
+  p.xz = mod(p.xz - uCam.xz + BOX.xz * 0.5, BOX.xz) + uCam.xz - BOX.xz * 0.5;
+  p.y += uCam.y - BOX.y * 0.4;
+  float d = distance(p, uCam);
+  vA = (1.0 - smoothstep(8.0, 15.0, d)) * step(fract(seed.z * 13.7), uAmt);   // the amount thins the flakes out
+  vec4 mv = viewMatrix * vec4(p, 1.0);
+  gl_PointSize = uPR * (0.05 + 0.035 * seed.w) * 420.0 / max(0.5, -mv.z);
+  gl_Position = projectionMatrix * mv;
+}`,
+      fragmentShader: `
+uniform float uLight; varying float vA;
+void main(){ vec2 q = gl_PointCoord - 0.5; float a = smoothstep(0.5, 0.1, length(q)) * vA; if (a < 0.01) discard; gl_FragColor = vec4(vec3(0.95, 0.97, 1.0) * uLight, a * 0.9); }`
+    });
+    const mesh = new THREE.Points(g, m); mesh.frustumCulled = false; mesh.renderOrder = 8; mesh.visible = false;
+    return { mesh, U };
+  }
   // rain hiss (filtered noise) and now and then a far thunder roll
   function rainAudio(AC, master, noise) {
     const src = AC.createBufferSource(); src.buffer = noise; src.loop = true;
@@ -72,11 +101,12 @@ void main(){ gl_FragColor = vec4(vec3(0.85, 0.88, 0.92), 0.55 * vA * uAmt); }`
 
   return {
     get: () => current,
-    set(v) { if (WEATHER[v]) { current = v; try { localStorage.setItem(KEY, v); } catch (e) { /* storage blocked */ } } },
+    set(v) { /* one season only */ },
     weather: () => WEATHER[current],
     // apply the current season to everything that has a hook; safe to call again after a change
     create({ THREE, scene, SKY, terrainMat, post }) {
       const rain = rainMesh(THREE), rainObj = rain; rain.mesh.visible = false; scene.add(rain.mesh);
+      const snow = snowMesh(THREE); scene.add(snow.mesh);
       let audio = null, flora = null;
       function apply() {
         const w = WEATHER[current];
@@ -92,20 +122,21 @@ void main(){ gl_FragColor = vec4(vec3(0.85, 0.88, 0.92), 0.55 * vA * uAmt); }`
       let dyn = null;   // weather.js: the day's changing weather on top of the season (rain amount, wet ground)
       return {
         apply,
-        // rain 0..1 (drizzle ~0.4), wet 0..1 (ground and rock darkened and shiny)
+        // snow 0..1 falling where the camera is, dust 0..1 (snow lying on the ground up high), light 0..1, wet 0..1
         setDynamic(d) {
-          dyn = d; const w = WEATHER[current], rain = Math.max(w.rain, d.rain), wet = Math.max(w.wet, d.wet);
-          rainObj.mesh.visible = rain > 0.02; rainObj.U.uAmt.value = Math.min(1, rain * 1.4);
-          const tu = terrainMat && terrainMat.userData.uniforms; if (tu && tu.uWet) tu.uWet.value = wet;
-          if (audio) audio.set(rain);
+          dyn = d; const w = WEATHER[current];
+          rainObj.mesh.visible = false;
+          snow.mesh.visible = (d.snow || 0) > 0.02; snow.U.uAmt.value = Math.min(1, (d.snow || 0) * 1.2); snow.U.uLight.value = 0.25 + 0.75 * (d.light == null ? 1 : d.light);
+          const tu = terrainMat && terrainMat.userData.uniforms; if (tu && tu.uWet) tu.uWet.value = Math.max(w.wet, d.wet || 0); if (tu && tu.uSnow) tu.uSnow.value = d.dust || 0;
+          if (audio) audio.set(0);
         },
-        get raining() { return Math.max(WEATHER[current].rain, dyn ? dyn.rain : 0) > 0.1; },
+        get raining() { return false; },
+        get snowing() { return !!dyn && (dyn.snow || 0) > 0.1; },
         get speed() { return WEATHER[current].speed * (dyn && dyn.wet > 0.4 ? 0.95 : 1); },
         setFlora(f) { flora = f; apply(); },
         setAudio(AC, master, noise) { if (!audio && AC) { audio = rainAudio(AC, master, noise); audio.set(WEATHER[current].rain); } },
         update(dt, cam, time) {
-          if (rain.mesh.visible) { rain.U.uTime.value = time % 1000; rain.U.uCam.value.copy(cam); }
-          if (audio) audio.tick(dt, WEATHER[current].rain > 0 || (dyn && dyn.rain > 0.5));
+          if (snow.mesh.visible) { snow.U.uTime.value = time % 1000; snow.U.uCam.value.copy(cam); }
         }
       };
     }

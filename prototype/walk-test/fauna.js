@@ -9,7 +9,7 @@
    World axes: x = east, y = up, z = south. */
 window.TriundFauna = {
   build(o) {
-    const { THREE, scene, H, trails, player, top, rng, blocked } = o;
+    const { THREE, scene, H, trails, player, top, rng, blocked, collide } = o, HM = o.meshH || H;
     const R = rng(31337);
     const lin = c => new THREE.Color(c).convertSRGBToLinear();
     const matCache = {};
@@ -129,8 +129,19 @@ window.TriundFauna = {
             const el2 = Math.hypot(tx - g.position.x, tz - g.position.z); sitWant = el2 < 0.3 ? 1 : 0;
             if (el2 < 0.3) d.yaw = lerpAng(d.yaw, yawOf(P.x - g.position.x, P.z - g.position.z), Math.min(1, dt * 4));
           } else if (P.seated) {
+            // at your left hip (your bag is on the right); if a bench or table is there, the first free spot of:
+            // in front on your left, in front of you, in front on your right, your right side
             const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = -fz, rz = fx;
-            tx = P.x - rx * 0.62 + fx * 0.22; tz = P.z - rz * 0.62 + fz * 0.22; run = 2.2; d.wait = 0;   // at your left hip; your bag is on the right
+            if (!d.seatSpot || Math.hypot(d.seatSpot.px - P.x, d.seatSpot.pz - P.z) > 0.2) {
+              const C = [[-0.62, 0.22], [-0.55, 0.75], [0, 0.9], [0.55, 0.75], [0.7, 0.1], [0, 1.4]];
+              let pick = C[C.length - 1];
+              for (const [r, f] of C) { const x = P.x + rx * r + fx * f, z = P.z + rz * r + fz * f;
+                if (collide && (collide.inside(x, z) || collide.inside(x + 0.25, z) || collide.inside(x - 0.25, z) || collide.inside(x, z + 0.25) || collide.inside(x, z - 0.25))) continue;
+                if (P.packAt && Math.hypot(x - P.packAt.x, z - P.packAt.z) < 0.55) continue;
+                pick = [r, f]; break; }
+              d.seatSpot = { px: P.x, pz: P.z, x: P.x + rx * pick[0] + fx * pick[1], z: P.z + rz * pick[0] + fz * pick[1] };
+            }
+            tx = d.seatSpot.x; tz = d.seatSpot.z; run = 2.2; d.wait = 0;
             const el2 = Math.hypot(tx - g.position.x, tz - g.position.z); sitWant = el2 < 0.35 ? 1 : 0;
             if (el2 < 0.35) d.yaw = lerpAng(d.yaw, Math.atan2(fx, fz), Math.min(1, dt * 3));
           } else if (P.stillT > 1.2) {
@@ -148,6 +159,7 @@ window.TriundFauna = {
         else if (ACT === d.tr && P.s > d.s0 && P.s < d.s1 && dp < 9) d.state = 'follow';
       }
       if (!(d.patted > 0)) d.patFix = null;
+      if (!P.seated) d.seatSpot = null;
       // move
       const ex = tx - g.position.x, ez = tz - g.position.z, el = Math.hypot(ex, ez);
       const target = el > 0.3 ? Math.min(run, el * 1.5) : 0;
@@ -161,7 +173,9 @@ window.TriundFauna = {
         const solid = [[P.x, P.z, 0.5]]; if (P.packAt) solid.push([P.packAt.x, P.packAt.z, 0.42]);
         for (const [cx, cz, r] of solid) { const ox = g.position.x - cx, oz = g.position.z - cz, od = Math.hypot(ox, oz); if (od < r && od > 1e-4) { g.position.x = cx + ox / od * r; g.position.z = cz + oz / od * r; } }
       }
-      g.rotation.y = d.yaw; g.position.y = H(g.position.x, g.position.z);
+      // benches, tables, walls and tents are solid for a dog too (it walks round them, never into or under them)
+      if (collide && dp < 60) { const r = collide.resolve(g.position.x, g.position.z, 0.3, 0.3); g.position.x = r.x; g.position.z = r.z; }
+      g.rotation.y = d.yaw; g.position.y = HM(g.position.x, g.position.z);
       d.sit += ((d.v < 0.15 ? sitWant : 0) - d.sit) * Math.min(1, dt * 3);
       const wag = d.state === 'follow' || d.patted > 0 ? 9 : 3;
       d.patted = Math.max(0, d.patted - dt);
@@ -275,13 +289,23 @@ window.TriundFauna = {
     }
     for (let i = 0; i < 4; i++) { const ang = R() * 6.28, r = 50 + R() * 90; const x = top.x + Math.cos(ang) * r, z = top.z + Math.sin(ang) * r; if (!(blocked && blocked(x, z))) cow(x, z, i === 3); }
     { const k = trailAt(trails.shiva, 3060, 18); cow(k.x, k.z, false); const k2 = trailAt(trails.shiva, 3100, -22); cow(k2.x, k2.z, false); }
+    // a Gaddi shepherd's goats on the rocks at the edge of the top meadow: long white coats (a few brown and black),
+    // grazing, lying on warm rocks, wandering a little
+    { const ga = R() * 6.28, gx = top.x + Math.cos(ga) * 70, gz = top.z + Math.sin(ga) * 70;
+      for (let i = 0; i < 11; i++) {
+        const x = gx + (R() - 0.5) * 22, z = gz + (R() - 0.5) * 22; if (blocked && blocked(x, z)) continue;
+        const col = i % 5 === 3 ? 0x6b4a32 : i % 7 === 5 ? 0x26221f : 0xe9e4d8;
+        const a = quadruped({ len: 0.78, leg: 0.42, wid: 0.3, depth: 0.36, col, col2: col, fluff: true, neckR: 0.07, neckLen: 0.24, neckTilt: 0.9, head: 0.2, snout: 0.12, ear: 0.08, earDroop: 1.5, legR: 0.035, hoof: true, tail: 0.1, tailR: 0.025, tailUp: 0.9, horn: 0.16 });
+        place(a.g, x, z, R() * 6.28);
+        herd.push({ a, home: { x, z }, tx: x, tz: z, yaw: a.g.rotation.y, t: R() * 8, v: 0, goat: true });
+      } }
     all.push({ kind: 'herd' });
     function herdUpdate(dt, P, time) {
       for (const c of herd) {
         const g = c.a.g; c.t -= dt;
         if (c.t < 0) { c.t = 8 + R() * 16; if (R() < 0.5) { c.tx = c.home.x + (R() - 0.5) * 24; c.tz = c.home.z + (R() - 0.5) * 24; } }
         const ex = c.tx - g.position.x, ez = c.tz - g.position.z, el = Math.hypot(ex, ez);
-        c.v = el > 0.5 ? 0.45 : 0;
+        c.v = el > 0.5 ? (c.goat ? 0.35 : 0.45) : 0;
         if (c.v > 0) { g.position.x += ex / el * c.v * dt; g.position.z += ez / el * c.v * dt; c.yaw = lerpAng(c.yaw, yawOf(ex, ez), Math.min(1, dt * 1.5)); }
         g.rotation.y = c.yaw; g.position.y = H(g.position.x, g.position.z);
         animQuad(c.a, dt, c.v, { t: time + c.t, wag: 1.2, graze: c.v === 0 && Math.sin(time * 0.1 + c.t) > -0.3 });
@@ -363,6 +387,7 @@ window.TriundFauna = {
         a.body.visible = false; a.g.add(r.holder); a.model = r;
       }));
       herd.forEach((c, i) => {
+        if (c.goat) return;
         const buffalo = c.a.p.col === 0x262422, kind = buffalo ? 'bull' : 'cow'; if (!G[kind]) return;
         const r = modelRig(G[kind], buffalo ? 1.55 : 1.5, buffalo ? m => tint(m, { Main: 0x1e1d1c, Main_Light: 0x2a2928 }) : m => tint(m, { Main: [0x8a6a4a, 0xd9cfbf, 0x5b4636, 0x6a5a4a][i % 4] }));
         Object.assign(r, { walkRef: r.natWalk || 0.9, runRef: r.natRun || 3, runAt: 3 });
