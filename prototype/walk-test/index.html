@@ -1022,7 +1022,7 @@ function selfieAfterRender(){
 let DL=null;if(window.claude&&window.claude.use)window.claude.use('downloads').then(d=>{DL=d;}).catch(()=>{});
 async function saveSelfie(){
   if($('selfieShot').hidden)return;const url=$('ssSave').href,name=$('ssSave').download;SELFIE.showT=Math.max(SELFIE.showT,4);
-  if(DL){try{const blob=await (await fetch(url)).blob();const r=await DL.save({filename:name,data:blob});if(r&&r.status==='saved')toast('Photo saved');}
+  if(DL){try{const bin=atob(url.split(',')[1]),buf=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);const blob=new Blob([buf],{type:'image/jpeg'});const r=await DL.save({filename:name,data:blob});if(r&&r.status==='saved')toast('Photo saved');}
     catch(e){toast(e&&e.code==='declined'?'Not saved':'This view cannot save files');}return;}
   if(window.claude){toast('This view cannot save files');return;}
   $('ssSave').click();toast('Photo saved to your downloads');
