@@ -39,11 +39,11 @@ window.TriundCamp = {
     /* ---------- panel ---------- */
     const panel = document.createElement('div'); panel.className = 'tpanel'; panel.hidden = true; panel.id = 'campPanel';
     panel.innerHTML = `<div class="box" role="dialog" aria-labelledby="campTitle"><h3 id="campTitle">Triund camp site</h3><div class="sub" id="campSub"></div><div id="campRows"></div>
-      <div class="foot"><span class="coins">🪙 <span id="campCoins">0</span> coins</span><span><button type="button" class="btn ghost" id="campClose">Not now</button> <button type="button" class="btn primary" id="campSleep">Pitch my tent</button></span></div></div>`;
+      <div class="foot"><span class="coins">📱 <span id="campCoins">0</span></span><span><button type="button" class="btn ghost" id="campClose">Not now</button> <button type="button" class="btn primary" id="campSleep">Pitch my tent</button></span></div></div>`;
     document.body.appendChild(panel);
     const has = id => { const b = ctx.trek.bag; return !!b && (b.gear.includes(id) || b.rented.includes(id)); };
     function render() {
-      $('campCoins').textContent = ECON.wallet.coins;
+      $('campCoins').textContent = `${ECON.wallet.coins} coins`;
       $('campSub').textContent = 'The forest department allows a limited number of tents on the meadow. The night drops close to freezing in autumn.';
       const rows = $('campRows'); rows.innerHTML = '';
       const add = (ic, nm, sub, label, fn, dis) => {
@@ -53,14 +53,16 @@ window.TriundCamp = {
         rows.appendChild(r);
       };
       if (has('tent')) add('⛺', 'Tent', has('sbag') ? 'You have a tent and a sleeping bag.' : 'You have a tent.', '', null);
-      else add('⛺', 'Rent a 2-person tent with sleeping bags', 'For one night, pitched for you', `🪙 ${RENT.tent}`, () => rent('tent'));
-      if (!has('sbag') && has('tent')) add('🛏', 'Rent a sleeping bag', 'Rated to about 0 °C', `🪙 ${RENT.sbag}`, () => rent('sbag'));
+      else add('⛺', 'Rent a 2-person tent with sleeping bags', 'For one night, pitched for you', `${RENT.tent} coins`, () => rent('tent'));
+      if (!has('sbag') && has('tent')) add('🛏', 'Rent a sleeping bag', 'Rated to about 0 °C', `${RENT.sbag} coins`, () => rent('sbag'));
       if (!has('sbag') && !has('tent')) add('🛏', 'Sleeping bag', 'Comes with the rented tent', '', null);
       $('campSleep').disabled = !has('tent'); $('campSleep').textContent = myTent ? 'Your tent is up' : 'Pitch my tent'; if (myTent) $('campSleep').disabled = true;
     }
     function rent(what) {
       const price = RENT[what];
-      if (!ECON.wallet.spend(price, what === 'tent' ? 'Tent hire at Triund' : 'Sleeping bag hire at Triund')) { ctx.toast('Not enough coins.'); close(); ctx.openTopUp(); return; }
+      const why = what === 'tent' ? 'Tent hire at Triund' : 'Sleeping bag hire at Triund';
+      const r = ctx.pay ? ctx.pay(price, why) : (ECON.wallet.spend(price, why) ? { ok: true } : { ok: false, msg: 'Not enough coins.', topUp: true });
+      if (!r.ok) { ctx.toast(r.msg); close(); if (r.topUp) ctx.openTopUp(); return; }
       const b = ctx.trek.bag; if (what === 'tent') { b.rented.push('tent'); if (!b.gear.includes('sbag')) b.rented.push('sbag'); } else b.rented.push('sbag');
       ctx.buzz(1); render(); ctx.trek.syncCoins();
     }

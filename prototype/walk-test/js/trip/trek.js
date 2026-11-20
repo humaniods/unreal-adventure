@@ -42,17 +42,17 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     document.head.appendChild(css);
     const div = (html, id, cls) => { const d = document.createElement('div'); if (id) d.id = id; if (cls) d.className = cls; d.innerHTML = html; document.body.appendChild(d); return d; };
     div(`<div class="chip" title="Food energy"><span>Energy</span><span class="bar" id="resBar"><i id="resFill"></i></span><b id="resEn">80%</b></div>
-         <div class="chip" title="Coins"><span>🪙</span><b id="resCoins">0</b></div>
+         <div class="chip" title="Coins on your phone (1 coin = ₹1)"><span>📱</span><b id="resCoins">0</b><small style="color:var(--muted)">coins</small></div>
          <div class="chip btn" id="resBag" role="button" tabindex="0" title="Open your bag (I)"><span>🎒</span><b>Bag</b><small id="resBagN" style="color:var(--muted)"></small></div>`, 'res').hidden = true;
     div('', 'sitHud').hidden = true;
     const shop = div(`<div class="box" role="dialog" aria-labelledby="shopTitle"><h3 id="shopTitle">Menu</h3><div class="sub" id="shopSub"></div><div id="shopRows"></div>
-      <div class="foot"><span class="coins">🪙 <span id="shopCoins">0</span> coins</span><span><button type="button" class="btn ghost" id="shopTop">Add coins</button> <button type="button" class="btn primary" id="shopClose">Back to the trail</button></span></div></div>`, 'shop', 'tpanel');
+      <div class="foot"><span class="coins">📱 <span id="shopCoins">0</span></span><span><button type="button" class="btn ghost" id="shopTop">Add coins</button> <button type="button" class="btn primary" id="shopClose">Back to the trail</button></span></div></div>`, 'shop', 'tpanel');
     shop.hidden = true;
     const bagP = div(`<div class="box" role="dialog" aria-labelledby="bagTitle"><h3 id="bagTitle">Your bag</h3><div class="sub" id="bagSub"></div><div id="bagRows"></div>
-      <div class="foot"><span class="coins">🪙 <span id="bagCoins">0</span> coins</span><button type="button" class="btn primary" id="bagClose">Close</button></div></div>`, 'bagPanel', 'tpanel');
+      <div class="foot"><span class="coins">📱 <span id="bagCoins">0</span></span><button type="button" class="btn primary" id="bagClose">Close</button></div></div>`, 'bagPanel', 'tpanel');
     bagP.hidden = true;
     const topP = div(`<div class="box" role="dialog" aria-labelledby="topTitle"><h3 id="topTitle">Add coins</h3><div class="sub">Coins pay for food, water and a tent at the top. Test mode: the checkout is a mock and no real money is charged.</div><div id="topRows"></div>
-      <div class="sub" id="topHist"></div><div class="foot"><span class="coins">🪙 <span id="topCoins">0</span> coins</span><button type="button" class="btn primary" id="topClose">Close</button></div></div>`, 'topPanel', 'tpanel');
+      <div class="sub" id="topHist"></div><div class="foot"><span class="coins">📱 <span id="topCoins">0</span></span><button type="button" class="btn primary" id="topClose">Close</button></div></div>`, 'topPanel', 'tpanel');
     topP.hidden = true;
 
     let P = null, bag = null, sit = null, eating = null, panelOpen = null, warn = {}, lastStop = null;
@@ -140,7 +140,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       let el = $('kitList');
       if (!el) { const seg = $('packSeg'); if (!seg) return; el = document.createElement('p'); el.id = 'kitList'; seg.parentNode.appendChild(el); }
       const k = ECON.KITS[kg] || ECON.KITS[12], b = ECON.newBag(kg);
-      const food = Object.entries(k.food).map(([id, n]) => `<span>${I[id].icon} ${n} × ${id === 'water' ? '1 L water' : I[id].name}</span>`).join('');
+      const food = Object.entries(k.food).map(([id, n]) => `<span>${I[id].icon} ${n} × ${id === 'water' ? '1 L water (steel bottle)' : I[id].name}</span>`).join('');
       const gear = k.gear.map(g => `<span>${ECON.GEAR[g].icon} ${ECON.GEAR[g].name}</span>`).join('');
       const en = Object.entries(k.food).reduce((a, [id, n]) => a + (I[id].en || 0) * n, 0);
       el.innerHTML = `<div><b>Free in your ${kg} kg bag (${k.label.toLowerCase()})</b></div>
@@ -178,6 +178,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       if (!HN) { applyFood(it, 1); doneDish(dish); return true; }
       if (HN.busy) { ctx.toast('Finish what you are eating first.'); return false; }
       const tea = dish && (it === I.chai || it === I.lemontea);
+      if (it.plastic && !dish) bag.wrappers = (bag.wrappers || 0) + 1;   // the empty wrapper goes back in the bag
       const kind = dish ? (tea ? 'sip' : 'eat') : it.icon === '🧃' ? 'drink' : 'snack';
       if (dish && !sit) sitDown(findSeat(P));
       const need = kind === 'eat' ? Math.min(16, Math.max(6, Math.round(it.eat * 2))) : kind === 'sip' ? Math.max(4, Math.round(it.eat * 2)) : kind === 'snack' ? (it.eat > 2 ? 4 : it.icon === '🍌' ? 4 : 2) : 1;   // Maggi: 12 forkfuls, chai: 6 sips
@@ -311,12 +312,14 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       }
       syncCoins(); openPanel(shop);
     }
+    // paying: coins from the phone (trip.js pay; plain wallet without it)
     function buy(st, it, btn) {
-      if (!ECON.wallet.spend(it.price, `${it.name} at ${st.label}`)) {
-        ctx.toast(`Not enough coins for ${it.name}.`); openTopUp(); return;
-      }
+      const why = `${it.name} at ${st.label}`;
+      const r = ctx.pay ? ctx.pay(it.price, why, st) : (ECON.wallet.spend(it.price, why) ? { ok: true } : { ok: false, msg: `Not enough coins for ${it.name}.`, topUp: true });
+      if (!r.ok) { ctx.toast(r.msg); if (r.topUp) openTopUp(); return; }
+      if (r.msg) ctx.toast(r.msg);
       if (ctx.crowd && ctx.crowd.serve) ctx.crowd.serve(st);
-      if (it.id === 'water') { P.water += it.sips; ctx.toast('The shopkeeper hands you a 1 L bottle. Into the bag.'); }
+      if (it.id === 'water') { P.water += it.sips; bag.plasticBottles = (bag.plasticBottles || 0) + 1; ctx.toast('The shopkeeper hands you a 1 L plastic bottle. Into the bag; carry the empty one back down.'); }
       else if (it.bag) { bag.food[it.id] = (bag.food[it.id] || 0) + 1; ctx.toast(`${it.name}: into the bag. Eat it any time (I).`); }
       else {
         orders.push({ stop: st, it: I[it.id], dish: dishMesh(it.id), cook: COOK[it.id] || 10 });
@@ -357,7 +360,10 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
         fleece: () => G.fleece ? ['Take off', 'You are wearing it'] : ['Put on', 'Warm layer for the cold top and the evening'],
         speaker: () => G.music ? ['Stop', 'Playing a campfire mix (B)'] : ['Play music', 'Small speaker: press B any time']
       };
+      const T = ctx.trip;
+      if (T) for (const r of T.bagRows()) add(r[0], r[1], r[2], '', null);
       for (const g of bag.gear) {
+        if (g === 'idcard' || g === 'receipt') { add(ECON.GEAR[g].icon, ECON.GEAR[g].name, g === 'idcard' ? 'Shown at the Gallu forest check post' : 'Paid at Gallu: keep it until you are back down', '', null); continue; }
         const u = USE[g] && USE[g]();
         if (u) add(ECON.GEAR[g].icon, ECON.GEAR[g].name, `${u[1]} · ${ECON.GEAR[g].kg} kg`, u[0], () => { if (ctx.useGear) ctx.useGear(g); openBag(); });
         else add(ECON.GEAR[g].icon, ECON.GEAR[g].name, `For the night at the camp at the top · ${ECON.GEAR[g].kg} kg`, '', null);
@@ -365,7 +371,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       for (const g of bag.rented) add(ECON.GEAR[g].icon, ECON.GEAR[g].name + ' (rented)', 'for tonight', '', null);
       syncCoins(); openPanel(bagP);
     }
-    function syncCoins() { const c = ECON.wallet.coins; $('shopCoins').textContent = c; $('bagCoins').textContent = c; $('resCoins').textContent = c; $('topCoins').textContent = c; }
+    function syncCoins() { const c = ECON.wallet.coins, m = `${c} coins`; $('shopCoins').textContent = m; $('bagCoins').textContent = m; $('resCoins').textContent = c; $('topCoins').textContent = m; }
 
     /* ---------- coin top-up through the (mock) payment gateway, payments.js ---------- */
     let topFrom = null;

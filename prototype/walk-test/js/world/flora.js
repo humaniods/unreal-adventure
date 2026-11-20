@@ -215,7 +215,7 @@ window.TriundFlora = {
     }
 
     // trunks are solid (radius from the trunk geometry below: base radius 0.022 / 0.035 / 0.04 of the height)
-    if (o.collide) for (const [sp, k] of [['deodar', 0.022], ['oak', 0.035], ['rhodo', 0.04]]) for (const t of trees[sp]) o.collide.circle(t.x, t.z, Math.max(0.12, k * t.h * t.w), false);
+    if (o.collide) for (const [sp, k] of [['deodar', 0.022], ['oak', 0.035], ['rhodo', 0.04]]) for (const t of trees[sp]) t.cid = o.collide.circle(t.x, t.z, Math.max(0.12, k * t.h * t.w), false);
 
     /* ---------------- instanced meshes + LOD ---------------- */
     const dummy = new THREE.Object3D(), col = new THREE.Color();
@@ -336,7 +336,7 @@ window.TriundFlora = {
         // bushes have no impostor: they simply end at the LOD radius
       }
       [near, trunk, imp].forEach(m => { if (m) { m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(list.length * 3), 3); scene.add(m); } });
-      groups.push({ sp, list, near, trunk, imp, nearM, nearC, barkC, impM, impC, lodU, lodMul: sp === 'bush' ? 0.45 : 1 });
+      groups.push({ sp, list, near, trunk, imp, nearM, nearC, barkC, impM, impC, lodU, lodMul: sp === 'bush' ? 0.45 : 1, gone: new Uint8Array(list.length) });
     }
     const lastLod = new THREE.Vector3(1e9, 0, 0);
     function rebuildLod(cam) {
@@ -352,6 +352,7 @@ window.TriundFlora = {
         const TM = g.trunk && g.trunk.instanceMatrix.array, TC = g.trunk && g.trunk.instanceColor.array;
         const IM = g.imp && g.imp.instanceMatrix.array, IC = g.imp && g.imp.instanceColor.array;
         for (let i = 0; i < g.list.length; i++) {
+          if (g.gone[i]) continue;
           const t = g.list[i], dx = t.x - cam.x, dz = t.z - cam.z, d2 = dx * dx + dz * dz;
           if (d2 < nearMax2) {
             NM.set(g.nearM.subarray(i * 16, i * 16 + 16), nn * 16); NC.set(g.nearC.subarray(i * 3, i * 3 + 3), nn * 3);
@@ -519,6 +520,26 @@ window.TriundFlora = {
       setHole(x, z, r) { wind.uHole.value.set(x, z, r, 1); },
       counts: { deodar: trees.deodar.length, oak: trees.oak.length, rhodo: trees.rhodo.length, bush: trees.bush.length, stones: stones.length },
       tint(c) { for (const m of tintMats) if (m && m.color) m.color.copy(c); },
+      // clear the trees and bushes standing at sign boards (pts: [{x, z}]): no board is hidden behind a trunk or a
+      // crown. Big deodars (wide crowns) go further out than oaks; bushes only right at the board
+      clearAround(pts, r) {
+        const R0 = r || 6, cell = new Map(), K = 16, k = (i, j) => i * 92821 + j;
+        for (const p of pts) { const i = Math.floor(p.x / K), j = Math.floor(p.z / K); let l = cell.get(k(i, j)); if (!l) cell.set(k(i, j), l = []); l.push(p); }
+        let n = 0;
+        for (const g of groups) {
+          const kr = g.sp === 'deodar' ? 1.4 : g.sp === 'bush' ? 0.7 : 1;
+          g.list.forEach((t, idx) => {
+            if (g.gone[idx]) return;
+            const i0 = Math.floor(t.x / K), j0 = Math.floor(t.z / K);
+            for (let i = i0 - 1; i <= i0 + 1; i++) for (let j = j0 - 1; j <= j0 + 1; j++) {
+              const l = cell.get(k(i, j)); if (!l) continue;
+              for (const p of l) if ((p.x - t.x) ** 2 + (p.z - t.z) ** 2 < ((p.r || R0) * kr) ** 2) { g.gone[idx] = 1; n++; if (o.collide && t.cid != null) o.collide.disable(t.cid); return; }
+            }
+          });
+        }
+        lastLod.set(1e9, 0, 0);
+        return n;
+      },
       update(dt, cam, time) {
         gust += dt;
         wind.uTime.value = time; wind.uCam.value.copy(cam); wind.uR.value = Q.grassR;

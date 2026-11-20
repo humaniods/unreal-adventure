@@ -11,17 +11,18 @@ window.TriundCollide = {
       if (!pts || pts.length < 3) return;
       let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
       for (const p of pts) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); z0 = Math.min(z0, p[1]); z1 = Math.max(z1, p[1]); }
-      const poly = { pts, x0, x1, z0, z1, low: !!low }, id = polys.push(poly) - 1;
+      const poly = { pts, x0, x1, z0, z1, low: !!low, off: false }, id = polys.push(poly) - 1;
       for (let i = Math.floor((x0 - 1) / CELL); i <= Math.floor((x1 + 1) / CELL); i++)
         for (let j = Math.floor((z0 - 1) / CELL); j <= Math.floor((z1 + 1) / CELL); j++) {
           const k = key(i, j); let l = grid.get(k); if (!l) grid.set(k, l = []); l.push(id);
         }
+      return id;
     }
     // rectangle centred at (x, z), rotated by ry (three.js Y rotation), w along local x, d along local z
     function rect(x, z, ry, w, d, low) {
       const c = Math.cos(ry), s = Math.sin(ry), out = [];
       for (const [lx, lz] of [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]]) out.push([x + lx * c + lz * s, z - lx * s + lz * c]);
-      add(out, low);
+      return add(out, low);
     }
     function inside(pts, x, z) {
       let c = false;
@@ -51,6 +52,7 @@ window.TriundCollide = {
         let moved = false;
         for (const id of l) {
           const p = polys[id], r = p.low && rLow != null ? rLow : r0;
+          if (p.off) continue;
           if (x < p.x0 - r || x > p.x1 + r || z < p.z0 - r || z > p.z1 + r) continue;
           const n = nearest(p.pts, x, z), inn = inside(p.pts, x, z);
           if (!inn && n.d >= r) continue;
@@ -64,7 +66,10 @@ window.TriundCollide = {
     }
     // inside(x, z, tallOnly): tallOnly skips knee-high things a camera can look over
     // a round footprint (tree trunk, boulder): an octagon of radius r
-    function circle(x, z, r, low) { const pts = []; for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; pts.push([x + Math.cos(a) * r, z + Math.sin(a) * r]); } add(pts, low); }
-    return { add, rect, circle, resolve, inside: (x, z, tallOnly) => { const l = grid.get(key(Math.floor(x / CELL), Math.floor(z / CELL))) || []; return l.some(id => !(tallOnly && polys[id].low) && inside(polys[id].pts, x, z)); }, get count() { return polys.length; } };
+    function circle(x, z, r, low) { const pts = []; for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; pts.push([x + Math.cos(a) * r, z + Math.sin(a) * r]); } return add(pts, low); }
+    // disable(id): the thing is gone (a tree cleared from in front of a sign board)
+    const disable = id => { if (id != null && polys[id]) polys[id].off = true; };
+    const enable = id => { if (id != null && polys[id]) polys[id].off = false; };
+    return { add, rect, circle, resolve, disable, enable, inside: (x, z, tallOnly) => { const l = grid.get(key(Math.floor(x / CELL), Math.floor(z / CELL))) || []; return l.some(id => !polys[id].off && !(tallOnly && polys[id].low) && inside(polys[id].pts, x, z)); }, get count() { return polys.length; } };
   }
 };

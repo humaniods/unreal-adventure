@@ -1,6 +1,6 @@
 """Build Triund game data from OSM trails, AWS Terrain Tiles (SRTM) and Sentinel-2 cloudless 2016.
 
-Outputs (in ../walk-test/):
+Outputs (in ../walk-test/data/):
   triund-data.js   heights (near 8 m, far 100 m), both trails, landmarks, baked terrain light
   sat-near.jpg     satellite colour of the play box (row 0 = north edge)
   sat-far.jpg      satellite colour of the 44 km surroundings
@@ -12,7 +12,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "..", "walk-test")
+OUT = os.path.join(HERE, "..", "walk-test", "data")   # the game's data folder
 TILES = os.path.join(HERE, "tiles")
 SAT = os.path.join(HERE, "sat")
 UA = {"User-Agent": "trek-prototype/0.2"}
@@ -89,7 +89,8 @@ def b64(a, dtype):
 
 # ---------------- OSM ways ----------------
 WAYS = {}
-for fn in ("route.json", "paths.json"):
+# osm/osm_ways.json: every highway way from McLeod Ganj to Snowline (roads too, for the walk up from the Main Square)
+for fn in ("route.json", "paths.json", os.path.join("osm", "osm_ways.json")):
     for e in json.load(open(os.path.join(HERE, fn)))["elements"]:
         if e["type"] == "way" and "geometry" in e:
             WAYS[e["id"]] = e
@@ -112,11 +113,13 @@ def chain_ways(order):
         pts += g
     return pts, wid
 
-def route_waypoints(wps):
+FOOT = ("path", "footway", "track", "steps")
+TOWN = FOOT + ("residential", "unclassified", "tertiary", "living_street", "service", "pedestrian")
+def route_waypoints(wps, kinds=FOOT):
     """Shortest path on the cached OSM path network through the given (lat, lon) waypoints."""
     adj, pos = {}, {}
     for w in WAYS.values():
-        if w.get("tags", {}).get("highway") not in ("path", "footway", "track", "steps"): continue
+        if w.get("tags", {}).get("highway") not in kinds: continue
         g = [KEY(p) for p in w["geometry"]]
         for p in g: pos[p] = to_local(*p)
         for a, b in zip(g, g[1:]):
@@ -189,9 +192,52 @@ trails, tline = {}, {}
 trails["galu"], *tline["galu"] = build_trail(*chain_ways(GALU_WAYS), "galu")
 # the Bhagsu side is much steeper (rock steps above the waterfall); a 0.45 cap pulled it 48 m off the DEM
 trails["shiva"], *tline["shiva"] = build_trail(*route_waypoints(SHIVA_WPS), "shiva", gmax=0.62)
+# the full walk from town: McLeod Ganj Main Square (OSM node 456970464) up the lanes to Dharamkot (taxi stand,
+# node 14065971605) and on to the first point of the Galu Devi trail, where the "galu" trail takes over
+g0 = to_ll(trails["galu"]["e"][0], trails["galu"]["n"][0]); g1 = to_ll(trails["galu"]["e"][-1], trails["galu"]["n"][-1])
+MCLEOD_WPS = [(32.2386259, 76.3236116), (32.2465217, 76.3259716), g0]
+trails["mcleod"], *tline["mcleod"] = build_trail(*route_waypoints(MCLEOD_WPS, TOWN), "mcleod", gmax=0.5)
+# beyond the top: Triund Hill - SnowLine Cafe Trail from the end of the Galu Devi trail to Snowline Cafe (node 539994861)
+SNOW_WPS = [g1, (32.2741416, 76.361572)]
+trails["snow"], *tline["snow"] = build_trail(*route_waypoints(SNOW_WPS), "snow", gmax=0.62)
+
+# ---------------- roads: the taxi route and the town streets ----------------
+# the motor road from McLeod Ganj Main Square (Tushita Road, then Gallu Devi Temple Road; its top part is a dirt
+# track) to where the Galu Devi trail starts, and from the Dharamkot taxi stand onto the same road. Corners are
+# rounded (Chaikin) so a car can follow the line; resampled every 2 m
+ROAD = ("primary", "secondary", "tertiary", "unclassified", "residential", "service", "living_street", "track")
+def drive_line(wps):
+    pts, wid = route_waypoints(wps, ROAD)
+    loc = np.array([to_local(a, b) for a, b in pts])
+    for _ in range(3):
+        q = [loc[0]]
+        for a, b2 in zip(loc[:-1], loc[1:]): q += [0.75 * a + 0.25 * b2, 0.25 * a + 0.75 * b2]
+        q.append(loc[-1]); loc = np.array(q)
+    seg = np.hypot(*np.diff(loc, axis=0).T); s = np.concatenate([[0], np.cumsum(seg)]); L = s[-1]
+    ss = np.append(np.arange(0, L, 2.0), L)
+    e = np.interp(ss, s, loc[:, 0]); n = np.interp(ss, s, loc[:, 1])
+    surf = []
+    acc = np.concatenate([[0], np.cumsum([math.dist(to_local(*a), to_local(*b2)) for a, b2 in zip(pts[:-1], pts[1:])])])
+    for i, w in enumerate(wid):
+        t = WAYS[w].get("tags", {}); sf = t.get("surface") or ("dirt" if t.get("highway") == "track" else "asphalt")
+        if surf and surf[-1][1] == sf: continue
+        surf.append([round(float(acc[i] / acc[-1] * L), 1), sf])
+    names = [WAYS[w].get("tags", {}).get("name") for w in wid]
+    print(f"[drive] {L:.0f} m, {len(ss)} pts, via {' / '.join(dict.fromkeys(n2 for n2 in names if n2))}")
+    return dict(len=round(float(L), 1), e=[round(float(v), 1) for v in e], n=[round(float(v), 1) for v in n], surf=surf)
+roads = dict(drive=dict(mcleod=drive_line([(32.2387022, 76.3235342), g0]), dharamkot=drive_line([(32.2465217, 76.3259716), g0])), streets=[])
+# town streets with names and surfaces (McLeod Ganj and Dharamkot): the shop fronts line these
+for w in WAYS.values():
+    t = w.get("tags", {}); hw = t.get("highway")
+    if hw not in ROAD + ("pedestrian", "footway", "steps"): continue
+    g = [to_local(p["lat"], p["lon"]) for p in w["geometry"]]
+    if not any(-900 < e < 3700 and -2100 < n < 600 for e, n in g): continue
+    roads["streets"].append(dict(k=hw, s=t.get("surface") or "", nm=t.get("name") or "", w=float(t.get("width", "0").split()[0] or 0) if t.get("width", "").replace(".", "").split()[0:1] and t.get("width", "").split()[0].replace(".", "").isdigit() else 0,
+                                 e=[round(p[0], 1) for p in g], n=[round(p[1], 1) for p in g]))
+print(f"[streets] {len(roads['streets'])} ways")
 
 # ---------------- terrain grids ----------------
-NEAR = dict(e0=-900, e1=3700, n0=-1800, n1=2300, step=8)
+NEAR = dict(e0=-900, e1=3700, n0=-2100, n1=2500, step=8)   # McLeod Ganj Main Square to Snowline Cafe
 FAR = dict(e0=-20600, e1=23400, n0=-21500, n1=22500, step=100)
 for k, (te, tn) in tline.items():
     out = ((te < NEAR["e0"] + 200) | (te > NEAR["e1"] - 200) | (tn < NEAR["n0"] + 200) | (tn > NEAR["n1"] - 200)).sum()
@@ -272,7 +318,14 @@ marks = {
     "lodge": mark(32.2551667, 76.3550393, "Triund Mountain Lodge", "galu"),
     "snowline": mark(32.2741416, 76.361572, "Snowline Cafe", "galu"),
     "hill": mark(32.2702302, 76.3528743, "Triund Hill", "galu"),
-    "dharamkot": mark(32.2455318, 76.3259971, "Dharamkot", "galu"),
+    "dharamkot": mark(32.2455318, 76.3259971, "Dharamkot", "mcleod"),
+    "mainSquare": mark(32.2386259, 76.3236116, "Main Square, McLeod Ganj", "mcleod"),
+    "taxiMcleod": mark(32.2387022, 76.3235342, "Autorickshaws & Taxis", "mcleod"),
+    "busStand": mark(32.2403303, 76.323647, "McLeod Ganj bus stand", "mcleod"),
+    "taxiDharamkot": mark(32.2465217, 76.3259716, "Dharamkot Taxi Stand", "mcleod"),
+    "forestRest": mark(32.2547156, 76.3257005, "Forest Rest House", "galu"),
+    "snowCafe": mark(32.2741416, 76.361572, "Snowline Cafe", "snow"),
+    "lahesh": mark(32.2734, 76.36158, "Galu Temple - Lahesh Caves Trail", "snow"),
     "bhagsuTemple": mark(32.24428, 76.33456, "Bhagsu Naag Temple", "shiva"),
     "bhagsuFall": mark(32.24747, 76.33835, "Bhagsunag Waterfall", "shiva"),
     "shivaCafe": mark(32.24825, 76.33937, "Shiva Cafe", "shiva"),
@@ -306,10 +359,10 @@ def osm_json(name, body):
             sys.exit(f"could not download {name}")
     return json.load(open(p))["elements"]
 os.makedirs(OSMD, exist_ok=True)
-POI_EL = osm_json("osm_poi.json", "".join(f'nwr["{k}"]{BB};' for k in ("amenity", "shop", "tourism", "historic", "religion", "leisure"))
+POI_EL = osm_json("osm_poi_b.json", "".join(f'nwr["{k}"]{BB};' for k in ("amenity", "shop", "tourism", "historic", "religion", "leisure"))
                   + f'nwr["natural"="waterfall"]{BB};nwr["waterway"="waterfall"]{BB};')
-BLD_EL = osm_json("osm_bld.json", f'way["building"]{BB};relation["building"]{BB};')
-WAT_EL = osm_json("osm_water.json", f'way["waterway"]{BB};nwr["natural"="water"]{BB};')
+BLD_EL = osm_json("osm_bld_b.json", f'way["building"]{BB};relation["building"]{BB};')
+WAT_EL = osm_json("osm_water_b.json", f'way["waterway"]{BB};nwr["natural"="water"]{BB};')
 msp = os.path.join(OSMD, "ms_buildings.json")
 if not os.path.exists(msp):
     sys.exit("osm/ms_buildings.json missing: filter the Microsoft footprints file for quadkey 123103322 "
@@ -388,7 +441,7 @@ for el in POI_EL:
     elif "bounds" in el: bb = el["bounds"]; la = (bb["minlat"] + bb["maxlat"]) / 2; lo = (bb["minlon"] + bb["maxlon"]) / 2
     else: continue
     e, n = to_local(la, lo); d, k, s = trail_near(e, n)
-    lim = 400 if kd in ("temple", "monastery", "church", "waterfall", "pool") else 120
+    lim = 400 if kd in ("temple", "monastery", "church", "waterfall", "pool") else 200 if n < -300 and kd in ("cafe", "shop", "lodge") else 120   # the town's shops a street back from the route too
     if d > lim: continue
     nm = t.get("name:en") or t.get("name") or ""
     if nm and any(nm == q[0] and math.hypot(e - q[1], n - q[2]) < 40 for q in seen): continue
@@ -400,8 +453,10 @@ for el in POI_EL:
     if bi >= 0 and kd not in ("bench", "bin", "viewpoint", "waterfall"):
         b = keep[bi]
         if not b.get("kind") or kd in ("temple", "monastery", "church"): b["kind"] = kd; b["name"] = b["name"] or nm
+    # t: what it is in OSM (restaurant, bar, bakery, clothes...), cu: cuisine; the shop signs in town show them
     pois.append(dict(name=nm, kind=kd, e=round(e, 1), n=round(n, 1), trail=k, s=round(s, 1), off=round(d, 1), b=bi,
-                     ele=round(float(sample(la, lo, 15)), 1), id=f"{el['type'][0]}{el['id']}"))
+                     ele=round(float(sample(la, lo, 15)), 1), id=f"{el['type'][0]}{el['id']}",
+                     t=t.get("amenity") or t.get("shop") or t.get("tourism") or "", cu=(t.get("cuisine") or "").split(";")[0].replace("_", " ")))
 print(f"POIs: {len(pois)} within reach of the trails; " + ", ".join(f"{k} {sum(p['kind'] == k for p in pois)}" for k in sorted({p['kind'] for p in pois})))
 
 def levels(b, i):
@@ -447,9 +502,9 @@ out = dict(
     # sun: 1 = lit by the fixed morning sun, 0 = in a mountain's cast shadow; ao: 0 open sky .. 1 enclosed
     shade=dict(near=dict(e0=NEAR["e0"], n0=NEAR["n0"], step=16, nx=lnx, nz=lnz, sun=b64(np.round(sn * 255), "u1"), ao=b64(np.round(an * 255), "u1")),
                far=dict(e0=FAR["e0"], n0=FAR["n0"], step=100, nx=lfx, nz=lfz, sun=b64(np.round(sf * 255), "u1"), ao=b64(np.round(af * 255), "u1"))),
-    sat=dict(near=dict(e0=NEAR["e0"], e1=NEAR["e1"], n0=NEAR["n0"], n1=NEAR["n1"], src="sat-near.jpg"),
-             far=dict(e0=FAR["e0"], e1=FAR["e1"], n0=FAR["n0"], n1=FAR["n1"], src="sat-far.jpg")),
-    trails=trails, marks=marks, places=places,
+    sat=dict(near=dict(e0=NEAR["e0"], e1=NEAR["e1"], n0=NEAR["n0"], n1=NEAR["n1"], src="data/sat-near.jpg"),
+             far=dict(e0=FAR["e0"], e1=FAR["e1"], n0=FAR["n0"], n1=FAR["n1"], src="data/sat-far.jpg")),
+    trails=trails, marks=marks, places=places, roads=roads,
     attribution="Map data © OpenStreetMap contributors (ODbL). Building footprints: Microsoft Global ML Building Footprints (ODbL). Elevation: AWS Terrain Tiles (SRTM, NASA; Mapzen). "
                 "Imagery: Sentinel-2 cloudless 2016 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0.",
 )
@@ -463,7 +518,7 @@ if "--overlay" in sys.argv:
     im = sat_near.convert("RGB").resize((2048, 2048)); dr = ImageDraw.Draw(im)
     W, Hh = NEAR["e1"] - NEAR["e0"], NEAR["n1"] - NEAR["n0"]
     P = lambda e, n: ((e - NEAR["e0"]) / W * 2048, (NEAR["n1"] - n) / Hh * 2048)
-    for k, col in (("galu", (255, 220, 0)), ("shiva", (0, 220, 255))):
+    for k, col in (("galu", (255, 220, 0)), ("shiva", (0, 220, 255)), ("mcleod", (255, 120, 220)), ("snow", (140, 255, 140))):
         te, tn = tline[k]; dr.line([P(a, b) for a, b in zip(te, tn)], fill=col, width=3)
     for v in marks.values():
         x, y = P(v["e"], v["n"]); dr.ellipse([x - 6, y - 6, x + 6, y + 6], outline=(255, 60, 60), width=2); dr.text((x + 8, y - 6), v["name"], fill=(255, 255, 255))

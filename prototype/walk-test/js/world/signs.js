@@ -50,7 +50,7 @@ window.TriundSigns = {
           if ((blocked && blocked(x, z)) || dh > (maxDh || 1.0)) continue;
           if (!best || dh < best.dh) best = { x, z, dh, sd, s: ss, p, d };
         }
-        if (best && !boards.some(b => (b.x - best.x) ** 2 + (b.z - best.z) ** 2 < 36)) return best;
+        if (best && !boards.some(b => (b.x - best.x) ** 2 + (b.z - best.z) ** 2 < 36) && !(o.taken || []).some(b => (b.x - best.x) ** 2 + (b.z - best.z) ** 2 < 36)) return best;
       }
       return null;
     }
@@ -163,6 +163,7 @@ window.TriundSigns = {
       const ge = new THREE.BufferGeometry(); ge.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); ge.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); ge.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); ge.setIndex(idx);
       const fr = new THREE.Mesh(ge, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85 })); fr.castShadow = true; fr.receiveShadow = true; scene.add(fr);
     }
+    if (o.taken) for (const b of boards) o.taken.push({ x: b.x, z: b.z, r: b.kind === 'mark' ? 3.5 : 6 });
     return {
       spots, list, miss, counts: { boards: boards.length, marks: boards.filter(b => b.kind === 'mark').length, selfie: spots.length },
       update(cam) {

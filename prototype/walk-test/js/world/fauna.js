@@ -403,7 +403,10 @@ window.TriundFauna = {
     return {
       counts: { dogs: dogs.length, mules: mules.reduce((n, m) => n + m.members.length, 0), langurs: troops.reduce((n, t) => n + t.members.length, 0), cattle: herd.length, birds: birds.length },
       dogs, mules, troops, birds, events, upgrade,
-      update(dt, cam, time, P, ACT) {
+      update(dt, cam, time, P0, R) {
+        // the player's route may chain several trails and run them backwards (index.html makeRoute): the dogs think
+        // in one trail's own distance, so look at the player through the trail under their feet
+        const L = R && R.local ? R.local(P0.s) : null, ACT = L ? trails[L.id] : R, P = L ? Object.assign(Object.create(P0), { s: L.s }) : P0;
         if (lastS !== null && Math.abs(P.s - lastS) > 0.005 && Math.abs(P.s - lastS) < 5) sdirF += (Math.sign(P.s - lastS) - sdirF) * Math.min(1, dt * 0.6);
         lastS = P.s; sdir = sdirF >= 0 ? 1 : -1;
         for (const d of dogs) { dogUpdate(d, dt, P, ACT, time); visible(d.a.g, cam); }

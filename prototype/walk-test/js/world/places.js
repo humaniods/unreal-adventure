@@ -5,6 +5,25 @@
    World axes: x = east, z = south (z = -north), y = altitude.
    Everything static is merged into a handful of meshes; only the name boards are separate (and hidden when far). */
 window.TriundPlaces = {
+  // In McLeod Ganj and Dharamkot (more than 300 m south of Gallu Devi) a cafe, restaurant, shop or guest house is
+  // the ground floor of a building on the street, not a hut on the grass: an OSM point that is not inside a footprint
+  // moves into the nearest building within 15 m. Runs once, before pads() and build(), so both see the same thing.
+  TOWN_N: -300,
+  adopt(data) {
+    if (data._adopted) return; data._adopted = true;
+    const B = data.buildings.map(b => { const P = []; let cx = 0, cz = 0; for (let k = 0; k < b.p.length; k += 2) { P.push([b.p[k], -b.p[k + 1]]); cx += b.p[k]; cz -= b.p[k + 1]; } return { P, cx: cx / P.length, cz: cz / P.length }; });
+    const edge = (P, x, z) => { let m = Infinity; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const ax = P[j][0], az = P[j][1], dx = P[i][0] - ax, dz = P[i][1] - az, l2 = dx * dx + dz * dz || 1e-9, t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / l2)); m = Math.min(m, Math.hypot(ax + dx * t - x, az + dz * t - z)); } return m; };
+    let n = 0;
+    for (const poi of data.pois) {
+      if (poi.b >= 0 || poi.n >= this.TOWN_N || !['cafe', 'shop', 'lodge'].includes(poi.kind)) continue;
+      const x = poi.e, z = -poi.n; let best = -1, bd = 15;
+      B.forEach((b, i) => { if (Math.abs(b.cx - x) > 60 || Math.abs(b.cz - z) > 60) return; const d = edge(b.P, x, z); if (d < bd) { bd = d; best = i; } });
+      if (best >= 0) { poi.b = best; poi.adopted = true; n++; }
+    }
+    data._adoptedN = n;
+  },
+  // a cafe in town is a stop (menu, shopkeeper) only right on the route; up the mountain within 30 m
+  stopReach: poi => poi.n < -300 ? 10 : 30,
   // the wall of footprint P that a walk from (x, z) along (tx, tz) leaves through: the crossing point and the
   // wall's outward normal
   wallAt(P, x, z, tx, tz) {
@@ -45,11 +64,12 @@ window.TriundPlaces = {
       if (poi.kind !== 'cafe' && poi.kind !== 'shop') continue;
       let x = poi.e, z = -poi.n;
       if (skip.some(k => Math.hypot(k.x - x, k.z - z) < k.r)) continue;
+      if (poi.adopted) { const bp = data.buildings[poi.b].p; let cx = 0, cz = 0; for (let k = 0; k < bp.length; k += 2) { cx += bp[k]; cz -= bp[k + 1]; } x = cx / (bp.length / 2); z = cz / (bp.length / 2); }   // a town shop moved into its building
       const nt = nearestTrail(x, z);
       let tx = (nt.x - x) / (nt.d || 1), tz = (nt.z - z) / (nt.d || 1);
       if (nt.d < 1e-3) { const d = nt.tr.dirAtS(nt.s, 10); tx = -d.dz; tz = d.dx; }
       if (poi.b >= 0) {
-        const b = data.buildings[poi.b]; if (!b || !poi.name || poi.kind !== 'cafe' || nt.d >= 30) continue;
+        const b = data.buildings[poi.b]; if (!b || !poi.name || poi.kind !== 'cafe' || nt.d >= window.TriundPlaces.stopReach(poi)) continue;
         const P = []; for (let k = 0; k < b.p.length; k += 2) P.push([b.p[k], -b.p[k + 1]]);
         let bx = x, bz = z; for (let k = 0; k < 40 && inPoly(P, bx, bz); k++) { bx += tx * 0.5; bz += tz * 0.5; }
         const w = window.TriundPlaces.wallAt(P, x, z, tx, tz), fx = w ? w.nx : tx, fz = w ? w.nz : tz;
@@ -75,6 +95,8 @@ window.TriundPlaces = {
     const seatAt = (x, z, ry, lx, lz, face, top) => Object.assign(lw(x, z, ry, lx, lz), { ry: face, h: 0.45, y: top });
     const R = rng(4242);
     const counts = {};
+    // menu boards (drawn when you come near): declared before the POI loop, whose shops put them up
+    const menus = [], blankMenu = new THREE.MeshLambertMaterial({ color: lin(0x22302a) });
     const bump = k => { counts[k] = (counts[k] || 0) + 1; };
 
     /* ---------- trail lookup (direction to the trail, distance) ---------- */
@@ -161,13 +183,13 @@ window.TriundPlaces = {
        from the per-vertex height above ground) and is a little desaturated and grimy, like things up a mountain. */
     const texLoader = new THREE.TextureLoader(), blankN = new THREE.DataTexture(new Uint8Array([128, 128, 255, 255]), 1, 1, THREE.RGBAFormat); blankN.needsUpdate = true;
     function photo(name, srgb, onImg) {
-      const t = texLoader.load('tex/' + name + '.jpg', tt => { if (onImg) onImg(tt.image); });
+      const t = texLoader.load('assets/tex/' + name + '.jpg', tt => { if (onImg) onImg(tt.image); });
       t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; if (srgb) t.encoding = THREE.sRGBEncoding; return t;
     }
     // greyed, brightened copy of a photo (so a vertex colour tints it like paint)
     function greyed(name, gain, rep) {
       const ct = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#c8c8c8'; g.fillRect(0, 0, w, h); }, rep);
-      texLoader.load('tex/' + name + '.jpg', t => {
+      texLoader.load('assets/tex/' + name + '.jpg', t => {
         const c = ct.image, g = c.getContext('2d'); g.drawImage(t.image, 0, 0, c.width, c.height);
         const d = g.getImageData(0, 0, c.width, c.height), a = d.data;
         let m = 0; for (let i = 0; i < a.length; i += 4) m += a[i] * 0.3 + a[i + 1] * 0.59 + a[i + 2] * 0.11; m /= a.length / 4;
@@ -431,6 +453,7 @@ window.TriundPlaces = {
     for (const poi of data.pois) {
       let x = poi.e, z = -poi.n;
       if (skipped(x, z)) continue;
+      if (poi.adopted) { const bp = data.buildings[poi.b].p; let cx = 0, cz = 0; for (let k = 0; k < bp.length; k += 2) { cx += bp[k]; cz -= bp[k + 1]; } x = cx / (bp.length / 2); z = cz / (bp.length / 2); }   // a town shop moved into its building
       const nt = nearestTrail(x, z);
       let tx = (nt.x - x) / (nt.d || 1), tz = (nt.z - z) / (nt.d || 1);    // unit vector toward the trail
       if (nt.d < 1e-3) { const d = nt.tr.dirAtS(nt.s, 10); tx = -d.dz; tz = d.dx; }
@@ -444,9 +467,13 @@ window.TriundPlaces = {
         bx += tx * 0.3; bz += tz * 0.3;
         const w = window.TriundPlaces.wallAt(P, x, z, tx, tz), fx = w ? w.nx : tx, fz = w ? w.nz : tz, f2 = Math.atan2(fx, fz);   // square to the wall
         if (w) { bx = w.x + fx * 0.3; bz = w.z + fz * 0.3; }
-        nameBoard(bx, H(bx, bz) + 3.1, bz, f2, poi.name, KIND_SUB[poi.kind], poi.kind === 'lodge' ? '#1f3b2e' : '#f2c230', poi.kind === 'lodge' ? '#f1ead8' : '#2a1a04', 2.8);
-        bump('board');
-        if (poi.kind === 'cafe' && nt.d < 30) {
+        // in town, town.js hangs the sign on the shop front (unless it is a stop with its own storefront here)
+        const isStop = poi.kind === 'cafe' && nt.d < window.TriundPlaces.stopReach(poi);
+        if (!(o.townSigns && poi.n < window.TriundPlaces.TOWN_N && !isStop)) {
+          nameBoard(bx, H(bx, bz) + 3.1, bz, f2, poi.name, KIND_SUB[poi.kind], poi.kind === 'lodge' ? '#1f3b2e' : '#f2c230', poi.kind === 'lodge' ? '#f1ead8' : '#2a1a04', 2.8);
+          bump('board');
+        }
+        if (poi.kind === 'cafe' && nt.d < window.TriundPlaces.stopReach(poi)) {
           // the storefront is built square against the wall the walk came out through (its back 5 cm off the wall),
           // facing straight out of it; the shopkeeper stands between the shelves and the counter, the customer in front
           const wx = w ? w.x : bx - tx * 0.3, wz = w ? w.z : bz - tz * 0.3;
@@ -463,7 +490,7 @@ window.TriundPlaces = {
       if (poi.kind === 'cafe' || poi.kind === 'shop') { const sp = window.TriundPlaces.stallSpot(x, z, tx, tz, stallsPlaced, nearestTrail, clear); if (!sp) continue; x = sp.x; z = sp.z; }
       const y = H(x, z);
       switch (poi.kind) {
-        case 'cafe': case 'shop': { const seats = stall(x, y, z, face, poi); if (poi.kind === 'cafe' && nt.d < 30) stops.push(Object.assign(stopAt(poi, x + tx * 2.4, z + tz * 2.4, tx, tz, nt, 'stall'), { seats, keeper: { x: x + tx * seats.keeperZ, z: z + tz * seats.keeperZ }, counter: seats.counter })); break; }
+        case 'cafe': case 'shop': { const seats = stall(x, y, z, face, poi); if (poi.kind === 'cafe' && nt.d < window.TriundPlaces.stopReach(poi)) stops.push(Object.assign(stopAt(poi, x + tx * 2.4, z + tz * 2.4, tx, tz, nt, 'stall'), { seats, keeper: { x: x + tx * seats.keeperZ, z: z + tz * seats.keeperZ }, counter: seats.counter })); break; }
         case 'lodge': building(rectPoly(x, z, face, 7, 9), 2, 'lodge', poi.name, 7 + boards.length);
           if (poi.name) nameBoard(x + tx * 3.9, y + 3.1, z + tz * 3.9, face, poi.name, 'rooms', '#1f3b2e', '#f1ead8', 2.8); break;
         case 'temple': shrine(x, y, z, face, poi); break;
@@ -494,7 +521,6 @@ window.TriundPlaces = {
     // chalkboard menus: each stall's own board, with that stall's prices (they rise with altitude, the same numbers
     // as its menu panel). The board is drawn when you come near (and freed when you leave), so only a few textures
     // exist at a time on a 1 GB GPU. Big, high-contrast chalk lettering so it reads from the trail.
-    const menus = [], blankMenu = new THREE.MeshLambertMaterial({ color: lin(0x22302a) });
     function menuBoard(x, y, z, ry, w, h) {
       w = w || 0.9; h = h || 1.2;
       const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), blankMenu); m.position.set(x, y, z); m.rotation.y = ry; m.visible = false; scene.add(m); boards.push(m);
@@ -797,7 +823,7 @@ window.TriundPlaces = {
       B.mesh(propMat);
     }
     return {
-      counts, stops, update, dress, benches, meshes: { wallMesh, roofMesh, propMesh },
+      counts, stops, update, dress, benches, meshes: { wallMesh, roofMesh, propMesh }, boardSpots: boards.map(b => ({ x: b.position.x, z: b.position.z })),
       surfaceMat,
       tex: { tinMap, tinN, plasterN, wood: woodDetail, woodN, plaster: photo('plaster_d', true), rock: photo('rock_d', true), rockN: photo('rock_n', false) },
       blocked: (x, z) => OCC.has(okey(Math.floor(x / OC), Math.floor(z / OC)))

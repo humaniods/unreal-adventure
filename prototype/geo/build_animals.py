@@ -1,7 +1,7 @@
 """Trim Quaternius "Animated Animal Pack" GLBs (CC0, poly.pizza) to the clips the game uses.
 
 Usage: python3 build_animals.py <dir with Husky.glb Shiba.glb Donkey.glb Horse.glb Cow.glb Bull.glb>
-Output: ../walk-test/chars/<name>.gltf.json
+Output: ../walk-test/assets/chars/<name>.gltf.json
 """
 import os, sys
 from build_chars import GLB, read_glb, OUT

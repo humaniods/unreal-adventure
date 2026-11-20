@@ -4,7 +4,7 @@ Inputs (download from quaternius.itch.io, CC0, extract anywhere):
   Universal Base Characters [Standard]   (Superhero_Male/Female_FullBody.gltf + textures, hairstyles)
   Universal Animation Library [Standard] (UAL1_Standard.glb, same skeleton bone names)
 
-Outputs (../walk-test/chars/):
+Outputs (../walk-test/assets/chars/):
   hiker_m.gltf.json, hiker_f.gltf.json  body mesh + skeleton + the clips the game uses, textures as small JPEGs,
                             unused vertex attributes dropped
   hair.gltf.json            static hair meshes in bind-pose space (attached to the Head bone at runtime)
@@ -16,7 +16,7 @@ import numpy as np
 from PIL import Image
 
 UBC, UAL = (sys.argv[1], sys.argv[2]) if len(sys.argv) > 2 and __name__ == "__main__" else (None, None)
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "walk-test", "chars")
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "walk-test", "assets", "chars")
 os.makedirs(OUT, exist_ok=True)
 CLIPS = ["Idle_Loop", "Walk_Loop", "Jog_Fwd_Loop", "Sitting_Idle_Loop", "Sitting_Talking_Loop", "Idle_Talking_Loop", "Interact", "PickUp_Table"]
 KEEP_ATTR = {"POSITION", "NORMAL", "TEXCOORD_0", "JOINTS_0", "WEIGHTS_0"}

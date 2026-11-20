@@ -13,7 +13,7 @@ window.TriundTrailProps = {
     const lin = c => new THREE.Color(c).convertSRGBToLinear();
     const rng = (s => () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; })(777);
     const counts = { eco: 0, fenceM: 0, boulders: 0, tarps: 0 };
-    const nearAvoid = (x, z, r) => (blocked && blocked(x, z)) || (avoid || []).some(a => Math.hypot(a.x - x, a.z - z) < (a.r || 0) + r);
+    const nearAvoid = (x, z, r) => (blocked && blocked(x, z)) || (avoid || []).some(a => Math.hypot(a.x - x, a.z - z) < (a.r || 0) + r) || (o.taken || []).some(a => Math.hypot(a.x - x, a.z - z) < 4 + r);
 
     /* ---------- Eco Trail boards (drawn when near, like signs.js) ---------- */
     const ECO = [
@@ -65,7 +65,7 @@ window.TriundTrailProps = {
         part(new THREE.BoxGeometry(2.3, 1.1, 0.04), 0, 1.25, -0.03, 0x6f757a);
         const fm = new THREE.Mesh(ecoGeo, ecoBlank); fm.position.set(0, 1.25, 0.0); g.add(fm); scene.add(g);
         if (collide) { collide.circle(x + Math.cos(ry) * 1.12, z - Math.sin(ry) * 1.12, 0.08, true); collide.circle(x - Math.cos(ry) * 1.12, z + Math.sin(ry) * 1.12, 0.08, true); }
-        boards.push({ g, fm, e, x, z, drawn: false }); counts.eco++; return true;
+        boards.push({ g, fm, e, x, z, drawn: false }); counts.eco++; if (o.taken) o.taken.push({ x, z }); return true;
       }
       return false;
     }

@@ -1,6 +1,6 @@
 'use strict';
 /* Time of day and the day's weather for the Triund walk test.
-   The game clock (trek.js P.gt, 6x real time, starting 09:00, window.TRIUND_DAY0) drives:
+   The game clock (trek.js P.gt, 6x real time, starting at the hour chosen on the start screen, window.TRIUND_DAY0) drives:
    - the sun: real solar position for Triund (32.25 N, 76.33 E) in late November, India time (solar noon ~12:25,
      sunrise ~06:55, sunset ~17:25). Sky, light, haze, exposure, cloud colour and the shadow direction follow it.
    - the weather, as a typical Triund post-monsoon day: a clear morning; cloud builds over the peaks late morning;
@@ -11,7 +11,7 @@
    Interface: create(ctx) -> { update(gtSeconds), state } where state = { hours, clock, name, rain, temp, sunset, next } */
 window.TriundWeather = {
   create({ THREE, SKY, SEASON, getAtmos, onSunDir }) {
-    const LAT = 32.25 * Math.PI / 180, DEC = -19.6 * Math.PI / 180, NOON = 12.42;   // Nov 19; solar noon in IST hours
+    const LAT = 32.25 * Math.PI / 180, DEC = -19.6 * Math.PI / 180, NOON = 12.17;   // Nov 19-20; solar noon in IST at 76.32 E (12:25 mean, minus ~15 min equation of time): sunrise ~06:58, sunset ~17:22
     function sunAt(h) {
       const H = (h - NOON) * 15 * Math.PI / 180;
       const el = Math.asin(Math.sin(LAT) * Math.sin(DEC) + Math.cos(LAT) * Math.cos(DEC) * Math.cos(H));
@@ -60,13 +60,14 @@ window.TriundWeather = {
       const s = k * k * (3 - 2 * k); w[prev] += 1 - s; w[cur] += s;
       return { w, P };
     }
-    const DAY0 = window.TRIUND_DAY0 || 9, state = { hours: DAY0, clock: '09:00', name: 'Clear', rain: 0, temp: 8, sunset: '17:25', next: '' };
+    const state = { hours: 9, clock: '09:00', name: 'Clear', rain: 0, temp: 8, sunset: '17:25', next: '' };
     let lastDir = null, wetness = 0, dust = 0, lastGt = null;
     const dir = new THREE.Vector3();
     return {
       state, sunAt,
       update(gt, altitude) {
-        const totalH = DAY0 + gt / 3600, day = Math.floor(totalH / 24), h = totalH - day * 24;
+        const totalH = (window.TRIUND_DAY0 || 9) + gt / 3600,   // the start hour is chosen on the start screen (trip.js)
+           day = Math.floor(totalH / 24), h = totalH - day * 24;
         const { w, P } = weightsAt(h, day), W = blend(w);
         if (SKY.setWeather) SKY.setWeather(W);
         const s = sunAt(h), daylight = SKY.setSun ? SKY.setSun(s.az, s.el) : 1;
@@ -83,7 +84,7 @@ window.TriundWeather = {
         dust = Math.max(0, Math.min(1, dust + (W.snow > 0.3 ? dgt / 2400 : -dgt / (s.el > 5 ? 7200 : 30000))));
         wetness = Math.max(0, Math.min(1, wetness + (snowHere > 0.2 ? dgt / 3600 : -dgt / 5400)));
         if (SEASON && SEASON.setDynamic) SEASON.setDynamic({ snow: snowHere, dust, light: daylight, wet: wetness * 0.4 });
-        state.snowHere = snowHere; state.dust = dust;
+        state.snowHere = snowHere; state.dust = dust; state.wetness = wetness;
         const top = Object.entries(w).sort((x, y) => y[1] - x[1])[0][0];
         // air temperature: about 9 C at 2,100 m on a late-November noon, colder higher up, early and late; cooler in mist
         const diurnal = h >= 7 && h <= 17 ? Math.sin((h - 7) / 10 * Math.PI) * 6 - 2 : -2 - Math.min(5, ((h + 24 - 17) % 24) * 0.45);   // falls through the night
