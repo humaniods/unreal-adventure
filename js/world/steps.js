@@ -17,7 +17,7 @@ window.TriundSteps = {
       const list = [];
       for (const run of tr.runs) {
         const paved = run.surf === 3, stone = run.surf === 1 || run.surf === 2;
-        if (!paved && !stone) continue;
+        if ((!paved && !stone) || run.road) continue;   // asphalt roads (McLeod Ganj to Dharamkot) climb as ramps
         const minGrade = paved ? 0.11 : 0.16;
         let s = run.s0 + 0.5;
         while (s < run.s1 - 0.5) {

@@ -477,7 +477,8 @@ float shawlMask(vec3 p, vec4 c) {
       for (const sd of [-1, 1]) seatSpots.push({ x: st.x + sx * sd * side + st.tx * out, z: st.z + sz * sd * side + st.tz * out, ry: Math.atan2(st.tx, st.tz), used: false, stop: st });
     }
     function newAgent(i) {
-      const tr = R() < 0.6 ? trails.galu : trails.shiva, up = R() < 0.55;
+      // most hikers are on the two Triund paths; some walk up the McLeod Ganj lanes, a few go on to Snowline
+      const r0 = R(), tr = r0 < 0.52 ? trails.galu : r0 < 0.8 || !trails.mcleod ? trails.shiva : r0 < 0.92 || !trails.snow ? trails.mcleod : trails.snow, up = R() < 0.55;
       const a = { id: 'bot' + i, kind: 'hiker', tr, s: 15 + R() * (tr.total - 30), dir: up ? 1 : -1, lat: 0, latT: 0.9 + R() * 0.5, v: 0,
         vWalk: up ? 0.55 + R() * 0.45 : 0.85 + R() * 0.45, state: 'walk', t: 20 + R() * 120, x: 0, y: 0, z: 0, yaw: 0, look: look(R() < 0.38 ? 'f' : 'm'),
         seat: null, anim: 'Walk', animSpeed: 1 };
@@ -510,7 +511,7 @@ float shawlMask(vec3 p, vec4 c) {
     const kOff = st => ({ stall: -1.9, building: 0.6 }[st.kind] != null ? { stall: -1.9, building: 0.6 }[st.kind] : 2.35);
     const keepers = stops.map((st, i) => ({ id: 'keeper' + i, kind: 'keeper', x: st.keeper ? st.keeper.x : st.x + st.tx * kOff(st), z: st.keeper ? st.keeper.z : st.z + st.tz * kOff(st), yaw: Math.atan2(st.tx, st.tz), state: 'keeper',
       look: keeperLook(), anim: 'Idle', animSpeed: 1, t: R() * 10 }));
-    const fixed = keepers.concat((talkers || []).map((t, i) => ({ id: 'talker' + i, kind: 'talker', x: t.x, z: t.z, yaw: t.yaw, state: 'talker', look: look(i % 2 ? 'f' : 'm'), anim: 'Idle_Talking', animSpeed: 1 })));
+    const fixed = keepers.concat((talkers || []).map((t, i) => ({ id: 'talker' + i, kind: 'talker', x: t.x, z: t.z, yaw: t.yaw, state: 'talker', look: t.keeper ? keeperLook() : look(i % 2 ? 'f' : 'm'), anim: 'Idle_Talking', animSpeed: 1 })));
     for (const k of fixed) k.y = H(k.x, k.z);
 
     // The sitting clips (Quaternius) put the hips 0.33 m behind the character's origin and the underside of the

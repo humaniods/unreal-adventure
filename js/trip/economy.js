@@ -15,15 +15,15 @@ window.TriundEconomy = (function () {
     omelette:  { name: 'Omelette with bread', price: 80, en: 24, hyd: 0, warm: 0.1, eat: 6, cat: 'meal', icon: '🍳' },
     paratha:   { name: 'Aloo paratha with curd', price: 100, en: 30, hyd: 2, warm: 0.15, eat: 8, cat: 'meal', icon: '🫓' },
     rajma:     { name: 'Rajma chawal', price: 150, en: 38, hyd: 2, warm: 0.15, eat: 10, cat: 'meal', icon: '🍛', top: true },
-    water:     { name: 'Water bottle, 1 L', price: 40, en: 0, hyd: 0, sips: 5, kg: 1.0, bag: true, cat: 'pack', icon: '💧' },
-    glucon:    { name: 'Glucon-D / ORS sachet', price: 30, en: 10, hyd: 20, eat: 1, kg: 0.05, bag: true, cat: 'pack', icon: '🧃' },
-    snickers:  { name: 'Snickers bar', price: 50, en: 12, hyd: 0, eat: 1, kg: 0.05, bag: true, cat: 'pack', icon: '🍫' },
-    parleg:    { name: 'Parle-G biscuits', price: 15, en: 10, hyd: -2, eat: 2, kg: 0.08, bag: true, cat: 'pack', icon: '🍪' },
+    water:     { name: 'Water bottle, 1 L', price: 40, en: 0, hyd: 0, sips: 5, kg: 1.0, bag: true, plastic: true, cat: 'pack', icon: '💧' },
+    glucon:    { name: 'Glucon-D / ORS sachet', price: 30, en: 10, hyd: 20, eat: 1, kg: 0.05, bag: true, plastic: true, cat: 'pack', icon: '🧃' },
+    snickers:  { name: 'Snickers bar', price: 50, en: 12, hyd: 0, eat: 1, kg: 0.05, bag: true, plastic: true, cat: 'pack', icon: '🍫' },
+    parleg:    { name: 'Parle-G biscuits', price: 15, en: 10, hyd: -2, eat: 2, kg: 0.08, bag: true, plastic: true, cat: 'pack', icon: '🍪' },
     banana:    { name: 'Banana', price: 20, en: 10, hyd: 2, eat: 1, kg: 0.15, bag: true, cat: 'pack', icon: '🍌' },
     // starter kit only (not sold on the trail)
     homeparatha: { name: 'Packed aloo paratha', en: 28, hyd: 0, eat: 4, kg: 0.25, bag: true, icon: '🫓' },
-    dryfruit:  { name: 'Dry fruits pouch', en: 20, hyd: -1, eat: 2, kg: 0.2, bag: true, icon: '🥜' },
-    chocolate: { name: 'Chocolate', en: 12, hyd: 0, eat: 1, kg: 0.1, bag: true, icon: '🍫' }
+    dryfruit:  { name: 'Dry fruits pouch', en: 20, hyd: -1, eat: 2, kg: 0.2, bag: true, plastic: true, icon: '🥜' },
+    chocolate: { name: 'Chocolate', en: 12, hyd: 0, eat: 1, kg: 0.1, bag: true, plastic: true, icon: '🍫' }
   };
   // camp gear (not food): `need` says what a night at the top needs
   const GEAR = {
@@ -34,11 +34,20 @@ window.TriundEconomy = (function () {
     rain:     { name: 'Rain jacket', kg: 0.4, icon: '🧥' },
     poncho:   { name: 'Rain poncho', kg: 0.2, icon: '🧥' },
     headlamp: { name: 'Torch', kg: 0.1, icon: '🔦' },
-    speaker: { name: 'Bluetooth speaker', kg: 0.25, icon: '🔊' }
+    speaker: { name: 'Bluetooth speaker', kg: 0.25, icon: '🔊' },
+    idcard:   { name: 'Original ID card', kg: 0.01, icon: '🪪' },
+    receipt:  { name: 'Forest entry receipt', kg: 0.01, icon: '🧾' }
+  };
+  // shoes (worn, chosen at the start): grip on wet rock, loose stones and the snow up high. slip: how likely a slip
+  // is on a steep, loose or wet stretch (going down is the worst); speed: how fast you dare to walk there
+  const SHOES = {
+    trek:   { name: 'Trekking shoes', note: 'Deep lugs, ankle support', slip: 0.12, speed: 1.0 },
+    sports: { name: 'Sports shoes', note: 'Fine on dirt, slippery on wet rock', slip: 0.5, speed: 0.95 },
+    canvas: { name: 'Canvas sneakers', note: 'Flat soles: risky going down', slip: 1.0, speed: 0.9 }
   };
   // what each bag size comes with (free). Food deliberately covers only part of the climb.
   const KITS = {
-    8:  { label: 'Day hike', food: { water: 2, parleg: 2, banana: 1 }, gear: ['poncho', 'headlamp', 'speaker'],
+    8:  { label: 'Day hike', food: { water: 2, parleg: 2, banana: 1 }, gear: ['fleece', 'poncho', 'headlamp', 'speaker'],
           note: 'Light and quick. No tent or sleeping bag: rent them at the top to stay the night.' },
     12: { label: 'Overnight, light', food: { water: 2, homeparatha: 1, parleg: 2, chocolate: 1 }, gear: ['sbag', 'fleece', 'rain', 'headlamp', 'speaker'],
           note: 'Sleeping bag and warm layers. Rent a tent at the top to stay the night.' },
@@ -53,7 +62,8 @@ window.TriundEconomy = (function () {
     return ids.map(id => ({ id, ...ITEMS[id], price: Math.round(ITEMS[id].price * k / 5) * 5 }));
   }
   // Gallu Devi (~2150 m) base price, x1.2 by Magic View (~2500 m), x1.5 at the top (~2840 m)
-  const priceFactor = alt => 1 + Math.max(0, Math.min(1, (alt - 2150) / 690)) * 0.5;
+  // and on past the top: Snowline Cafe (~3170 m) is dearer still
+  const priceFactor = alt => 1 + Math.max(0, Math.min(1.5, (alt - 2150) / 690)) * 0.5;
 
   // coin packs for the (mock) payment gateway: rupees -> coins
   const PACKS = [{ id: 'p49', inr: 49, coins: 100 }, { id: 'p99', inr: 99, coins: 220, tag: 'Popular' }, { id: 'p199', inr: 199, coins: 480, tag: 'Best value' }];
@@ -64,19 +74,23 @@ window.TriundEconomy = (function () {
     get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage blocked */ } }
   };
+  // coins are the money on your phone (1 coin = Rs 1); everything on the trek is paid in coins. `cash` only exists so
+  // pocket cash saved by build 2.3 goes back to the phone at the next start (depositCash).
   const wallet = {
     coins: store.get('triund-coins', WELCOME),
+    cash: store.get('triund-cash', 0),
+    depositCash() { if (this.cash > 0) { this.coins += this.cash; this.history.unshift({ t: Date.now(), n: this.cash, why: 'Cash left over' }); this.cash = 0; this.save(); } },
     history: store.get('triund-coin-history', []),
     add(n, why, ref) { this.coins += n; this.history.unshift({ t: Date.now(), n, why, ref: ref || null }); this.history.length = Math.min(this.history.length, 50); this.save(); },
     spend(n, why) { if (this.coins < n) return false; this.coins -= n; this.history.unshift({ t: Date.now(), n: -n, why }); this.history.length = Math.min(this.history.length, 50); this.save(); return true; },
-    save() { store.set('triund-coins', this.coins); store.set('triund-coin-history', this.history); }
+    save() { store.set('triund-coins', this.coins); store.set('triund-cash', this.cash); store.set('triund-coin-history', this.history); }
   };
 
   /* ---------- the bag ---------- */
   function newBag(kg) {
     const kit = KITS[kg] || KITS[12], food = {};
     for (const id in kit.food) food[id] = kit.food[id];
-    return { kg, food, gear: kit.gear.slice(), rented: [] };
+    return { kg, food, gear: kit.gear.slice(), rented: [], wrappers: 0, plasticBottles: 0 };
   }
   const bagWeight = bag => {
     let w = 0;
@@ -98,5 +112,5 @@ window.TriundEconomy = (function () {
   // resting (seated) brings energy and stamina back: 2 %/game minute energy, 4 %/game minute stamina
   const REST = { energyPerMin: 2, staminaPerMin: 4 };
 
-  return { ITEMS, GEAR, KITS, PACKS, WELCOME, wallet, menuFor, priceFactor, newBag, bagWeight, burnPerHour, REST };
+  return { ITEMS, GEAR, SHOES, KITS, PACKS, WELCOME, wallet, menuFor, priceFactor, newBag, bagWeight, burnPerHour, REST };
 })();
