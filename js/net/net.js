@@ -28,6 +28,9 @@ window.TriundNet = {
     let pid = store.get('triund-pid', '');
     if (!/^[A-Za-z0-9_-]{8,40}$/.test(pid)) { pid = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => (b % 36).toString(36)).join(''); store.set('triund-pid', pid); }
     // everyone's clothes come from their player id (the same hash on every screen)
+    // phones and tablets have buttons, not keys: the lines say what to tap
+    const touch = () => document.body.classList.contains('touchmode');
+    const press = (key, btn) => touch() ? `Tap ${btn}` : `Press ${key}`;
     const seedOf = id => { let h = 2166136261; for (let i = 0; i < id.length; i++) { h ^= id.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
 
     /* ---------- start screen: mode and room ---------- */
@@ -71,7 +74,7 @@ window.TriundNet = {
     <div class="prow" style="margin-top:8px"><input id="roomCodeIn" maxlength="6" placeholder="CODE" autocomplete="off" spellcheck="false" aria-label="Room code"><button type="button" class="btn ghost small" id="roomJoin">Join</button></div>
   </div>
   <div id="roomIn" hidden>
-    <div class="prow"><span id="roomCode">------</span><button type="button" class="btn ghost small" id="roomCopy">Copy invite link</button><button type="button" class="btn ghost small" id="roomLeave">Leave</button></div>
+    <div class="prow"><span id="roomCode">------</span><button type="button" class="btn ghost small" id="roomCopy">Share invite</button><button type="button" class="btn ghost small" id="roomLeave">Leave</button></div>
     <ul id="roomList"></ul>
     <div class="prow"><button type="button" class="btn primary small" id="roomGo">Ready</button></div>
   </div>
@@ -117,8 +120,11 @@ window.TriundNet = {
     $('roomLeave').addEventListener('click', () => { send({ t: 'party.leave' }); });
     $('roomCopy').addEventListener('click', () => {
       const u = new URL(location.href); u.search = ''; u.searchParams.set('join', party.code); if (QS.get('server')) u.searchParams.set('server', QS.get('server'));
-      const text = `Triund trek together! Room code ${party.code}\n${u}`;
-      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => ctx.toast('Invite copied: send it on WhatsApp'), () => { prompt('Copy this invite:', text); });
+      const text = `Triund trek together! Room code ${party.code}`;
+      // phones and tablets: the share sheet (WhatsApp, Telegram, SMS…); laptops: copied, paste it anywhere
+      if (navigator.share) { navigator.share({ title: 'Triund trek', text, url: u.toString() }).catch(() => {}); return; }
+      const all = text + '\n' + u;
+      (navigator.clipboard ? navigator.clipboard.writeText(all) : Promise.reject()).then(() => ctx.toast('Invite copied: send it on WhatsApp'), () => { prompt('Copy this invite:', all); });
     });
     $('roomGo').addEventListener('click', () => {
       if (!party) return;
@@ -162,9 +168,9 @@ window.TriundNet = {
         case 'start': pendingStart = m; if (!started) begin(m); break;
         case 'roster': setRoster(m.players || []); break;
         case 'snap': snap(m.p || []); break;
-        case 'friend.ask': asks.push({ pid: m.pid, name: m.name }); ctx.say(`${m.name} wants to be your friend. Press G to accept.`, 5); ctx.buzz(1); break;
+        case 'friend.ask': asks.push({ pid: m.pid, name: m.name }); ctx.say(`${m.name} wants to be your friend. ${press('G', 'Yes')} to accept.`, 5); ctx.buzz(1); break;
         case 'link.ask': linkAsk = { pid: m.pid, name: m.name, sex: m.sex, kind: m.kind }; ctx.buzz(1);
-          ctx.say(m.kind === 'hand' ? `${m.name} holds out a hand. Press J to take it.` : `${m.name} crouches down to carry you on ${m.sex === 'f' ? 'her' : 'his'} shoulders. Press U to climb on.`, 6); break;
+          ctx.say(m.kind === 'hand' ? `${m.name} holds out a hand. ${press('J', 'Yes')} to take it.` : `${m.name} crouches down to carry you on ${m.sex === 'f' ? 'her' : 'his'} shoulders. ${press('U', 'Yes')} to climb on.`, 6); break;
         case 'link': setLink(m.link); break;
         case 'friends': { const before = friends.size; friends = new Map((m.list || []).map(f => [f.pid, f.name])); if (friends.size > before) ctx.toast('New friend added'); break; }
       }
@@ -181,7 +187,7 @@ window.TriundNet = {
       // a voice server on the host's own laptop (127.0.0.1) cannot be reached by friends elsewhere: say so instead of failing
       const loop = h => /^(127\.|localhost$|\[?::1)/.test(h);
       if (m.voice && loop(new URL(m.voice.url.replace(/^ws/, 'http')).hostname) && !loop(location.hostname)) {
-        m.voice = null; ctx.toast('Voice works once the trek is on the online server. Walk together and chat with Enter for now.');
+        m.voice = null; ctx.toast(`Voice works once the trek is on the online server. Walk together and chat with ${touch() ? 'Talk' : 'Enter'} for now.`);
       } else if (m.voice && window.TriundVoice) {
         VOICE = window.TriundVoice.create({ url: m.voice.url, token: m.voice.token, mode: micMode, team: () => team, where: id => { const r = remotes.get(id); return r ? r.a : null; }, me: () => ctx.me(), onTalk: (id, on) => { if (id === pid) myTalk = on; else { const r = remotes.get(id); if (r) { r.talk = on; r.tagDirty = true; } } renderPill(); }, onError: t => ctx.toast(t) });
       } else if (!m.voice && !VOICE) ctx.toast('Voice is not set up on this server: you see your friends but cannot talk.');
@@ -240,8 +246,8 @@ window.TriundNet = {
       const was = link; link = l; linkAsk = null;
       const r = l ? remotes.get(l.with) : null, name = r ? r.name : (was && remotes.get(was.with) || {}).name || 'your partner';
       ctx.setCarry(l && l.kind === 'carry' && l.lead ? KG[(r && r.sex) || 'f'] : 0);
-      if (l && l.kind === 'hand') ctx.say(`You walk hand in hand with ${name}. J to let go.`, 4);
-      else if (l && l.kind === 'carry') ctx.say(l.lead ? `${name} is on your shoulders. Heavy! Every step costs more now. U to put ${r && r.sex === 'm' ? 'him' : 'her'} down.` : `You are up on ${name}'s shoulders: what a view. U to get down.`, 5);
+      if (l && l.kind === 'hand') ctx.say(`You walk hand in hand with ${name}. ${touch() ? 'Hand' : 'J'} to let go.`, 4);
+      else if (l && l.kind === 'carry') ctx.say(l.lead ? `${name} is on your shoulders. Heavy! Every step costs more now. ${touch() ? 'Carry' : 'U'} to put ${r && r.sex === 'm' ? 'him' : 'her'} down.` : `You are up on ${name}'s shoulders: what a view. ${touch() ? 'Carry' : 'U'} to get down.`, 5);
       else if (was) {
         ctx.say(was.kind === 'hand' ? 'You let go of each other\'s hands.' : was.lead ? 'You crouch and let your partner down.' : 'You slide down off the shoulders, back on your own feet.', 3);
         if (was.kind === 'carry' && !was.lead) {   // carried: step down beside the one who carried you
@@ -307,7 +313,8 @@ window.TriundNet = {
       const near = Array.from(remotes.values()).filter(r => r.a && Math.hypot(r.a.x - ctx.me().x, r.a.z - ctx.me().z) < 60).length;
       const teamOn = Array.from(roster.values()).filter(p => p.team).length;
       const label = { all: 'Mic: All', team: 'Mic: Team', off: 'Mic: Off' }[micMode];
-      pill.innerHTML = `<span class="talk${myTalk ? ' on' : ''}"></span><span class="m-${micMode}">${label}</span><kbd>N</kbd><span>· team ${teamOn + 1} · ${near} near · ${roster.size + 1} on the mountain</span>`;
+      const loading = !ctx.crowd() ? ' · loading people…' : '';
+      pill.innerHTML = `<span class="talk${myTalk ? ' on' : ''}"></span><span class="m-${micMode}">${label}</span><kbd>N</kbd><span>· team ${teamOn + 1} · ${near} near · ${roster.size + 1} on the mountain${loading}</span>`;
     }
     let pillT = 0;
     return {
@@ -371,6 +378,9 @@ window.TriundNet = {
         }
       },
       hands() { linkKey('hand'); }, carry() { linkKey('carry'); },
+      // a request is waiting for your yes (touch: the Yes button)
+      get pending() { return !!linkAsk || asks.length > 0; },
+      acceptAny() { if (linkAsk) linkKey(linkAsk.kind); else this.acceptFriend(); },
       linkState() { return { link, ask: linkAsk }; },
       // QA: what this player sees and hears
       debug() { return { mode: micMode, link, remotes: Array.from(remotes, ([id, r]) => ({ id, name: r.name, sex: r.sex, body: r.a.look.sex, team: r.team, x: r.a.x, y: r.a.y, z: r.a.z, yaw: r.a.yaw, anim: r.a.anim, ch: !!r.a.ch, link: r.link })), voice: VOICE && VOICE.debug ? VOICE.debug() : null }; },
@@ -378,12 +388,13 @@ window.TriundNet = {
       nearest(P, r0) { let best = null, bd = r0 || 3.5; for (const [id, r] of remotes) { const d = Math.hypot(r.a.x - P.x, r.a.z - P.z); if (d < bd) { bd = d; best = { pid: id, r }; } } return best; },
       prompt(P) {
         if (!started) return null;
-        if (link) { const r = remotes.get(link.with), nm = esc(r ? r.name : 'partner'); return link.kind === 'hand' ? `<kbd>J</kbd> Let go of ${nm}'s hand` : link.lead ? `<kbd>U</kbd> Put ${nm} down` : `<kbd>U</kbd> Get down`; }
-        if (linkAsk) return linkAsk.kind === 'hand' ? `<kbd>J</kbd> Take ${esc(linkAsk.name)}'s hand` : `<kbd>U</kbd> Climb onto ${esc(linkAsk.name)}'s shoulders`;
+        const k = (key, btn) => `<kbd>${touch() ? btn : key}</kbd>`;
+        if (link) { const r = remotes.get(link.with), nm = esc(r ? r.name : 'partner'); return link.kind === 'hand' ? `${k('J', 'Hand')} Let go of ${nm}'s hand` : link.lead ? `${k('U', 'Carry')} Put ${nm} down` : `${k('U', 'Carry')} Get down`; }
+        if (linkAsk) return linkAsk.kind === 'hand' ? `${k('J', 'Yes')} Take ${esc(linkAsk.name)}'s hand` : `${k('U', 'Yes')} Climb onto ${esc(linkAsk.name)}'s shoulders`;
         const n = this.nearest(P); if (!n) return null;
-        if (n.r.team) return `<kbd>J</kbd> Hold ${esc(n.r.name)}'s hand · <kbd>U</kbd> Carry ${n.r.sex === 'm' ? 'him' : 'her'} on your shoulders`;
+        if (n.r.team) return `${k('J', 'Hand')} Hold ${esc(n.r.name)}'s hand · ${k('U', 'Carry')} Carry ${n.r.sex === 'm' ? 'him' : 'her'} on your shoulders`;
         if (friends.has(n.pid)) return `${esc(n.r.name)} · friend`;
-        return `<kbd>E</kbd> Ask ${esc(n.r.name)} to be friends`;
+        return `${k('E', 'Use')} Ask ${esc(n.r.name)} to be friends`;
       },
       interact(P) {
         if (!started) return false; const n = this.nearest(P); if (!n || n.r.team || friends.has(n.pid)) return false;
