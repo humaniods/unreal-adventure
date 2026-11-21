@@ -1,6 +1,7 @@
 <meta charset="utf-8">
 <title>Triund Walk Test</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600&family=Rajdhani:wght@500;600;700&display=swap">
@@ -155,6 +156,16 @@ kbd{font-family:var(--f-display);font-weight:600;font-size:13px;border:1px solid
 body.touchmode #watch{bottom:auto;top:calc(8px + env(safe-area-inset-top,0px));transform:rotate(4deg) scale(.6);transform-origin:top left}
 body.touchmode #watch.up{transform:rotate(2deg) scale(.85)}
 body.touchmode #watch .strap{top:-60px;bottom:-46px}
+/* phones and tablets: the watch keeps the top-left corner; energy, coins and bag go top-right with the room pill
+   under them; subtitles stay clear of the buttons (above them standing up, between the stick and buttons lying down) */
+body.touchmode #res{left:auto;right:calc(8px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));font-size:11px;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:64vw}
+body.touchmode #res .chip{padding:4px 8px;gap:5px}
+body.touchmode #res .bar{width:44px}
+body.touchmode #netPill{left:auto;right:calc(8px + env(safe-area-inset-right,0px));transform:none;top:calc(44px + env(safe-area-inset-top,0px));font-size:11px;padding:3px 9px;max-width:64vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.touchmode #netPill kbd{display:none}
+@media (orientation:portrait){body.touchmode #subtitle{bottom:calc(290px + env(safe-area-inset-bottom,0px));max-width:92vw}
+  body.touchmode #prompt{top:44%}body.touchmode #netPill{top:calc(84px + env(safe-area-inset-top,0px))}}
+@media (orientation:landscape){body.touchmode #subtitle{bottom:calc(14px + env(safe-area-inset-bottom,0px));max-width:calc(100vw - 440px)}}
 
 #droneHud{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:8;background:rgba(8,12,10,.72);
   color:var(--mist);padding:10px 16px;border-radius:10px;text-align:center;width:max-content;max-width:calc(100vw - 32px);pointer-events:none}
@@ -251,6 +262,11 @@ body.touchmode #watch .strap{top:-60px;bottom:-46px}
     <button type="button" id="tbUse">Use</button>
     <button type="button" id="tbWater">Water</button>
     <button type="button" id="tbMenu">Pause</button>
+    <button type="button" id="tbTalk">Talk</button>
+    <button type="button" id="tbHand" hidden>Hand</button>
+    <button type="button" id="tbCarry" hidden>Carry</button>
+    <button type="button" id="tbMic" hidden>Mic</button>
+    <button type="button" id="tbYes" hidden>Yes</button>
   </div>
 </div>
 
@@ -1414,6 +1430,12 @@ if(isTouch){
   hold('tbBreath',b=>{holdBreathTouch=true;b.classList.add('on');},b=>{holdBreathTouch=false;b.classList.remove('on');});
   hold('tbWatch',()=>{if($('watch').classList.contains('up'))cyclePage();else toggleWatch();});
   hold('tbUse',()=>interact());hold('tbWater',()=>drink());hold('tbMenu',()=>pause());
+  // talking and the couple moves on a touch screen (the keys are Enter, J, U, N and G on a keyboard)
+  hold('tbTalk',()=>{if(!(TALK&&TALK.open()))toast('Walk up to a hiker or a stall keeper to talk');});
+  hold('tbHand',()=>{if(NET)NET.hands();});hold('tbCarry',()=>{if(NET)NET.carry();});hold('tbMic',()=>{if(NET)NET.cycleMic();});
+  hold('tbYes',()=>{if(NET)NET.acceptAny();});
+  setInterval(()=>{const on=!!(NET&&NET.active);$('tbHand').hidden=$('tbCarry').hidden=$('tbMic').hidden=!on;$('tbYes').hidden=!(NET&&NET.pending);
+    $('tbYes').classList.toggle('on',!!(NET&&NET.pending));},400);
 }
 
 /* ================= UI helpers ================= */
