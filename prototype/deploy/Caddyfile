@@ -1,0 +1,9 @@
+# HTTPS certificates come from Let's Encrypt automatically.
+{$GAME_DOMAIN} {
+	encode gzip
+	reverse_proxy game:8787    # the game, /ws (rooms and positions) and /bot/chat
+}
+
+{$VOICE_DOMAIN} {
+	reverse_proxy host.docker.internal:7880    # LiveKit signalling (WebSocket)
+}

@@ -67,7 +67,8 @@ window.TriundSigns = {
       const bm = new THREE.Mesh(PLANE[kind], blank(st)); bm.position.set(0, by + st.h / 2, -0.027); bm.rotation.y = Math.PI; g.add(bm);
       if (extra) extra(g, st);
       scene.add(g);
-      if (collide) for (const sx of st.post ? [0] : [-1, 1]) collide.circle(at.x + Math.cos(g.rotation.y) * sx * st.w / 2, at.z - Math.sin(g.rotation.y) * sx * st.w / 2, 0.1, true);
+      // the whole board is solid, posts and panel: nobody walks through it
+      if (collide) collide.rect(at.x, at.z, g.rotation.y, st.w + 0.1, 0.16, !!st.post);   // the small 50 m markers stand below eye height: body radius
       const b = { g, fm, bm, kind, front, back, st, x: at.x, z: at.z, drawn: false };
       boards.push(b); list.push({ kind, x: at.x, z: at.z, text: front[0] }); return b;
     }

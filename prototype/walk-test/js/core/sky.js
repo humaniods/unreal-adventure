@@ -42,6 +42,7 @@ window.TriundSky = {
     // light: sun + sky fill; intensities tuned for ACES at the exposure above
     const hemi = new THREE.HemisphereLight(new THREE.Color(0xbcd3ff).convertSRGBToLinear(), new THREE.Color(0x5a5238).convertSRGBToLinear(), 1.45);
     scene.add(hemi);
+    const NIGHT_SKY = new THREE.Color(0x7d93c8).convertSRGBToLinear(), NIGHT_GROUND = new THREE.Color(0x2a3040).convertSRGBToLinear(), GROUND_DAY = hemi.groundColor.clone();
     const sun = new THREE.DirectionalLight(new THREE.Color(0xffe0b8).convertSRGBToLinear(), 3.1);
     sun.position.copy(sunDir).multiplyScalar(400);
     scene.add(sun); scene.add(sun.target);
@@ -59,9 +60,13 @@ window.TriundSky = {
         if (sky) sky.material.uniforms.sunPosition.value.copy(d);
         const ss = t => Math.max(0, Math.min(1, t)), day = ss((elDeg + 6) / 16), lit = ss((elDeg + 1) / 9);
         sun.intensity = W.sun * lit; sun.color.setRGB(1, 0.62 + 0.26 * lit, 0.42 + 0.3 * lit).convertSRGBToLinear();
-        hemi.intensity = W.hemi * (0.018 + 0.982 * day);
+        // a mountain night is dark but not black: starlight and the snow and town glow leave a dim blue light in which
+        // the ridge lines, the path and the trees still read (about 6 % of the day's sky light, tinted blue)
+        hemi.intensity = W.hemi * (0.14 + 0.86 * day);
+        if (day < 1) { hemi.color.set(W.sky || 0xbcd3ff).convertSRGBToLinear().lerp(NIGHT_SKY, 1 - day); hemi.groundColor.copy(GROUND_DAY).lerp(NIGHT_GROUND, 1 - day); }
+        else hemi.groundColor.copy(GROUND_DAY);
         this._dark = 1 - day;
-        renderer.toneMappingExposure = W.exposure * (1 + 0.7 * (1 - day));   // the eye adapts a little to the dark, not to daylight
+        renderer.toneMappingExposure = W.exposure * (1 + 1.1 * (1 - day));   // the eye adapts to the dark (night vision), not to daylight
         return day;
       },
       setWeather(w) {
@@ -74,7 +79,7 @@ window.TriundSky = {
         if (sky) sky.position.copy(camera.position);
         camera.getWorldDirection(v);
         const k = Math.max(0, v.x * sunDir.x + v.z * sunDir.z) ** 2 * 0.6;
-        scene.fog.color.copy(hazeBase).lerp(hazeSun, k).multiplyScalar(1 - 0.93 * (this._dark || 0));
+        scene.fog.color.copy(hazeBase).lerp(hazeSun, k).multiplyScalar(1 - 0.86 * (this._dark || 0));   // night air: a deep blue haze, not black
       }
     };
   }

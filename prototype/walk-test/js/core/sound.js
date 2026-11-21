@@ -47,14 +47,49 @@ window.TriundSound = {
       // large-billed crow: deep hoarse caw
       crow(d, t) { for (let i = 0, n = 1 + (Math.random() * 3 | 0); i < n; i++) { const x = t + i * 0.42; tone(d, x, 'sawtooth', 520, 430, 0.3, 0.22, [28, 25]); noiseBurst(d, x, 'bandpass', 1300, 1.5, 0.28, 0.12); } },
       // red-billed chough: ringing "chee-ow"
-      chough(d, t) { tone(d, t, 'square', 1700, 1100, 0.2, 0.12); }
+      chough(d, t) { tone(d, t, 'square', 1700, 1100, 0.2, 0.12); },
+      // black kite circling over the valley: a thin whistle falling into a trill
+      kite(d, t) { tone(d, t, 'sine', 2600, 2100, 0.45, 0.35); tone(d, t + 0.47, 'sine', 2200, 1900, 0.7, 0.28, [22, 160]); },
+      // grey langur troop in the oaks: deep "whoop" calls
+      langur(d, t) { let x = t; for (let i = 0, n = 2 + (Math.random() * 3 | 0); i < n; i++) { tone(d, x, 'triangle', rnd(160, 210), rnd(260, 320), 0.22, 0.55); x += rnd(0.35, 0.6); } },
+      // night: brown wood owl, two soft low hoots
+      owl(d, t) { tone(d, t, 'sine', 420, 380, 0.32, 0.6); tone(d, t + 0.55, 'sine', 400, 350, 0.6, 0.55); },
+      // nightjar: a run of hollow "chuk" notes, like a stone tapped on a plank
+      nightjar(d, t) { let x = t; for (let i = 0, n = 6 + (Math.random() * 8 | 0); i < n; i++) { tone(d, x, 'sine', 980, 760, 0.05, 0.7); x += 0.21 + Math.random() * 0.02; } },
+      // jackals far down in the valley: a few rising and falling wails together
+      jackal(d, t) { for (let v = 0; v < 3; v++) { const x = t + v * rnd(0.1, 0.5), f = rnd(650, 900); tone(d, x, 'sine', f, f * 1.45, 0.9, 0.35, [rnd(5, 8), 25]); tone(d, x + 0.9, 'sine', f * 1.45, f * 0.8, 1.1, 0.3, [rnd(5, 8), 30]); } }
     };
+    // a night of insects: two crickets (fast pulses in chirp groups) in the grass below about 2,600 m
+    const night = (() => {
+      const g = AC.createGain(); g.gain.value = 0; g.connect(out);
+      for (const [f, rate, grp, pan] of [[4450, 31, 0.9, -0.4], [3950, 24, 1.3, 0.5]]) {
+        const o = AC.createOscillator(); o.frequency.value = f;
+        const am = AC.createGain(); am.gain.value = 0.5; const lfo = AC.createOscillator(); lfo.type = 'square'; lfo.frequency.value = rate; const lg = AC.createGain(); lg.gain.value = 0.5; lfo.connect(lg); lg.connect(am.gain);
+        const gp = AC.createGain(); gp.gain.value = 0.5; const l2 = AC.createOscillator(); l2.frequency.value = grp; const l2g = AC.createGain(); l2g.gain.value = 0.5; l2.connect(l2g); l2g.connect(gp.gain);
+        o.connect(am); am.connect(gp); let tail = gp; if (hasPan) { const p = AC.createStereoPanner(); p.pan.value = pan; gp.connect(p); tail = p; } tail.connect(g);
+        o.start(); lfo.start(); l2.start();
+      }
+      return g;
+    })();
+    // leaves in the wind: a soft rustle in the forest that swells with the gusts
+    const leaves = (() => { const s = AC.createBufferSource(); s.buffer = noise; s.loop = true; const hp = AC.createBiquadFilter(); hp.type = 'bandpass'; hp.frequency.value = 2400; hp.Q.value = 0.4; const g = AC.createGain(); g.gain.value = 0; s.connect(hp); hp.connect(g); g.connect(out); s.start(); return g; })();
+    let gust = 0, gustT = 0, nightT = 6;
+    function nightTick(dt, L, env) {
+      nightT -= dt; if (nightT > 0) return; nightT = rnd(6, 16);
+      const pool = [['owl', 3], ['nightjar', env.alt < 2600 ? 3 : 0.5], ['jackal', env.alt < 2500 ? 1.2 : 0.6]];
+      let sum = 0; for (const p of pool) sum += p[1]; let r = Math.random() * sum, k = pool[0][0];
+      for (const p of pool) { r -= p[1]; if (r <= 0) { k = p[0]; break; } }
+      const dist = k === 'jackal' ? rnd(300, 700) : rnd(30, 160), pan = rnd(-0.9, 0.9);
+      CALLS[k](chain(pan, dist, (k === 'jackal' ? 0.5 : 0.2) * distGain(dist, 30)), now() + 0.02);
+    }
     let birdT = 1.5;
     function birdTick(dt, L, env) {
       birdT -= dt; if (birdT > 0) return;
       const forest = env.alt < 2650, top = env.alt > 2700, nearWater = env.waterD < 90;
-      birdT = rnd(1.2, forest ? 4.5 : 7);
+      birdT = rnd(1.2, forest ? 4.5 : 7) * (env.dawn ? 0.5 : 1);   // the dawn chorus is busiest
+      if (env.dark > 0.75) return;                                   // birds are quiet at night
       const pool = [];
+      pool.push(['kite', top ? 1 : 0.5]); if (forest) pool.push(['langur', 0.35]);
       if (forest) pool.push(['bulbul', 4], ['magpie', 2], ['barbet', 1.5], ['laughing', 2]);
       if (nearWater) pool.push(['thrush', 5]);
       if (top) pool.push(['chough', 1]);
@@ -157,7 +192,13 @@ window.TriundSound = {
             if (fN.p) { const pp = panTo(L, fN.p[0], fN.p[1]) * 0.7; fallBed.p.pan.setTargetAtTime(pp, now(), 0.3); fallLow.p.pan.setTargetAtTime(pp * 0.5, now(), 0.3); }
           }
         }
-        birdTick(dt, L, { alt: L.y, waterD: st.waterD, nearStall: info.nearStall });
+        const dark = info.dark || 0;
+        birdTick(dt, L, { alt: L.y, waterD: st.waterD, nearStall: info.nearStall, dark, dawn: dark > 0.2 && dark < 0.6 && info.morning });
+        if (dark > 0.7) nightTick(dt, L, { alt: L.y });
+        night.gain.setTargetAtTime(dark > 0.6 && L.y < 2650 ? 0.012 * Math.min(1, (dark - 0.6) * 4) * (1 - Math.max(0, (L.y - 2400) / 250)) : 0, now(), 1.5);
+        // gusts come and go; the forest rustles with them, more on the open ridge
+        gustT -= dt; if (gustT <= 0) { gustT = rnd(3, 9); gust = Math.random() ** 2; }
+        leaves.gain.setTargetAtTime((L.y < 2650 ? 0.018 : 0.008) * (0.3 + gust) * (info.mist ? 1.3 : 1), now(), 1.2);
         // mule bells (ring with each step while the string is moving) and hooves close by
         if (info.mules) for (const m of info.mules) {
           if (!m.moving) continue;

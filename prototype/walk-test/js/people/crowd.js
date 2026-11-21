@@ -17,6 +17,8 @@ window.TriundCrowd = {
     const [gm, gf, gh] = await Promise.all([load(base + 'hiker_m.gltf.json'), load(base + 'hiker_f.gltf.json'), load(base + 'hair.gltf.json')]);
     window.__crowdStage = 'loaded';
     const HAIR = {}; gh.scene.traverse(n => { if (n.isMesh) HAIR[n.name.replace(/_\d+$/, '')] = n; });
+    // the hair model is light grey: Indian hikers' hair is near black, dark brown in the sun
+    { const dark = new THREE.Color(0x2a1d15).convertSRGBToLinear(); for (const k in HAIR) { const m = HAIR[k].material; if (m && m.color) { HAIR[k].material = m.clone(); HAIR[k].material.color.copy(dark); } } }
     // ground speed each locomotion clip was authored for (m/s at scale 1): playback is scaled to the real speed so
     // planted feet do not slide. [measured, fallback, min, max playback rate]
     const LOCO = {};
@@ -239,6 +241,15 @@ float shawlMask(vec3 p, vec4 c) {
                hairStyle: sex === 'f' ? 'Hair_Long' : (R() < 0.6 ? 'Hair_SimpleParted' : 'Hair_Buzzed'), beard: sex === 'm' && R() < 0.35,
                capCol: pick([0xb8432f, 0x2e2e33, 0x2f4f7f, 0xd9a321, 0xe0e0dc, 0x3f6b3a, 0x8a2f2f]), puffer: R() < 0.6, hiker: true,
                scale: sex === 'f' ? 0.93 + R() * 0.05 : 0.9 + R() * 0.07 };
+    }
+    // a real player's kit (theirs and everyone else's view of them): trekking jacket, bag and cap by player id
+    const P_TOPS = [0x2a5d86, 0x7a2e4a, 0x3f6b3a, 0xb8432f, 0x2e2e33, 0xd9a321, 0x4a3f7a, 0x1f7a7a];
+    const P_PACKS = [0xa8452c, 0x2f6f8a, 0xe0b021, 0x3a5a2a, 0x6b2f6b, 0x222428];
+    function playerLook(sex, seed) {
+      const f = sex === 'f', h = (seed >>> 0) || (f ? 1 : 0);
+      return { sex: f ? 'f' : 'm', top: P_TOPS[h % P_TOPS.length], bottom: f ? 0x2f3440 : 0x3b4036, shoe: 0x5a3d26, pack: P_PACKS[(h >>> 4) % P_PACKS.length],
+               head: 'beanie', capCol: [0x8a2f2f, 0xd9a321, 0x2e2e33, 0xe0e0dc, 0x3f6b3a][(h >>> 8) % 5], puffer: true, hiker: true,
+               scale: f ? 0.92 : 0.95, hairStyle: f ? 'Hair_Long' : 'Hair_SimpleParted', beard: false };
     }
     function keeperLook() {
       return { sex: 'm', top: pick(SWEATERS), bottom: pick([0xd9d2c3, 0xcfc8b8, 0x8a8478, 0x5a5650]), shoe: pick([0x3a2a20, 0x2a2420, 0x4a4038]), pack: null,
@@ -528,6 +539,11 @@ float shawlMask(vec3 p, vec4 c) {
     }
     function think(a, dt, P) {
       a.t -= dt;
+      // in a conversation with you (talk.js): standing people stop, turn to you and talk with their hands; seated ones stay seated
+      if (a.chatT > 0) {
+        a.chatT -= dt; if (a.talkT > 0) a.talkT -= dt;
+        if (a.state !== 'sit' && a.state !== 'fire') { a.v = 0; a.yaw = Math.atan2(P.x - a.x, P.z - a.z); a.anim = a.talkT > 0 ? 'Idle_Talking' : 'Idle'; a.animSpeed = 1; return; }
+      }
       if (a.state === 'walk') {
         // keep left (Indian trails) relative to the walking direction; step aside around the hiker
         let latT = -a.dir * a.latT;
@@ -623,7 +639,11 @@ float shawlMask(vec3 p, vec4 c) {
         .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb = vColor.rgb * vPc.x + vec3(0.03, 0.035, 0.04) * vPc.y + vec3(0.32, 0.2, 0.13) * vPc.z;');
     };
     pmat.vertexColors = false;
-    const total = agents.length + fixed.length;
+    // real players from the network (net.js): same bodies as the bots, driven by their snapshots. Fixed slots so
+    // the instanced proxy never has to grow; an unused slot sits far away and is never drawn
+    const REMOTE_MAX = 32, FAR = 1e7;
+    const remotes = []; for (let i = 0; i < REMOTE_MAX; i++) remotes.push({ id: 'remote' + i, kind: 'player', active: false, x: FAR, y: -1e4, z: FAR, yaw: 0, state: 'remote', look: look(i % 2 ? 'f' : 'm'), anim: 'Idle', animSpeed: 1, lamp: false });
+    const total = agents.length + fixed.length + remotes.length;
     const proxy = new THREE.InstancedMesh(proxyGeo(), pmat, total); proxy.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(total * 3), 3);
     proxy.frustumCulled = false; proxy.castShadow = false; scene.add(proxy);
     // vColor comes from instanceColor (three defines USE_COLOR when instanceColor is set)
@@ -633,18 +653,24 @@ float shawlMask(vec3 p, vec4 c) {
     const POOL = quality && quality.grassDensity < 0.7 ? 10 : 18;
     const pool = []; for (let i = 0; i < POOL; i++) { window.__crowdStage = 'char' + i; try { pool.push(makeChar(i % 3 === 2 ? 'f' : 'm')); } catch (e) { window.__crowdStage = 'charErr ' + (e && e.stack || e); throw e; } }
     window.__crowdStage = 'pool';
-    const everyone = agents.concat(fixed);
+    const everyone = agents.concat(fixed, remotes);
     let assignT = 0;
     const M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), V = new THREE.Vector3(), S1 = new THREE.Vector3(1, 1, 1), UP = new THREE.Vector3(0, 1, 0), C = new THREE.Color();
     function assign(cam) {
       for (const p of everyone) p.d2 = (p.x - cam.x) ** 2 + (p.z - cam.z) ** 2;
-      const near = everyone.filter(p => p.d2 < 90 * 90).sort((a, b) => a.d2 - b.d2);
+      const near = everyone.filter(p => p.d2 < 90 * 90).sort((a, b) => (a.kind === 'player' ? a.d2 * 0.1 : a.d2) - (b.kind === 'player' ? b.d2 * 0.1 : b.d2));
       const want = new Set(near.slice(0, POOL * 2).filter(p => near.indexOf(p) < POOL || true).slice(0, POOL));
       // release characters whose person left the set
-      for (const ch of pool) if (ch.agent && !want.has(ch.agent)) { ch.agent.ch = null; ch.agent = null; ch.root.visible = false; }
+      for (const ch of pool) if (ch.agent && !want.has(ch.agent)) { ch.agent.ch = null; ch.agent = null; ch.root.visible = false; if (ch.torch) { ch.torch.g.visible = false; ch.torch.spot.visible = false; } }
       for (const p of want) {
         if (p.ch) continue;
-        let ch = pool.find(c => !c.agent && c.sex === p.look.sex) || pool.find(c => !c.agent);
+        let ch = pool.find(c => !c.agent && c.sex === p.look.sex);
+        // a real player always gets a body of their own sex: borrow it from the farthest bot if none is free
+        if (!ch && p.kind === 'player') {
+          ch = pool.filter(c => c.agent && c.agent.kind !== 'player' && c.sex === p.look.sex).sort((x, y) => y.agent.d2 - x.agent.d2)[0] || null;
+          if (ch) { ch.agent.ch = null; ch.agent = null; }
+        }
+        ch = ch || pool.find(c => !c.agent);
         if (!ch) break;
         if (ch.sex !== p.look.sex) p.look.sex = ch.sex;
         ch.agent = p; p.ch = ch; dress(ch, p.look); ch.cur = null; ch.root.visible = true;
@@ -654,6 +680,41 @@ float shawlMask(vec3 p, vec4 c) {
       byDist.forEach((c, i) => { const on = i < SHADOW_CASTERS; if (on !== c.shadow) { c.shadow = on; c.casters.forEach(m => { m.castShadow = on; }); } });
     }
     const SHADOW_CASTERS = 4;
+    /* ---------- torches at night: hikers on the move carry one in the right hand ---------- */
+    // not real lights (a 1 GB GPU cannot afford dozens): a glowing lens, a faint cone of light in the air and a
+    // bright patch on the ground ahead of them
+    let DARK = 0;
+    const glowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,240,200,0.55)'); gr.addColorStop(1, 'rgba(255,230,180,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+    const TM = {
+      body: new THREE.MeshStandardMaterial({ color: 0x1f2123, roughness: 0.5, metalness: 0.4 }),
+      glow: new THREE.SpriteMaterial({ map: glowTex, color: 0xfff1cf, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }),
+      // the beam in the air: bright at the lens, fading to nothing a few metres out (alpha gradient along the cone)
+      beam: new THREE.MeshBasicMaterial({ color: 0xfff0c8, transparent: true, opacity: 0.035, alphaMap: (()=>{const c=document.createElement('canvas');c.width=4;c.height=64;const g=c.getContext('2d'),gr=g.createLinearGradient(0,0,0,64);gr.addColorStop(0,'#fff');gr.addColorStop(0.35,'#777');gr.addColorStop(1,'#000');g.fillStyle=gr;g.fillRect(0,0,4,64);return new THREE.CanvasTexture(c);})(), blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }),
+      spot: new THREE.MeshBasicMaterial({ map: glowTex, color: 0xfff0c8, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 })
+    };
+    const beamGeo = new THREE.ConeGeometry(1.0, 6, 14, 1, true); beamGeo.translate(0, -3, 0); beamGeo.rotateX(-Math.PI / 2);   // apex at the lens, opening along +z
+    const bodyGeo = new THREE.CylinderGeometry(0.022, 0.03, 0.2, 8); bodyGeo.rotateX(Math.PI / 2);
+    const spotGeo = new THREE.PlaneGeometry(1, 1); spotGeo.rotateX(-Math.PI / 2);
+    const TV3 = new THREE.Vector3(), TQ3 = new THREE.Quaternion(), ZF = new THREE.Vector3(0, 0, 1);
+    function torchOf(ch) {
+      if (ch.torch) return ch.torch;
+      const g = new THREE.Group(), body = new THREE.Mesh(bodyGeo, TM.body), glow = new THREE.Sprite(TM.glow), beam = new THREE.Mesh(beamGeo, TM.beam), spot = new THREE.Mesh(spotGeo, TM.spot);
+      glow.scale.setScalar(0.35); glow.position.z = 0.11; beam.position.z = 0.1; g.add(body, glow, beam); g.visible = false; spot.visible = false; spot.renderOrder = 2;
+      scene.add(g); scene.add(spot);
+      let hand = null; ch.root.traverse(o => { if (!hand && /^hand_r$/i.test(o.name)) hand = o; });
+      return (ch.torch = { g, spot, hand });
+    }
+    function torchTick(ch, p) {
+      const on = DARK > 0.35 && (p.kind === 'player' ? p.lamp : (p.state === 'walk' || p.state === 'top' || p.state === 'leave' || p.state === 'rest')) && p.d2 < 70 * 70;
+      if (!on) { if (ch.torch) { ch.torch.g.visible = false; ch.torch.spot.visible = false; } return; }
+      const t = torchOf(ch), fx = Math.sin(p.ryaw), fz = Math.cos(p.ryaw);
+      if (t.hand) t.hand.getWorldPosition(TV3); else TV3.set(p.x + Math.cos(p.ryaw) * -0.25, p.y + 1.0, p.z - Math.sin(p.ryaw) * -0.25);
+      t.g.position.copy(TV3); t.g.quaternion.setFromUnitVectors(ZF, TV3.set(fx, -0.32, fz).normalize()); t.g.visible = true;
+      const k = Math.min(1, (DARK - 0.35) * 3), d = 4.5, sx = p.x + fx * d, sz = p.z + fz * d;
+      t.spot.position.set(sx, HM(sx, sz) + 0.06, sz); t.spot.scale.set(3.2, 1, 4.2); t.spot.rotation.y = p.ryaw; t.spot.visible = true;
+      TM.spot.opacity = 0.5 * k; TM.beam.opacity = 0.035 * k;
+    }
     const FR = new THREE.Frustum(), PM = new THREE.Matrix4(), SPH = new THREE.Sphere();
 
     // a round steel serving tray with a rolled rim (what every chai stall uses)
@@ -772,6 +833,27 @@ float shawlMask(vec3 p, vec4 c) {
     const IK_D2 = 90 * 90;      // every full character in view (the pool is small)
     let simT = 0;
     return {
+      setDark(d) { DARK = d || 0; },
+      // the nearest bot or shopkeeper within r metres you could talk to (not real players, not campers asleep in tents)
+      nearestPerson(P, r) {
+        let best = null, bd = r || 3.2;
+        for (const list of [agents, keepers]) for (const a of list) {
+          if (a.kind === 'player' || (a.camper && a.state !== 'fire')) continue;
+          const d = Math.hypot(a.x - P.x, a.z - P.z); if (d < bd) { bd = d; best = a; }
+        }
+        return best;
+      },
+      // keep them with you for `secs` (they stop and face you); `talk` seconds of talking with their hands
+      chat(a, secs, talk) { if (!a) return; a.chatT = Math.max(a.chatT || 0, secs); if (talk) a.talkT = talk; },
+      // a real player joins your view: a body for them (sex 'm' or 'f'); free it when they leave
+      addRemote(sex, seed) {
+        const r = remotes.find(q => !q.active); if (!r) return null;
+        r.active = true; r.look = playerLook(sex, seed); r.ryaw = undefined; return r;
+      },
+      freeRemote(r) {
+        if (!r) return; r.active = false; r.x = r.z = FAR; r.y = -1e4; r.lamp = false;
+        if (r.ch) { const ch = r.ch; ch.agent = null; r.ch = null; ch.root.visible = false; if (ch.torch) { ch.torch.g.visible = false; ch.torch.spot.visible = false; } }
+      },
       agents, keepers, seatSpots, pushOut, counts: { bots: agents.length, keepers: keepers.length, pool: POOL },
       // the shopkeeper of this stop turns to the player and hands the order over (Interact clip)
       serve(stop) { const i = stops.indexOf(stop); if (i >= 0 && !keepers[i].task) keepers[i].serveT = 2.2; },
@@ -797,6 +879,7 @@ float shawlMask(vec3 p, vec4 c) {
           // you only while you are at the counter, slowly, and back to the front when you leave
           const dp = Math.hypot(P.x - k.x, P.z - k.z), home = k.homeYaw != null ? k.homeYaw : (k.homeYaw = k.yaw);
           if (k.serveT > 0) { k.serveT -= dt; k.anim = 'Interact'; k.yaw = Math.atan2(P.x - k.x, P.z - k.z); continue; }   // handing over an order
+          if (k.chatT > 0) { k.chatT -= dt; if (k.talkT > 0) k.talkT -= dt; k.anim = k.talkT > 0 ? 'Idle_Talking' : 'Idle'; k.yaw += window.TriundAnim.angDiff(k.yaw, Math.atan2(P.x - k.x, P.z - k.z)) * Math.min(1, dt * 4); continue; }   // talking with you
           if (dp < 5 && !k.greeted) { k.greeted = true; k.talkT = 2.6; } else if (dp > 9) k.greeted = false;
           k.t = (k.t || 8 + R() * 10) - dt;
           if (k.talkT > 0) { k.talkT -= dt; k.anim = 'Idle_Talking'; }
@@ -813,6 +896,7 @@ float shawlMask(vec3 p, vec4 c) {
           if (p.ch) {
             const ch = p.ch; ch.root.position.set(p.x, p.y, p.z); ch.root.rotation.y = p.ryaw;
             play(ch, p.anim, p.animSpeed);
+            if (!p.keeper) torchTick(ch, p);
             // skin animation is CPU work per bone: skip people out of view, and step distant ones at a lower rate
             ch.animAcc += dt;
             const seen = !camera || FR.intersectsSphere(SPH.set(ch.root.position, 1.6));
@@ -849,9 +933,11 @@ float shawlMask(vec3 p, vec4 c) {
       // the player's own third-person body
       // the player's own third-person body, and a copy of their rucksack that stands on the ground beside them
       // while they sit (people take the bag off at a chai stall)
-      playerChar() {
-        const base = { sex: 'm', top: 0x2a5d86, bottom: 0x3b4036, shoe: 0x5a3d26, pack: 0xa8452c, head: 'beanie', capCol: 0x8a2f2f, puffer: true, hiker: true, scale: 0.95, hairStyle: 'Hair_SimpleParted', beard: false };
-        const ch = makeChar('m'); dress(ch, base);
+      playerChar(sex, seed) {
+        // you: a man or a woman, as chosen on the start screen; your jacket, bag and cap come from your player id, so
+        // your friends see you in the same clothes you see yourself in
+        const base = playerLook(sex, seed);
+        const ch = makeChar(base.sex); dress(ch, base);
         // what the player has on: a rain jacket (red, hood up) or a poncho (yellow, over the bag too), a fleece
         const wear = ({ coat, fleece }) => {
           const lk = Object.assign({}, base);
@@ -864,7 +950,8 @@ float shawlMask(vec3 p, vec4 c) {
         for (const c of ch.acc.pack.children) { const m = c.clone(); m.castShadow = c.castShadow; inner.add(m); bb.expandByObject(m); }
         const ctr = bb.getCenter(new THREE.Vector3()); inner.position.set(-ctr.x, -bb.min.y, -ctr.z); ground.add(inner);
         ground.scale.setScalar(0.95); ground.visible = false; scene.add(ground);
-        return { ch, ground, wear, play: (n, s) => play(ch, n, s) };
+        return { ch, ground, wear, sex: base.sex, play: (n, s) => play(ch, n, s),
+          dispose() { scene.remove(ch.root); scene.remove(ground); } };
       }
     };
   }

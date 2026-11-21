@@ -445,6 +445,8 @@ window.TriundPlaces = {
     const streamTex = flowTex.clone(); streamTex.needsUpdate = true; streamTex.wrapS = streamTex.wrapT = THREE.RepeatWrapping;
     const streamMat = new THREE.MeshLambertMaterial({ map: streamTex, color: lin(0x7f989c), transparent: true, opacity: 0.85, depthWrite: false });
     const mists = [];
+    let bigFall = null;   // set by gorge() (Bhagsu falls) while the POIs are built
+    const shrines = [];   // every small temple placed (bhagsu.js dresses the ones filmed: Jhande Wali Mata, Magic View)
 
     const SNACK = [0xd8322b, 0xf2c230, 0x2f6fd6, 0x2f9a52, 0xf08a24, 0x7a2fa0, 0x1fa0a0];
     /* ---------- POIs ---------- */
@@ -490,7 +492,8 @@ window.TriundPlaces = {
       if (poi.kind === 'cafe' || poi.kind === 'shop') { const sp = window.TriundPlaces.stallSpot(x, z, tx, tz, stallsPlaced, nearestTrail, clear); if (!sp) continue; x = sp.x; z = sp.z; }
       const y = H(x, z);
       switch (poi.kind) {
-        case 'cafe': case 'shop': { const seats = stall(x, y, z, face, poi); if (poi.kind === 'cafe' && nt.d < window.TriundPlaces.stopReach(poi)) stops.push(Object.assign(stopAt(poi, x + tx * 2.4, z + tz * 2.4, tx, tz, nt, 'stall'), { seats, keeper: { x: x + tx * seats.keeperZ, z: z + tz * seats.keeperZ }, counter: seats.counter })); break; }
+        case 'cafe': case 'shop': { const seats = stall(x, y, z, face, poi); if (!(poi.kind === 'cafe' && nt.d < 60)) for (const q of seats) benches.push(q);   // a stall's chairs are seats even where it is not a stop
+          if (poi.kind === 'cafe' && nt.d < 60) stops.push(Object.assign(stopAt(poi, x + tx * 2.4, z + tz * 2.4, tx, tz, nt, 'stall'), { seats, keeper: { x: x + tx * seats.keeperZ, z: z + tz * seats.keeperZ }, counter: seats.counter })); break; }
         case 'lodge': building(rectPoly(x, z, face, 7, 9), 2, 'lodge', poi.name, 7 + boards.length);
           if (poi.name) nameBoard(x + tx * 3.9, y + 3.1, z + tz * 3.9, face, poi.name, 'rooms', '#1f3b2e', '#f1ead8', 2.8); break;
         case 'temple': shrine(x, y, z, face, poi); break;
@@ -662,7 +665,7 @@ window.TriundPlaces = {
       shikhara(x, y + 2.4, z, 1.1, ry);
       for (let i = 0; i < 3; i++) lbox(props, x, y, z, ry, -0.9 + i * 0.9, 0.1, 2.0, 0.5, 0.3, 0.4, C(0xd83b30));   // red cloth offerings
       if (poi.name) nameBoard(x + Math.sin(ry) * 2.3, y + 3.0, z + Math.cos(ry) * 2.3, ry, poi.name, '', '#7a1f1f', '#f2d27a', 2.6);
-      occupyDisc(x, z, 4); bump('temple');
+      occupyDisc(x, z, 4); bump('temple'); shrines.push({ x, y, z, ry, poi });
     }
     function camp(x, y, z, ry, poi) {
       const r = rng((poi.e * 13) | 0), cols = [0xf2a93b, 0xd83b30, 0x2f6fd6, 0x2f9a52, 0xf2c230, 0x7a4fa0];
@@ -726,6 +729,7 @@ window.TriundPlaces = {
       { const l = Math.hypot(fx, fz) || 1; fx /= l; fz /= l; }
       const nt = nearestTrail(x0, z0);
       const big = /bhagsu/i.test(poi.name), tall = big ? 20 : 9, wdt = big ? 4.5 : 2.5;
+      if (big) { gorge(poi, x0, z0, fx, fz, nt); return; }
       const yb = H(x0, z0) - 0.4;
       const rx = -fz, rz = fx;
       // rock step across the gully: the water pours over its downstream face
@@ -755,6 +759,60 @@ window.TriundPlaces = {
         const px = nt.x + bx * 2.6, pz = nt.z + bz * 2.6; nameBoard(px, H(px, pz) + 2.0, pz, Math.atan2(-bx, -bz), poi.name, 'waterfall', '#1f3b2e', '#f1ead8', 2.8); }
       occupyDisc(x0, z0, wdt * 2.5); bump('waterfall');
     }
+    // Bhagsu falls as filmed: one narrow white ribbon (~3 m) dropping ~20 m out of a deep, narrow V-gorge of dark
+    // slate, its walls thick with green growth; a shallow pale-green pool below with big tilted dark boulders
+    function gorge(poi, x0, z0, fx, fz, nt) {
+      const rx = -fz, rz = fx, yb = H(x0, z0) - 0.3, tall = 20, wdt = 3;
+      const rockC = () => C(0x55554f).multiplyScalar(0.8 + R() * 0.45), leaf = () => C([0x2f5a2a, 0x3b6b30, 0x285024, 0x4a7a3a][(R() * 4) | 0]).multiplyScalar(0.8 + R() * 0.4);
+      const rock = (x, y, z, s, sy) => props.geo(ROCK, new THREE.Matrix4().compose(T.set(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(R() * 3, R() * 3, R() * 3)), S.set(s, s * (sy || 1), s)), rockC());
+      const bush = (x, y, z, s) => props.geo(ROCK, new THREE.Matrix4().compose(T.set(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(R() * 3, R() * 3, R() * 3)), S.set(s, s * 0.7, s)), leaf());
+      // the gorge: one curved rock face (a U open downstream) from the pool up to the lip, its top running back into
+      // the hillside; rough relief, the rock photo texture, and green growth clinging to its ledges
+      const NU = 28, NV = 16, NB = 6, Wd = 13, pos = [], uv = [], idx = [], noise = (a, b) => Math.sin(a * 1.7 + b * 0.9) * 0.5 + Math.sin(a * 0.6 - b * 2.3) * 0.4 + Math.sin(a * 3.1 + b * 1.3) * 0.2;
+      const lip = u => yb + tall * (1 - 0.55 * (u / Wd) ** 2);
+      const wallPt = (u, t) => { const k = (u / Wd) ** 2, back = -2.2 + k * 9, y = yb - 1 + (lip(u) - yb + 1) * t, rel = noise(u, t * 6) * 0.9 * Math.sin(Math.PI * Math.min(1, t * 1.2));
+        const nx = fx * (1 - k) + rx * Math.sign(u) * k * 0.9, nz = fz * (1 - k) + rz * Math.sign(u) * k * 0.9;   // roughly the face's outward direction
+        return [x0 + fx * back + rx * u + nx * rel, y, z0 + fz * back + rz * u + nz * rel]; };
+      for (let j = 0; j <= NV + NB; j++) for (let i = 0; i <= NU; i++) {
+        const u = -Wd + 2 * Wd * i / NU; let p;
+        if (j <= NV) { p = wallPt(u, j / NV); if (Math.abs(u) < 1.3 && j === NV) p[1] -= 0.8; }   // the notch the water pours from
+        else { const t = (j - NV) / NB, top = wallPt(u, 1), bx = top[0] - fx * 14 * t, bz = top[2] - fz * 14 * t, gh = H(bx, bz);   // back over the top into the hillside
+          p = [bx, top[1] + (Math.max(gh, top[1] - 3) - top[1]) * t, bz]; }
+        pos.push(p[0], p[1], p[2]); uv.push(u / 4, (j <= NV ? (lip(u) - yb) * j / NV : tall + (j - NV) * 2) / 4);
+      }
+      for (let j = 0; j < NV + NB; j++) for (let i = 0; i < NU; i++) { const a = j * (NU + 1) + i, b = a + 1, c = a + NU + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+      const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); wg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); wg.setIndex(idx); wg.computeVertexNormals();
+      const wall = new THREE.Mesh(wg, new THREE.MeshStandardMaterial({ map: photo('rock_d', true), normalMap: photo('rock_n', false), color: lin(0x8a8a84), roughness: 0.92, side: THREE.DoubleSide }));
+      wall.castShadow = true; wall.receiveShadow = true; scene.add(wall);
+      // moss and ferns on the ledges, thicker toward the sides and the top, none in the spray of the fall
+      for (let k = 0; k < 260; k++) {
+        const u = (R() * 2 - 1) * Wd, t = Math.pow(R(), 0.7); if (Math.abs(u) < 2.2 && t < 0.9) continue;
+        const p = wallPt(u, t), k2 = (u / Wd) ** 2, nx = fx * (1 - k2) + rx * Math.sign(u) * k2, nz = fz * (1 - k2) + rz * Math.sign(u) * k2;
+        bush(p[0] + nx * 0.5, p[1], p[2] + nz * 0.5, 0.35 + R() * (0.4 + 0.4 * Math.abs(u) / Wd));
+      }
+      for (let k = 0; k < 40; k++) { const u = (R() * 2 - 1) * Wd, t = R(); const top = wallPt(u, 1), bx = top[0] - fx * 14 * t, bz = top[2] - fz * 14 * t; bush(bx, top[1] + (H(bx, bz) - top[1]) * t + 0.4, bz, 0.6 + R() * 1.0); }
+      // a few dark slabs at the foot of the walls
+      for (let k = 0; k < 10; k++) { const u = (R() * 2 - 1) * Wd * 0.9, p = wallPt(u, 0.03); rock(p[0] + fx * 1.2, yb + 0.4, p[2] + fz * 1.2, 0.8 + R() * 1.1, 0.7); }
+      // the water: a narrow ribbon from the notch, a little bowed, wider at the foot
+      const g = new THREE.PlaneGeometry(wdt, tall, 1, 10); g.translate(0, tall / 2, 0);
+      const pp = g.attributes.position; for (let i = 0; i < pp.count; i++) { const v = pp.getY(i) / tall; pp.setZ(i, (1 - v) * 1.2 + Math.sin(v * Math.PI) * 0.35); pp.setX(i, pp.getX(i) * (1 + (1 - v) * 0.6)); }
+      g.computeVertexNormals();
+      const m = new THREE.Mesh(g, fallMat); m.position.set(x0 - fx * 1.3, yb, z0 - fz * 1.3); m.rotation.y = Math.atan2(fx, fz); m.renderOrder = 3; scene.add(m);
+      // the pool: shallow, pale green, people wade in it; big dark slabs tilted at its front
+      const pool = new THREE.Mesh(new THREE.CircleGeometry(6.5, 24), new THREE.MeshLambertMaterial({ color: lin(0x86b3a0), transparent: true, opacity: 0.88 }));
+      pool.rotation.x = -Math.PI / 2; pool.position.set(x0 + fx * 4, yb + 0.35, z0 + fz * 4); pool.renderOrder = 2; scene.add(pool);
+      for (let i = 0; i < 6; i++) { const u = (R() - 0.5) * 9, d = 6.5 + R() * 4; props.geo(ROCK, new THREE.Matrix4().compose(T.set(x0 + fx * d + rx * u, yb + 0.6, z0 + fz * d + rz * u), new THREE.Quaternion().setFromEuler(new THREE.Euler(R() * 0.6, R() * 3, R() * 0.6)), S.set(1.4 + R() * 1.4, 1 + R() * 0.8, 1.2 + R())), rockC()); }
+      const mtex = canvasTex(64, 64, (g2) => { const gr = g2.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,0.7)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g2.fillStyle = gr; g2.fillRect(0, 0, 64, 64); });
+      for (let i = 0; i < 7; i++) {
+        const sp2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: mtex, transparent: true, depthWrite: false, opacity: 0.35 }));
+        sp2.position.set(x0 + fx * (1 + R() * 3) + rx * (R() - 0.5) * 4, yb + 1 + R() * 3, z0 + fz * (1 + R() * 3) + rz * (R() - 0.5) * 4); sp2.scale.setScalar(3 + R() * 4);
+        scene.add(sp2); mists.push({ sp: sp2, ph: R() * 6 });
+      }
+      if (collide) { const poly = []; for (let u = -Wd; u <= Wd + 0.01; u += Wd / 6) { const p = wallPt(u, 0); poly.push([p[0] - fx * 0.3, p[2] - fz * 0.3]); }
+        for (let u = Wd; u >= -Wd - 0.01; u -= Wd / 3) { const p = wallPt(u, 0); poly.push([p[0] - fx * 14, p[2] - fz * 14]); } collide.add(poly); }
+      occupyDisc(x0, z0, 16); bump('waterfall');
+      bigFall = { x: x0, z: z0, y: yb, fx, fz, rx, rz, nt: { x: nt.x, z: nt.z, s: nt.s } };
+    }
     // streams: ribbon sitting in the gully (lowest of three samples across), flowing texture
     const sp = [], si = [], su = [];
     let sv = 0;
@@ -782,7 +840,8 @@ window.TriundPlaces = {
       let y = Infinity; for (const p of P) y = Math.min(y, H(p[0], p[1]));
       const shape = new THREE.Shape(P.map(p => new THREE.Vector2(p[0], -p[1])));
       const g = new THREE.ShapeGeometry(shape); g.rotateX(-Math.PI / 2);
-      const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: lin(0x3f6a70), transparent: true, opacity: 0.92 })); m.position.y = y + 0.2; scene.add(m);
+      const milky = /bhagsu/i.test(pl.name || '');   // the Bhagsu Nag pool is spring water, milky turquoise
+      const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: lin(milky ? 0x63b9b2 : 0x3f6a70), transparent: true, opacity: 0.92 })); m.position.y = y + 0.2; scene.add(m);
       for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length]; walls.quad([a[0], y - 0.5, a[1]], [b[0], y - 0.5, b[1]], [b[0], y + 0.6, b[1]], [a[0], y + 0.6, a[1]], C(0xb1ada5), null); }
       occupyPoly(P, 2); bump('pool');
     }
@@ -823,6 +882,7 @@ window.TriundPlaces = {
       B.mesh(propMat);
     }
     return {
+      get bigFall() { return bigFall; }, shrines,
       counts, stops, update, dress, benches, meshes: { wallMesh, roofMesh, propMesh }, boardSpots: boards.map(b => ({ x: b.position.x, z: b.position.z })),
       surfaceMat,
       tex: { tinMap, tinN, plasterN, wood: woodDetail, woodN, plaster: photo('plaster_d', true), rock: photo('rock_d', true), rockN: photo('rock_n', false) },

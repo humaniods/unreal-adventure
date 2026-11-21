@@ -4,7 +4,8 @@ The real Triund trek in the browser (three.js r128): McLeod Ganj Main Square →
 or up from Bhagsu. Terrain, trails, roads, buildings and places come from OpenStreetMap and SRTM elevation
 (`../geo/build.py`).
 
-Run it: `python3 -m http.server 8765` in this folder, then open http://127.0.0.1:8765/index.html.
+Run it: `python3 -m http.server 8765` in this folder, then open http://127.0.0.1:8765/index.html (Solo only).
+For friends, voice and talking to bots, run `../server/dev.sh` and open http://127.0.0.1:8787/ instead.
 
 ```
 index.html            the page: start screen, HUD, terrain, player, camera, main loop
@@ -37,6 +38,11 @@ js/
   people/
     crowd.js              hikers and shopkeepers
     hands.js              first-person hands (eating, drinking)
+  net/                  playing together (needs ../server running; Solo works without it)
+    net.js                Couple / Bakchods rooms by code, other players, name tags, friends, mic modes,
+                          hold hands (J), carry your partner on your shoulders (U)
+    voice.js              LiveKit voice: All (near you + team), Team, Off
+    talk.js               Enter to chat with hikers and stall keepers (server /bot/chat, Claude; short lines offline)
   trip/                 gameplay
     economy.js            menu, prices, coins wallet, bag
     payments.js           coin top-up (mock gateway, test mode)

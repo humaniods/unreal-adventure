@@ -83,7 +83,8 @@ float cloudShadow(vec3 vp) {
     }
     const PUFF = puffTex();
     const fogU = THREE.UniformsUtils.clone(THREE.UniformsLib.fog);
-    const sunCol = new THREE.Color(1.0, 0.94, 0.84).multiplyScalar(1.55), shadeCol = new THREE.Color(0.52, 0.57, 0.66).multiplyScalar(1.05);
+    // sunlit tops warm white, the shaded undersides a soft blue-grey (not dark: cumulus undersides are lit by the sky)
+    const sunCol = new THREE.Color(1.0, 0.95, 0.87).multiplyScalar(1.55), shadeCol = new THREE.Color(0.7, 0.75, 0.83).multiplyScalar(1.08);
     const sunCol0 = sunCol.clone(), shadeCol0 = shadeCol.clone();
 
     // camera-facing instanced puffs; wrap = drift and wrap around the cloud field
@@ -158,7 +159,7 @@ void main() {
 
     /* ---------- Kangra valley cloud sea (three soft layers; the hills poke through) ---------- */
     const seaMat = new THREE.ShaderMaterial({
-      uniforms: Object.assign({}, fogU, { uOff: U.uCloudOff, uSun: { value: sunCol }, uShade: { value: shadeCol }, uC: { value: new THREE.Vector2((box.e0 + box.e1) / 2, -(box.n0 + box.n1) / 2) } }),
+      uniforms: Object.assign({}, fogU, { uAmt: { value: 1 }, uOff: U.uCloudOff, uSun: { value: sunCol }, uShade: { value: shadeCol }, uC: { value: new THREE.Vector2((box.e0 + box.e1) / 2, -(box.n0 + box.n1) / 2) } }),
       vertexShader: `#include <common>
 #include <fog_pars_vertex>
 #include <logdepthbuf_pars_vertex>
@@ -170,7 +171,7 @@ void main() { vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vec4 mvPos
       fragmentShader: `#include <common>
 #include <fog_pars_fragment>
 #include <logdepthbuf_pars_fragment>
-uniform vec2 uOff; uniform vec3 uSun; uniform vec3 uShade; uniform vec2 uC;
+uniform float uAmt; uniform vec2 uOff; uniform vec3 uSun; uniform vec3 uShade; uniform vec2 uC;
 varying vec3 vW;
 float h2(vec2 p){ p = fract(p * vec2(0.1031, 0.1030)); p += dot(p, p.yx + 33.33); return fract((p.x + p.y) * p.x); }
 float n2(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f * f * (3.0 - 2.0 * f);
@@ -183,7 +184,7 @@ void main() {
   // more cloud to the south (the plains), thinning toward the mountains
   float south = smoothstep(-2000.0, 6000.0, vW.z - uC.y);
   float edge = 1.0 - smoothstep(16000.0, 22000.0, length(vW.xz - uC));
-  float a = smoothstep(0.42 - 0.18 * south, 0.72, d) * edge * 0.55;
+  float a = smoothstep(0.42 - 0.18 * south, 0.72, d) * edge * 0.55 * uAmt;
   if (a < 0.004) discard;
   vec3 col = mix(uShade, uSun, 0.55 + 0.45 * smoothstep(0.4, 0.8, d));
   gl_FragColor = vec4(col, a);
@@ -217,6 +218,8 @@ void main() {
     return {
       counts: { clouds: clouds.length, puffs: puffs.length, mist: mist ? mist.count : 0 },
       // camp.js: dim the clouds and mist with the daylight (1 day .. 0 night), warm them at sunset
+      // the Kangra valley cloud sea is a morning thing: full at dawn, burnt off by late morning (weather.js)
+      setSea(k) { seaMat.uniforms.uAmt.value = k; },
       setDaylight(day) {
         // at night clouds are dark shapes against the stars, only faintly lit from below by the towns
         const k = 0.008 + 0.992 * Math.pow(day, 1.3), warm = Math.max(0, 1 - Math.abs(day - 0.45) * 3);
