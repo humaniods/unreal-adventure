@@ -205,8 +205,9 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       if (ctx.hands) ctx.hands.update(dt, fast ? 4 : 1);
       if (sit && (keys.KeyW || keys.KeyS || keys.KeyA || keys.KeyD || keys.ArrowUp || keys.ArrowDown)) { if (!eating) standUp(); }
       if (sit) {
-        P.energy = clamp(P.energy + ECON.REST.energyPerMin / 60 * gdt, 0, 100);
-        P.stamina = clamp(P.stamina + ECON.REST.staminaPerMin / 60 * gdt, 0, 100);
+        const lk = sit.lie ? 1.4 : 1;   // lying flat rests the legs and the heart better than sitting
+        P.energy = clamp(P.energy + ECON.REST.energyPerMin / 60 * gdt * lk, 0, 100);
+        P.stamina = clamp(P.stamina + ECON.REST.staminaPerMin / 60 * gdt * lk, 0, 100);
         if (!eating && P.tray.length && !(ctx.hands && ctx.hands.busy)) { const o = P.tray.shift(); setTimeout(() => startEating(o.it, 'tray', o.dish), 900); eating = { it: o.it, pending: true, need: 1, done: 0 }; }
       } else {
         P.energy = clamp(P.energy - ECON.burnPerHour(P.v, P.grade, load, P.hr) / 3600 * gdt, 0, 100);
@@ -241,7 +242,8 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     }
     const nearShop = p => ctx.stops.some(st => Math.hypot(p.x - st.spot.x, p.z - st.spot.z) < 12);
     // at a stall you sit on its benches or chairs; out on the trail you can sit on the grass
-    function findSeat(p) { return nearShop(p) ? nearSeat(p, 9, true) : nearSeat(p, 2.4, false); }
+    // any chair or bench within 4 m is where you sit (a cafe's plastic chairs too), not the ground beside it
+    function findSeat(p) { return nearShop(p) ? nearSeat(p, 9, true) : nearSeat(p, 4, false); }
     function sitDown(seat) {
       sit = seat ? { ...seat, bench: true } : { x: P.x, z: P.z, bench: false };
       if (seat) { if (seat.ref) seat.ref.used = true; P.x = seat.x; P.z = seat.z; P.yaw = seat.ry + Math.PI; }
@@ -262,22 +264,35 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     }
     function toggleSit() {
       if (!P) return;
-      if (sit) { if (eating) { ctx.say('Finish eating first.', 2); return; } standUp(); return; }
+      if (sit) {
+        if (eating) { ctx.say('Finish eating first.', 2); return; }
+        // on the grass, C again: lie back and rest properly; C once more to get up
+        if (!sit.bench && !sit.lie) { sit.lie = true; P.pitch = 0.9; ctx.say('You lie back on the grass, pack under your head. Resting faster. C to get up.', 3.5); return; }
+        standUp(); return;
+      }
       const s = findSeat(P);
       if (!s && nearShop(P)) { ctx.say('No free seat at this stall right now.', 2.5); return; }
+      // on the trail with no bench: you step off the path to its side first (nobody sits in the middle of the way)
+      if (!s && ctx.trailSide) {
+        const spot = ctx.trailSide(P.x, P.z);
+        if (spot && Math.hypot(spot.x - P.x, spot.z - P.z) > 0.4) {
+          ctx.walkTo(spot, () => { sitDown(null); P.yaw = spot.yaw; ctx.say('You step off the path and sit down at its edge, facing the valley. C again to lie back.', 3.5); });
+          return;
+        }
+      }
       sitDown(s);
       // by a camp fire: you sit down facing it
       const f = !s && ctx.fireNear ? ctx.fireNear(P.x, P.z) : null;
       if (f) { P.yaw = Math.atan2(-(f.x - P.x), -(f.z - P.z)); ctx.say(f.lit > 0.3 ? 'You sit down cross-legged by the fire. The warmth reaches your hands.' : 'You sit down by the fire ring.', 3); return; }
-      ctx.say(s ? (s.h ? 'You take a seat at the stall and catch your breath.' : 'You sit on the bench and catch your breath.') : 'You sit down cross-legged on the grass.', 2.5);
+      ctx.say(s ? (s.h ? 'You take a seat at the stall and catch your breath.' + (nearStop(P, 10) ? ' E to order from your seat.' : '') : 'You sit on the bench and catch your breath.') : 'You sit down cross-legged on the grass. C again to lie back.', 3);
     }
-    const eyeHeight = () => sit ? (sit.bench ? (sit.y != null ? sit.y - ctx.H(P.x, P.z) + 0.78 : 1.2) : 0.82) : 1.65;
+    const eyeHeight = () => sit ? (sit.bench ? (sit.y != null ? sit.y - ctx.H(P.x, P.z) + 0.78 : 1.2) : sit.lie ? 0.32 : 0.82) : 1.65;
     function hudSit() {
       const h = $('sitHud'), show = !!sit;
       if (h.hidden === show) h.hidden = !show;
       if (!show) return;
       const m = eating ? (eating.pending ? `Picking up the ${eating.it.name.toLowerCase()}` : `${eating.kind === 'sip' ? 'Sipping' : 'Eating'} ${eating.it.name.toLowerCase()} · ${eating.kind === 'sip' ? 'sip' : 'bite'} ${eating.done} of ${eating.need}`) : P.tray.length ? 'About to eat' : inflight.length ? `Your ${inflight[0].it.name.toLowerCase()} is ${performance.now() - inflight[0].sent < inflight[0].cook * 1000 ? 'being made' : 'on its way'}` : orders.length ? `Waiting for your ${orders[0].it.name.toLowerCase()}` : 'Resting: energy and stamina coming back';
-      h.textContent = m + ' · hold Shift to let time pass faster' + (eating ? '' : ' · move or C to get up');
+      h.textContent = m + ' · hold Shift to let time pass faster' + (!eating && nearStop(P, 10) ? ' · E to order' : '') + (eating ? '' : sit.bench || sit.lie ? ' · move or C to get up' : ' · C to lie back · move to get up');
     }
 
     /* ---------- shops ---------- */
@@ -434,7 +449,9 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     return {
       TIME, reset, update, openTopUp, onBench: () => !!(sit && sit.bench), seat: () => sit,
       drinkAnim() { if (ctx.hands && !ctx.hands.busy) ctx.hands.start('drink', { icon: '💧', need: 1 }); }, speedFactor, sitting, toggleSit, eyeHeight, prompt, hud, renderKit, syncCoins,
-      interact(p) { const st = nearStop(p, 3.6); if (st) { openShop(st); return true; } return false; },
+      // at the counter, or from your seat at the stall: the shopkeeper brings it over
+      interact(p) { const st = nearStop(p, sit ? 10 : 3.6); if (st) { openShop(st); return true; } return false; },
+      lying: () => !!(sit && sit.lie),
       toggleBag() { if (panelOpen === bagP) closePanels(); else openBag(); },
       qaEat(id) { if (I[id] && I[id].bag) return startEating(I[id], 'bag', null); const d = dishMesh(id); placeDish(d); return startEating(I[id], 'qa', d); },   // QA: eat or sip a served dish here
       closePanels, get panelOpen() { return !!panelOpen; }, get bag() { return bag; }, get lastStop() { return lastStop; }

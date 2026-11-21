@@ -64,7 +64,7 @@ window.TriundTrailProps = {
         for (const sx of [-1.12, 1.12]) part(new THREE.CylinderGeometry(0.03, 0.03, 2.2, 8), sx, 0.9, -0.03, 0x8a8f94);
         part(new THREE.BoxGeometry(2.3, 1.1, 0.04), 0, 1.25, -0.03, 0x6f757a);
         const fm = new THREE.Mesh(ecoGeo, ecoBlank); fm.position.set(0, 1.25, 0.0); g.add(fm); scene.add(g);
-        if (collide) { collide.circle(x + Math.cos(ry) * 1.12, z - Math.sin(ry) * 1.12, 0.08, true); collide.circle(x - Math.cos(ry) * 1.12, z + Math.sin(ry) * 1.12, 0.08, true); }
+        if (collide) collide.rect(x, z, ry, 2.35, 0.16, false);   // posts and panel: solid
         boards.push({ g, fm, e, x, z, drawn: false }); counts.eco++; if (o.taken) o.taken.push({ x, z }); return true;
       }
       return false;

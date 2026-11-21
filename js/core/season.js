@@ -9,7 +9,8 @@ window.TriundSeason = (function () {
   // one season now: late November (the monsoon option was dropped); the day's weather changes on top of it
 
   const WEATHER = {
-    autumn: { turbidity: 3.4, rayleigh: 1.15, mie: 0.0045, haze: 0x9fb4c9, hazeSun: 0xd8cdbb, fog: 0.000042, sun: 3.1, hemi: 1.45, sky: 0xbcd3ff, exposure: 0.8,
+    // late November is the clearest month: a deep blue sky, the plains visible far below
+    autumn: { turbidity: 2.6, rayleigh: 1.5, mie: 0.0035, haze: 0x94b2d4, hazeSun: 0xd8cfbf, fog: 0.00003, sun: 3.1, hemi: 1.45, sky: 0xbcd3ff, exposure: 0.8,
               wet: 0, tint: [1, 1, 1], rain: 0, grade: 1, speed: 1 },
     monsoon: { turbidity: 12, rayleigh: 0.5, mie: 0.02, haze: 0x8d989e, hazeSun: 0x9ea6a8, fog: 0.0024, sun: 0.75, hemi: 2.1, sky: 0xc9d2d8, exposure: 0.95,
                wet: 1, tint: [0.86, 1.0, 0.8], rain: 1, grade: 0.55, speed: 0.92 }

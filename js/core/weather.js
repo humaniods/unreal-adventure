@@ -22,7 +22,9 @@ window.TriundWeather = {
     const SW = window.TriundSeason, clear = () => Object.assign({}, SW ? SW.weather() : { turbidity: 3.4, rayleigh: 1.15, mie: 0.0045, haze: 0x9fb4c9, hazeSun: 0xd8cdbb, fog: 0.000042, sun: 3.1, hemi: 1.45, sky: 0xbcd3ff, exposure: 0.8 });
     const STATES = {
       clear: {},
-      cloudy: { turbidity: 6.5, rayleigh: 0.9, mie: 0.009, haze: 0xa3b0bc, hazeSun: 0xc8c6bf, fog: 0.00035, sun: 2.0, hemi: 1.65, sky: 0xc4ced8, exposure: 0.86 },
+      // clouds building over the peaks: the sun comes and goes, but the air stays clear (post-monsoon), the far
+      // valley and the Kangra plains still read; only a light haze
+      cloudy: { turbidity: 4.6, rayleigh: 1.05, mie: 0.006, haze: 0xa9bccd, hazeSun: 0xd2ccbf, fog: 0.00013, sun: 2.3, hemi: 1.6, sky: 0xc0d2e6, exposure: 0.84 },
       mist: { turbidity: 10, rayleigh: 0.6, mie: 0.016, haze: 0xb3bbc0, hazeSun: 0xc2c5c5, fog: 0.011, sun: 0.9, hemi: 2.0, sky: 0xc9d1d6, exposure: 0.95 },
       snow: { turbidity: 11, rayleigh: 0.55, mie: 0.018, haze: 0xb9c0c6, hazeSun: 0xc4c8cb, fog: 0.0055, sun: 0.7, hemi: 2.1, sky: 0xcfd6dc, exposure: 1.0, snow: 0.8 }
     };
@@ -53,12 +55,25 @@ window.TriundWeather = {
       out.wet = base.wet || 0; out.tint = base.tint; out.grade = base.grade; out.speed = base.speed;
       return out;
     }
-    function weightsAt(h, day) {
+    // what passes while you walk: every 12 game minutes (2 real minutes) the sky does something: a cloud drifts over
+    // the sun, a patch of mist rolls up the slope from the valley and thins again, or the sun breaks through the cloud.
+    // Mist patches come mostly up in the forest belt and in the middle of the day; a high, cold ridge gets more wind and cloud
+    function passing(h, day, alt) {
+      const SL = 0.2, slot = Math.floor(h / SL), f = (h - slot * SL) / SL, r = rnd(day * 1000 + slot), r2 = rnd(day * 1000 + slot + 0.5);
+      const bell = Math.sin(Math.PI * f) ** 2, mid = h > 9.5 && h < 16.5, high = Math.min(1, Math.max(0, ((alt || 2100) - 2300) / 500));
+      if (r < 0.32) return { kind: 'cloudy', a: (0.55 + 0.3 * r2) * bell, what: 'A cloud drifts across the sun' };
+      if (r < 0.32 + (mid ? 0.16 + 0.1 * high : 0.05)) return { kind: 'mist', a: (0.45 + 0.4 * r2) * bell, what: 'Mist rolls up from the valley' };
+      if (r > 0.86) return { kind: 'clear', a: 0.8 * bell, what: 'The sun breaks through' };
+      return null;
+    }
+    function weightsAt(h, day, alt) {
       const P = plan(day), w = { clear: 0, cloudy: 0, mist: 0, snow: 0 }, T = 25 / 60;
       let cur = P[0][1], prev = cur, k = 1;
       for (let i = 0; i < P.length; i++) if (h >= P[i][0] - T) { prev = i ? P[i - 1][1] : P[i][1]; cur = P[i][1]; k = Math.min(1, (h - (P[i][0] - T)) / (2 * T)); }
       const s = k * k * (3 - 2 * k); w[prev] += 1 - s; w[cur] += s;
-      return { w, P };
+      const ps = passing(h, day, alt);
+      if (ps && ps.a > 0.01) { for (const key in w) w[key] *= 1 - ps.a; w[ps.kind] += ps.a; }
+      return { w, P, ps };
     }
     const state = { hours: 9, clock: '09:00', name: 'Clear', rain: 0, temp: 8, sunset: '17:25', next: '' };
     let lastDir = null, wetness = 0, dust = 0, lastGt = null;
@@ -68,10 +83,13 @@ window.TriundWeather = {
       update(gt, altitude) {
         const totalH = (window.TRIUND_DAY0 || 9) + gt / 3600,   // the start hour is chosen on the start screen (trip.js)
            day = Math.floor(totalH / 24), h = totalH - day * 24;
-        const { w, P } = weightsAt(h, day), W = blend(w);
+        const { w, P, ps } = weightsAt(h, day, altitude), W = blend(w);
+        state.passing = ps && ps.a > 0.25 ? ps.what : '';
         if (SKY.setWeather) SKY.setWeather(W);
         const s = sunAt(h), daylight = SKY.setSun ? SKY.setSun(s.az, s.el) : 1;
         const atmos = getAtmos && getAtmos(); if (atmos && atmos.setDaylight) atmos.setDaylight(daylight);
+        // morning cloud sea over the plains: thick until ~9:30, gone to a thin band by ~11:30, back a little at dusk
+        if (atmos && atmos.setSea) atmos.setSea(h < 9.5 ? 1 : h < 11.5 ? 1 - 0.8 * (h - 9.5) / 2 : h < 16.5 ? 0.2 : Math.min(0.5, 0.2 + (h - 16.5) * 0.3));
         // the shadow-casting light follows the sun while it is up (in steps of about half a degree, so shadows do not crawl)
         const a = THREE.MathUtils.degToRad(s.az), e = THREE.MathUtils.degToRad(Math.max(6, s.el));
         dir.set(Math.cos(e) * Math.sin(a), Math.sin(e), -Math.cos(e) * Math.cos(a)).normalize();
