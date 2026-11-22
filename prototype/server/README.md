@@ -49,6 +49,13 @@ local server on another port (Chrome's local network access rules), so `/bot/cha
 To play from another device on the same Wi-Fi, open `http://<laptop-ip>:8787/`.
 Voice also needs LiveKit to be reachable at `LIVEKIT_URL`, so set it to `ws://<laptop-ip>:7880` before running.
 
+### Without this server (Ludo style)
+
+Opened from GitHub Pages (`../deploy/pages.sh`), or from anywhere `/health` is missing, the game runs rooms itself.
+The browser that creates the room acts as this server for its group: the same messages and rules (`../walk-test/js/net/p2p.js`).
+Friends connect to that browser over WebRTC, through PeerJS's public broker and its TURN relay. This covers Couple and
+Bakchods (2-8) with voice. There is no 100-player world, and the room ends when its host leaves.
+
 ### Playing with friends anywhere, from this laptop
 
 `127.0.0.1` means "this computer", so a link with it only opens on your own laptop. Run `./share.sh` next to

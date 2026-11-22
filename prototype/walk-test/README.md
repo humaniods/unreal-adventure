@@ -5,7 +5,11 @@ or up from Bhagsu. Terrain, trails, roads, buildings and places come from OpenSt
 (`../geo/build.py`).
 
 Run it: `python3 -m http.server 8765` in this folder, then open http://127.0.0.1:8765/index.html (Solo only).
-For friends, voice and talking to bots, run `../server/dev.sh` and open http://127.0.0.1:8787/ instead.
+Play online with friends (no server needed): https://humaniods.github.io/unreal-adventure/. Choose Couple or Bakchods and
+create a room; it gets a 6-letter code and a Share invite. Friends on any phone, tablet or laptop, on any network,
+open the link or type the code. The browser that created the room hosts it, so it ends when that player closes the game.
+To update the site, run `../deploy/pages.sh` after committing.
+For the 100-player shared mountain, its voice and Claude bot chat, run `../server/dev.sh` and open http://127.0.0.1:8787/.
 
 ```
 index.html            the page: start screen, HUD, terrain, player, camera, main loop
@@ -43,6 +47,8 @@ js/
                           hold hands (J), carry your partner on your shoulders (U)
     voice.js              LiveKit voice: All (near you + team), Team, Off
     talk.js               Enter to chat with hikers and stall keepers (server /bot/chat, Claude; short lines offline)
+    p2p.js                Ludo-style rooms without a server: the creator's browser hosts the room, friends connect
+                          to it over WebRTC (PeerJS); used on GitHub Pages or anywhere /health is missing
   trip/                 gameplay
     economy.js            menu, prices, coins wallet, bag
     payments.js           coin top-up (mock gateway, test mode)

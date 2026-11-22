@@ -114,8 +114,8 @@ window.TriundNet = {
 
     $('playSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (party && b.dataset.mode !== party.mode) { msg('Leave the room first.', true); return; } mode = b.dataset.mode; syncMode(); if (mode !== 'solo') connect(); });
     $('sizeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; size = +b.dataset.size; syncMode(); });
-    $('roomCreate').addEventListener('click', () => { if (!needName()) return; send({ t: 'party.create', mode, size: mode === 'couple' ? 2 : size }); });
-    $('roomJoin').addEventListener('click', () => { if (!needName()) return; const c = $('roomCodeIn').value.trim().toUpperCase(); if (c.length !== 6) { msg('The code has 6 letters.', true); return; } send({ t: 'party.join', code: c }); });
+    $('roomCreate').addEventListener('click', () => { if (!needName()) return; createRoom(); });
+    $('roomJoin').addEventListener('click', () => { if (!needName()) return; const c = $('roomCodeIn').value.trim().toUpperCase(); if (c.length !== 6) { msg('The code has 6 letters.', true); return; } joinRoom(c); });
     $('roomCodeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('roomJoin').click(); });
     $('roomLeave').addEventListener('click', () => { send({ t: 'party.leave' }); });
     $('roomCopy').addEventListener('click', () => {
@@ -138,14 +138,44 @@ window.TriundNet = {
 
     /* ---------- connection ---------- */
     let queue = [], retry = 0;
-    function connect() {
+    /* Two ways to play together: through the trek server (../server: the 100-player mountain and its voice), or,
+       when the game is opened from anywhere else (GitHub Pages, a phone), Ludo style: the browser that creates the
+       room is the room and friends connect straight to it (p2p.js). The game finds out which by asking for the
+       server's /health; ?p2p=1 or ?server=… decide it outright. */
+    let P2P = QS.get('p2p') === '1' ? true : QS.get('server') ? false : null, p2pRetry = 0, lastMsg = 0;
+    const probe = () => P2P !== null ? Promise.resolve(P2P) : (location.port === '8765' ? Promise.resolve(false) :
+      fetch(new URL('health', location.href.replace(/[^/]*$/, '')).toString(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => !(d && d.ok), () => true))
+      .then(v => (P2P = v));
+    const CODE_ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const newCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), b => CODE_ABC[b % CODE_ABC.length]).join('');
+    async function connect(kind, code) {
       if (ws) return;
-      msg('Connecting to the trek server…');
-      try { ws = new WebSocket(SERVER); } catch (e) { ws = null; msg('Cannot reach the trek server (' + SERVER + ').', true); return; }
-      ws.onopen = () => { wsOpen = true; retry = 0; myName = ctx.getName() || 'Hiker'; ws.send(JSON.stringify({ t: 'hello', pid, name: myName, sex: ctx.getSex ? ctx.getSex() || 'm' : 'm' })); };
-      ws.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; } on(m); };
+      await probe(); if (ws) return;
+      if (P2P) {
+        if (!kind || !window.TriundP2P) { if (mode !== 'solo' && !$('roomMsg').classList.contains('err')) msg('Create a room, or type the code a friend sent you.'); return; }
+        msg(kind === 'host' ? 'Opening your room…' : 'Finding your friend\u2019s room…');
+        ws = kind === 'host' ? window.TriundP2P.host(code) : window.TriundP2P.join(code); ws.kind = kind; ws.code = code;
+      } else {
+        msg('Connecting to the trek server…');
+        try { ws = new WebSocket(SERVER); } catch (e) { ws = null; msg('Cannot reach the trek server (' + SERVER + ').', true); return; }
+      }
+      const me = ws;
+      ws.onopen = () => { wsOpen = true; retry = 0; p2pRetry = 0; myName = ctx.getName() || 'Hiker'; me.send(JSON.stringify({ t: 'hello', pid, name: myName, sex: ctx.getSex ? ctx.getSex() || 'm' : 'm', peer: me.peerId || null })); };
+      ws.onmessage = e => { lastMsg = performance.now(); let m; try { m = JSON.parse(e.data); } catch (err) { return; } on(m); };
       ws.onclose = () => {
+        if (ws !== me) return;
         const was = wsOpen; ws = null; wsOpen = false;
+        if (P2P) {
+          if (me.kind === 'host' && me.error === 'taken' && !was && p2pRetry++ < 5) { connect('host', newCode()); return; }   // that code is in use: another one
+          if (me.kind === 'join' && !was && me.error === 'timeout' && p2pRetry++ < 2) { connect('join', me.code); return; }
+          queue = [];
+          const why = me.error === 'noroom' ? 'No room with that code. Check the letters, and that your friend still has the game open.'
+            : me.error === 'lib' || me.error === 'network' || me.error === 'server-error' ? 'Cannot reach the internet to open rooms. Check the connection and try again.'
+            : was ? (me.kind === 'host' ? 'Your room closed: the connection dropped.' : 'The room ended: the host left the game or lost the connection.')
+            : 'Could not reach your friend\u2019s room. Try again in a moment.';
+          msg(why, true); if (started) { ctx.toast(why); clearRemotes(); }
+          party = null; syncMode(); return;
+        }
         if (mode === 'solo' && !started) return;
         msg(was ? 'Lost the trek server. Reconnecting…' : 'Cannot reach the trek server. Is it running? (' + SERVER + ')', true);
         if (started) { ctx.toast('Connection lost: reconnecting…'); clearRemotes(); }
@@ -153,14 +183,17 @@ window.TriundNet = {
         if (retry++ < 20) setTimeout(connect, Math.min(8000, 800 * retry));
       };
     }
-    function send(o) { if (ws && wsOpen) ws.send(JSON.stringify(o)); else { queue.push(o); connect(); } }
+    function send(o) { if (ws && wsOpen) ws.send(JSON.stringify(o)); else { queue.push(o); if (P2P === false) connect(); } }
+    // Create and Join: through the server, or (Ludo style) this browser opens the room / goes to the friend's
+    async function createRoom() { await probe(); if (P2P && !ws) { p2pRetry = 0; connect('host', newCode()); } send({ t: 'party.create', mode, size: mode === 'couple' ? 2 : size }); }
+    async function joinRoom(c) { await probe(); if (P2P) { if (ws && ws.kind === 'join' && ws.code === c) return; if (ws) { ws.close(); ws = null; wsOpen = false; } queue = []; p2pRetry = 0; connect('join', c); } send({ t: 'party.join', code: c }); }
     let pendingStart = null;
     function on(m) {
       switch (m.t) {
         case 'welcome':
           friends = new Map((m.friends || []).map(f => [f.pid, f.name])); msg(mode === 'solo' ? '' : 'Connected. Create a room or type a friend’s code.');
           { const q = queue; queue = []; q.forEach(send); }
-          if (joinCode) { const c = joinCode; joinCode = null; if (ctx.getName()) send({ t: 'party.join', code: c }); else { $('roomCodeIn').value = c; msg('Write your name, then press Join.'); } }
+          if (joinCode && !P2P) { const c = joinCode; joinCode = null; if (ctx.getName()) send({ t: 'party.join', code: c }); else { $('roomCodeIn').value = c; msg('Write your name, then press Join.'); } }
           break;
         case 'party': party = m; if (party.host === pid) ready = true; else ready = !!(party.members.find(x => x.pid === pid) || {}).ready; mode = party.mode; syncMode(); break;
         case 'party.gone': party = null; ready = false; msg('You left the room.'); syncMode(); break;
@@ -177,7 +210,11 @@ window.TriundNet = {
     }
     // an invite link: ?join=CODE opens the right room
     let joinCode = (QS.get('join') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) || null;
-    if (joinCode) { mode = 'bakchods'; $('roomCodeIn').value = joinCode; syncMode(); connect(); }
+    // opened from an invite link: straight into the friend's room if you already have a name and Male/Female, else fill them in and press Join
+    if (joinCode) { mode = 'bakchods'; $('roomCodeIn').value = joinCode; syncMode();
+      probe().then(p2p => { if (!p2p) { connect(); return; }
+        const c = joinCode; joinCode = null;
+        if (ctx.getName() && ctx.getSex && ctx.getSex()) joinRoom(c); else msg('Write your name and choose Male or Female, then press Join.'); }); }
 
     function begin(m) {
       started = true; world = m.world; team = new Set(m.team || []);
@@ -186,8 +223,10 @@ window.TriundNet = {
       pill.hidden = false; renderPill();
       // a voice server on the host's own laptop (127.0.0.1) cannot be reached by friends elsewhere: say so instead of failing
       const loop = h => /^(127\.|localhost$|\[?::1)/.test(h);
-      if (m.voice && loop(new URL(m.voice.url.replace(/^ws/, 'http')).hostname) && !loop(location.hostname)) {
+      if (m.voice && m.voice.url && loop(new URL(m.voice.url.replace(/^ws/, 'http')).hostname) && !loop(location.hostname)) {
         m.voice = null; ctx.toast(`Voice works once the trek is on the online server. Walk together and chat with ${touch() ? 'Talk' : 'Enter'} for now.`);
+      } else if (m.voice && m.voice.p2p && window.TriundP2P) {
+        VOICE = window.TriundP2P.voice({ mode: micMode, pid, me: () => ctx.me(), where: id => { const r = remotes.get(id); return r ? r.a : null; }, roster: () => Array.from(roster.values()), onError: t => ctx.toast(t) });
       } else if (m.voice && window.TriundVoice) {
         VOICE = window.TriundVoice.create({ url: m.voice.url, token: m.voice.token, mode: micMode, team: () => team, where: id => { const r = remotes.get(id); return r ? r.a : null; }, me: () => ctx.me(), onTalk: (id, on) => { if (id === pid) myTalk = on; else { const r = remotes.get(id); if (r) { r.talk = on; r.tagDirty = true; } } renderPill(); }, onError: t => ctx.toast(t) });
       } else if (!m.voice && !VOICE) ctx.toast('Voice is not set up on this server: you see your friends but cannot talk.');
@@ -326,6 +365,8 @@ window.TriundNet = {
         sendT -= dt;
         if (sendT <= 0 && wsOpen && pose) { sendT = 0.1; send({ t: 'pose', p: [+pose.x.toFixed(2), +pose.y.toFixed(2), +pose.z.toFixed(2), +pose.yaw.toFixed(3), pose.anim, +(pose.speed || 1).toFixed(2), pose.flags | 0] }); }
         const now = performance.now() / 1000 - DELAY;
+        for (const [id, r] of remotes) if (now + DELAY - r.last > 6) dropRemote(id);   // no word from them for 6 s: gone
+        if (P2P && ws && ws.kind === 'join' && wsOpen && lastMsg && performance.now() - lastMsg > 9000) { ws.error = 'silent'; ws.close(); ws.onclose && ws.onclose(); }
         for (const [id, r] of remotes) {
           const b = r.buf; if (!b.length) continue;
           let i = b.length - 1; while (i > 0 && b[i - 1][0] > now) i--;
