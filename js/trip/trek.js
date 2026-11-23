@@ -300,6 +300,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
     function prompt(p) {
       if (!P || sit) return '';
       const st = nearStop(p, 3.6); if (st) return '<kbd>E</kbd> Menu · <kbd>C</kbd> Sit';
+      const ts = ctx.townShop && ctx.townShop(p.x, p.z); if (ts) return `<kbd>E</kbd> Buy · ${ts.title}`;
       if (nearSeat(p, 2.4)) return '<kbd>C</kbd> Sit down';
       return '';
     }
@@ -327,6 +328,24 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       }
       syncCoins(); openPanel(shop);
     }
+    // a shop in McLeod Ganj: what that kind of shop sells (goods.js), at town prices; gear goes in the bag
+    function openTownShop(ts) {
+      const GD = ctx.goods && ctx.goods(), list = GD && GD.SELLS[ts.cat]; if (!list) return;
+      const st = { label: ts.title, town: true };
+      $('shopTitle').textContent = ts.title;
+      $('shopSub').textContent = 'McLeod Ganj prices. Things for the trek are cheaper here than up on the trail.';
+      const rows = $('shopRows'); rows.innerHTML = '';
+      for (const [id, price] of list) {
+        const food = ECON.ITEMS[id], gear = !food && ECON.GEAR[id]; if (!food && !gear) continue;
+        const it = Object.assign({ id }, food || gear, { price, gear: !!gear, bag: food ? true : undefined });
+        const have = gear && bag.gear.includes(id);
+        const r = document.createElement('div'); r.className = 'row';
+        r.innerHTML = `<span class="ic">${it.icon}</span><span><div class="nm">${it.name}</div><div class="fx">${gear ? (it.note || '') + ` · ${it.kg} kg` : fx(it) + ' · goes in your bag'}</div></span><button type="button" class="buy"${have ? ' disabled' : ''}>${have ? 'In your bag' : '🪙 ' + price}</button>`;
+        r.querySelector('button').addEventListener('click', e => buy(st, it, e.currentTarget));
+        rows.appendChild(r);
+      }
+      syncCoins(); openPanel(shop);
+    }
     // paying: coins from the phone (trip.js pay; plain wallet without it)
     function buy(st, it, btn) {
       const why = `${it.name} at ${st.label}`;
@@ -334,6 +353,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       if (!r.ok) { ctx.toast(r.msg); if (r.topUp) openTopUp(); return; }
       if (r.msg) ctx.toast(r.msg);
       if (ctx.crowd && ctx.crowd.serve) ctx.crowd.serve(st);
+      if (it.gear) { if (!bag.gear.includes(it.id)) bag.gear.push(it.id); ctx.toast(`${it.name}: in your bag (I). ${it.note || ''}`); btn.textContent = 'In your bag'; btn.disabled = true; syncCoins(); return; }
       if (it.id === 'water') { P.water += it.sips; bag.plasticBottles = (bag.plasticBottles || 0) + 1; ctx.toast('The shopkeeper hands you a 1 L plastic bottle. Into the bag; carry the empty one back down.'); }
       else if (it.bag) { bag.food[it.id] = (bag.food[it.id] || 0) + 1; ctx.toast(`${it.name}: into the bag. Eat it any time (I).`); }
       else {
@@ -381,7 +401,7 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
         if (g === 'idcard' || g === 'receipt') { add(ECON.GEAR[g].icon, ECON.GEAR[g].name, g === 'idcard' ? 'Shown at the Gallu forest check post' : 'Paid at Gallu: keep it until you are back down', '', null); continue; }
         const u = USE[g] && USE[g]();
         if (u) add(ECON.GEAR[g].icon, ECON.GEAR[g].name, `${u[1]} · ${ECON.GEAR[g].kg} kg`, u[0], () => { if (ctx.useGear) ctx.useGear(g); openBag(); });
-        else add(ECON.GEAR[g].icon, ECON.GEAR[g].name, `For the night at the camp at the top · ${ECON.GEAR[g].kg} kg`, '', null);
+        else add(ECON.GEAR[g].icon, ECON.GEAR[g].name, `${ECON.GEAR[g].note || 'For the night at the camp at the top'} · ${ECON.GEAR[g].kg} kg`, '', null);
       }
       for (const g of bag.rented) add(ECON.GEAR[g].icon, ECON.GEAR[g].name + ' (rented)', 'for tonight', '', null);
       syncCoins(); openPanel(bagP);
@@ -450,7 +470,8 @@ body:has(#start:not([hidden])) #res,body:has(#end:not([hidden])) #res{display:no
       TIME, reset, update, openTopUp, onBench: () => !!(sit && sit.bench), seat: () => sit,
       drinkAnim() { if (ctx.hands && !ctx.hands.busy) ctx.hands.start('drink', { icon: '💧', need: 1 }); }, speedFactor, sitting, toggleSit, eyeHeight, prompt, hud, renderKit, syncCoins,
       // at the counter, or from your seat at the stall: the shopkeeper brings it over
-      interact(p) { const st = nearStop(p, sit ? 10 : 3.6); if (st) { openShop(st); return true; } return false; },
+      interact(p) { const st = nearStop(p, sit ? 10 : 3.6); if (st) { openShop(st); return true; }
+        const ts = !sit && ctx.townShop && ctx.townShop(p.x, p.z); if (ts) { openTownShop(ts); return true; } return false; },
       lying: () => !!(sit && sit.lie),
       toggleBag() { if (panelOpen === bagP) closePanels(); else openBag(); },
       qaEat(id) { if (I[id] && I[id].bag) return startEating(I[id], 'bag', null); const d = dishMesh(id); placeDish(d); return startEating(I[id], 'qa', d); },   // QA: eat or sip a served dish here

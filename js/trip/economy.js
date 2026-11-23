@@ -20,6 +20,13 @@ window.TriundEconomy = (function () {
     snickers:  { name: 'Snickers bar', price: 50, en: 12, hyd: 0, eat: 1, kg: 0.05, bag: true, plastic: true, cat: 'pack', icon: '🍫' },
     parleg:    { name: 'Parle-G biscuits', price: 15, en: 10, hyd: -2, eat: 2, kg: 0.08, bag: true, plastic: true, cat: 'pack', icon: '🍪' },
     banana:    { name: 'Banana', price: 20, en: 10, hyd: 2, eat: 1, kg: 0.15, bag: true, cat: 'pack', icon: '🍌' },
+    // sold in the McLeod Ganj shops (town.js / goods.js): packed to take along
+    chips:     { name: 'Chips packet', price: 20, en: 8, hyd: -2, eat: 1, kg: 0.06, bag: true, plastic: true, icon: '🥔' },
+    momos:     { name: 'Veg momos, packed (8)', price: 80, en: 24, hyd: 0, eat: 4, kg: 0.3, bag: true, icon: '🥟' },
+    cookies:   { name: 'Bakery cookies', price: 60, en: 14, hyd: -1, eat: 2, kg: 0.15, bag: true, plastic: true, icon: '🍪' },
+    bun:       { name: 'Sweet bun', price: 30, en: 12, hyd: 0, eat: 2, kg: 0.1, bag: true, icon: '🥯' },
+    apple:     { name: 'Himachali apple', price: 30, en: 9, hyd: 4, eat: 1, kg: 0.2, bag: true, icon: '🍎' },
+    orange:    { name: 'Orange', price: 20, en: 8, hyd: 5, eat: 1, kg: 0.2, bag: true, icon: '🍊' },
     // starter kit only (not sold on the trail)
     homeparatha: { name: 'Packed aloo paratha', en: 28, hyd: 0, eat: 4, kg: 0.25, bag: true, icon: '🫓' },
     dryfruit:  { name: 'Dry fruits pouch', en: 20, hyd: -1, eat: 2, kg: 0.2, bag: true, plastic: true, icon: '🥜' },
@@ -36,6 +43,17 @@ window.TriundEconomy = (function () {
     headlamp: { name: 'Torch', kg: 0.1, icon: '🔦' },
     speaker: { name: 'Bluetooth speaker', kg: 0.25, icon: '🔊' },
     idcard:   { name: 'Original ID card', kg: 0.01, icon: '🪪' },
+    // bought in town (note: what it is for, shown in the bag)
+    cap:      { name: 'Woollen cap', kg: 0.1, icon: '🧢', note: 'Keeps your head warm at the top' },
+    gloves:   { name: 'Woollen gloves', kg: 0.1, icon: '🧤', note: 'Cold hands on the rocks after sunset' },
+    shawl:    { name: 'Kullu shawl', kg: 0.4, icon: '🧣', note: 'Warm, and a present to take home' },
+    pole:     { name: 'Trekking pole', kg: 0.3, icon: '🦯', note: 'Easier on the knees going down' },
+    flags:    { name: 'Prayer flags', kg: 0.1, icon: '🎏', note: 'Tie them up at the top for luck' },
+    mala:     { name: 'Prayer beads (mala)', kg: 0.05, icon: '📿', note: 'A souvenir from McLeod Ganj' },
+    bowl:     { name: 'Singing bowl', kg: 0.6, icon: '🥣', note: 'Heavy souvenir: it rides up in your bag' },
+    balm:     { name: 'Pain relief balm', kg: 0.05, icon: '🧴', note: 'For sore legs in the evening' },
+    map:      { name: 'Trek map', kg: 0.05, icon: '🗺', note: 'Triund, Snowline, Indrahar Pass' },
+    powerbank: { name: 'Power bank', kg: 0.3, icon: '🔋', note: 'No sockets above Gallu' },
     receipt:  { name: 'Forest entry receipt', kg: 0.01, icon: '🧾' }
   };
   // shoes (worn, chosen at the start): grip on wet rock, loose stones and the snow up high. slip: how likely a slip

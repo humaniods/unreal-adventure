@@ -14,7 +14,8 @@
    Interface: build(o) -> { counts } */
 window.TriundTown = {
   build(o) {
-    const { THREE, scene, H, data, streets, avoid, collide, rng } = o;
+    const { THREE, scene, H, data, streets, avoid, collide, rng } = o, GD = o.goods || null;
+    const shops = [];   // open shops you can buy from: { x, z (in front of the counter), nx, nz, title, cat }
     const lin = c => new THREE.Color(c).convertSRGBToLinear();
     const TOWN_Z = 300;                                     // world z (= -north) beyond which is town
     const counts = { walls: 0, shops: 0, named: 0, balconies: 0, flags: 0, poles: 0, bikes: 0 };
@@ -64,8 +65,8 @@ window.TriundTown = {
     };
     // chunks of 240 m: each its own meshes, hidden beyond 450 m (update)
     const CHK = 240, chunks = new Map();
-    const chunk = (x, z) => { const k = Math.floor(x / CHK) + "," + Math.floor(z / CHK); let c = chunks.get(k); if (!c) chunks.set(k, c = { x: (Math.floor(x / CHK) + 0.5) * CHK, z: (Math.floor(z / CHK) + 0.5) * CHK, facade: new Batch(), signs: new Batch(), flags: new Batch(), poles: new Batch(), bikes: new Batch(), meshes: [] }); return c; };
-    let facade = null, signs = null, flags = null;
+    const chunk = (x, z) => { const k = Math.floor(x / CHK) + "," + Math.floor(z / CHK); let c = chunks.get(k); if (!c) chunks.set(k, c = { x: (Math.floor(x / CHK) + 0.5) * CHK, z: (Math.floor(z / CHK) + 0.5) * CHK, facade: new Batch(), signs: new Batch(), flags: new Batch(), poles: new Batch(), bikes: new Batch(), goods: GD ? new GD.Quads() : null, meshes: [] }); return c; };
+    let facade = null, signs = null, flags = null, goods = null;
     const C = (h, k) => lin(h).multiplyScalar(k == null ? 1 : k);
 
     /* ---------- sign atlas: 8 x 42 cells of 256 x 48 px ---------- */
@@ -116,7 +117,7 @@ window.TriundTown = {
       const lv = b.lv || 1, yG = gMax + 0.15, yt = yG + lv * 2.9;
       const r = rng ? rng(bi * 31 + 7) : Math.random;
       const named = (byB.get(bi) || []).slice(), frames = [];
-      { const c = chunk(cx, cz); facade = c.facade; signs = c.signs; }
+      { const c = chunk(cx, cz); facade = c.facade; signs = c.signs; goods = c.goods; }
       for (let i = 0; i < P.length; i++) {
         const a = P[i], c = P[(i + 1) % P.length], ex = c[0] - a[0], ez = c[1] - a[1], len = Math.hypot(ex, ez);
         if (len < 2.8) continue;
@@ -141,24 +142,33 @@ window.TriundTown = {
           const u0 = j * uw + 0.3, u1 = (j + 1) * uw - 0.3, um = (u0 + u1) / 2, wx = F.ox + ux * um, wz = F.oz + uz * um;
           if (avoidNear(wx + nx * 0.5, wz + nz * 0.5, 2.6)) continue;   // a cafe's own storefront is already here
           counts.shops++;
-          const closed = r() < 0.18, oh = 2.45;
-          // the opening: dark interior, shelves of goods (or a shutter pulled down)
-          facade.box(F, u0, u1, y0, y0 + oh, 0.0, 0.04, closed ? metal : dark);
-          if (!closed) {
-            for (const sy of [0.55, 1.15, 1.75]) {
-              facade.box(F, u0 + 0.15, u1 - 0.15, y0 + sy, y0 + sy + 0.04, 0.04, 0.34, shelf);
-              for (let u = u0 + 0.2; u < u1 - 0.3; u += 0.18 + r() * 0.2) { const h = 0.18 + r() * 0.32; facade.box(F, u, u + 0.12 + r() * 0.1, y0 + sy + 0.04, y0 + sy + 0.04 + h, 0.06, 0.26, C(GOODS[(r() * GOODS.length) | 0], 0.75 + r() * 0.3)); }
-            }
-            facade.box(F, u0 + 0.2, u1 - 0.2, y0, y0 + 0.85, 0.3, 0.75, C(0x6e4b2e));   // the counter at the front
-          } else for (let y = y0 + 0.12; y < y0 + oh; y += 0.12) facade.box(F, u0, u1, y, y + 0.03, 0.04, 0.06, metalD);   // shutter ribs
-          facade.box(F, u0 - 0.06, u1 + 0.06, y0 + oh, y0 + oh + 0.3, 0.0, 0.3, metal);                   // rolled shutter box
-          for (const uu of [u0 - 0.06, u1]) facade.box(F, uu, uu + 0.06, y0, y0 + oh, 0.0, 0.1, metal);  // shutter rails
           // the sign: a real name where the place is in this building, else the kind of shop
           let title, sub, pal;
           const near = named.length ? named.reduce((bi2, p, k) => { const d = (p.e - wx) ** 2 + (-p.n - wz) ** 2; return d < bi2.d ? { d, k } : bi2; }, { d: Infinity, k: -1 }) : { d: Infinity, k: -1 };
           const pi = near.d < 22 * 22 ? near.k : -1;
           if (pi >= 0) { const p = named.splice(pi, 1)[0]; title = p.name; sub = [SUB[p.t] || '', p.cu ? p.cu.charAt(0).toUpperCase() + p.cu.slice(1) : ''].filter(Boolean).join(' · '); pal = (p.name.length * 7) % PALETTE.length; counts.named++; }
           else { const g = GENERIC[(r() * GENERIC.length) | 0]; title = g[0]; sub = g[1]; pal = (r() * PALETTE.length) | 0; }
+          const closed = r() < 0.18, oh = 2.45;
+          // the opening: the shop inside (painted shelves of what it sells, goods.js) or a shutter pulled down
+          facade.box(F, u0, u1, y0, y0 + oh, 0.0, 0.04, closed ? metal : dark);
+          if (!closed) {
+            const cat = GD ? GD.catOf(title, sub) : 'kiryana', A = (u, y, nn) => [F.ox + ux * u + nx * nn, y, F.oz + uz * u + nz * nn];
+            const UVF = q => flip ? { u0: q.u1, u1: q.u0, v0: q.v0, v1: q.v1 } : q;   // reads left to right from the street
+            if (GD) goods.quad(A(u0 + 0.04, y0 + 0.02, 0.05), A(u1 - 0.04, y0 + 0.02, 0.05), A(u1 - 0.04, y0 + oh - 0.1, 0.05), A(u0 + 0.04, y0 + oh - 0.1, 0.05), UVF(GD.shelf(cat, r() * 2)));
+            if (!['momos', 'fruit', 'service', 'lodge'].includes(cat)) for (const sy of [0.55, 1.15, 1.75]) facade.box(F, u0 + 0.12, u1 - 0.12, y0 + sy - 0.05, y0 + sy - 0.01, 0.05, 0.36, shelf);   // shelf edges in front of the picture
+            facade.box(F, u0 + 0.2, u1 - 0.2, y0, y0 + 0.85, 0.3, 0.75, C(0x6e4b2e));   // the counter at the front
+            if (GD) {
+              const W = u1 - u0;
+              if (cat === 'kiryana' || cat === 'momos' && r() < 0.5) for (const uu of [u0 + 0.06, u1 - 0.3]) { const s2 = GD.strip(r() * 4); goods.quad(A(uu, y0 + oh - 1.25, 0.42), A(uu + 0.24, y0 + oh - 1.25, 0.42), A(uu + 0.24, y0 + oh - 0.05, 0.42), A(uu, y0 + oh - 0.05, 0.42), UVF(s2)); }   // chips strips at the front
+              if (cat === 'woollen' || cat === 'gear') for (let k = 0; k < Math.min(3, Math.floor(W / 0.7)); k++) { const uu = u0 + 0.08 + k * 0.62, hh = cat === 'gear' ? 0.92 : 1.05, ww = cat === 'gear' ? 0.6 : 0.55;
+                goods.quad(A(uu, y0 + oh - 0.1 - hh, 0.55 + k * 0.02), A(uu + ww, y0 + oh - 0.1 - hh, 0.55 + k * 0.02), A(uu + ww, y0 + oh - 0.1, 0.55 + k * 0.02), A(uu, y0 + oh - 0.1, 0.55 + k * 0.02), UVF(GD.hang(cat, r() * 6))); }   // jackets / shawls on a rail outside
+              if (cat === 'crafts') goods.quad(A(u0, y0 + oh - 0.42, 0.4), A(u1, y0 + oh - 0.42, 0.4), A(u1, y0 + oh, 0.4), A(u0, y0 + oh, 0.4), UVF(GD.hang('crafts', r() * 2)));   // prayer flags across the top
+              if (cat === 'fruit') for (let k = 0; k < Math.floor((W - 0.4) / 0.62); k++) { const uu = u0 + 0.2 + k * 0.62; goods.quad(A(uu, y0 + 0.86, 0.75), A(uu + 0.58, y0 + 0.86, 0.75), A(uu + 0.58, y0 + 1.2, 0.4), A(uu, y0 + 1.2, 0.4), UVF(GD.crate(r() * 4))); }   // crates tilted on the counter
+            }
+            if (GD && GD.SELLS[cat]) shops.push({ x: wx + nx * 1.3, z: wz + nz * 1.3, nx, nz, title, cat });
+          } else for (let y = y0 + 0.12; y < y0 + oh; y += 0.12) facade.box(F, u0, u1, y, y + 0.03, 0.04, 0.06, metalD);   // shutter ribs
+          facade.box(F, u0 - 0.06, u1 + 0.06, y0 + oh, y0 + oh + 0.3, 0.0, 0.3, metal);                   // rolled shutter box
+          for (const uu of [u0 - 0.06, u1]) facade.box(F, uu, uu + 0.06, y0, y0 + oh, 0.0, 0.1, metal);  // shutter rails
           const uv = cell(title, sub, pal), sy0 = y0 + oh + 0.32, sy1 = sy0 + Math.min(0.78, (u1 - u0 + 0.1) * 0.19);
           const SP = (u, y) => [F.ox + ux * u + nx * 0.33, y, F.oz + uz * u + nz * 0.33];
           const ua = flip ? uv.u1 : uv.u0, ub = flip ? uv.u0 : uv.u1;
@@ -261,12 +271,21 @@ window.TriundTown = {
     const tex = new THREE.CanvasTexture(atlas); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 8;
     const M = { facade: vc(), poles: vc(), bikes: vc({ roughness: 0.5, metalness: 0.2 }), flags: new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
       signs: new THREE.MeshLambertMaterial({ map: tex, vertexColors: true, emissive: lin(0x222222), emissiveMap: tex, side: THREE.DoubleSide }) };
+    for (const c of chunks.values()) { if (c.goods) { const m = c.goods.mesh(scene); if (m) c.meshes.push(m); } c.goods = null; }
     for (const c of chunks.values()) for (const k of ['facade', 'poles', 'bikes', 'flags', 'signs']) { const m = c[k].mesh(M[k]); if (m) { if (k === 'flags' || k === 'signs' || k === 'bikes') m.castShadow = false; c.meshes.push(m); } c[k] = null; }
     if (wires.length) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(wires, 3)); scene.add(new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: lin(0x222222) }))); }
     counts.signCells = nextCell; counts.chunks = chunks.size;
     let lastX = 1e9, lastZ = 1e9;
+    // the open shop whose counter you are standing at (within r metres in front of it)
+    const SG = new Map(); for (const sh of shops) { const k = Math.floor(sh.x / 8) + ',' + Math.floor(sh.z / 8); let l = SG.get(k); if (!l) SG.set(k, l = []); l.push(sh); }
+    counts.buyShops = shops.length;
     return {
-      counts,
+      counts, shops,
+      shopNear(x, z, r) {
+        let best = null, bd = r || 2.2; const i0 = Math.floor(x / 8), j0 = Math.floor(z / 8);
+        for (let i = i0 - 1; i <= i0 + 1; i++) for (let j = j0 - 1; j <= j0 + 1; j++) for (const sh of SG.get(i + ',' + j) || []) { const d = Math.hypot(sh.x - x, sh.z - z); if (d < bd) { bd = d; best = sh; } }
+        return best;
+      },
       update(cam) {
         if ((cam.x - lastX) ** 2 + (cam.z - lastZ) ** 2 < 100) return; lastX = cam.x; lastZ = cam.z;
         for (const c of chunks.values()) { const v = (c.x - cam.x) ** 2 + (c.z - cam.z) ** 2 < 450 * 450; for (const m of c.meshes) m.visible = v; }
