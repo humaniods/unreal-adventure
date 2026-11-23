@@ -324,9 +324,10 @@ body.touchmode #netPill kbd{display:none}
     <label class="check"><input type="checkbox" id="idBox" checked> Original ID card in the bag (checked at the Gallu forest check post)</label>
     <div class="field">
       <div class="label" id="gfxLabel">Graphics</div>
-      <div class="seg two" role="group" aria-labelledby="gfxLabel" id="gfxSeg">
+      <div class="seg" role="group" aria-labelledby="gfxLabel" id="gfxSeg">
         <button type="button" data-q="high" aria-pressed="true"><b>High</b><span>Shadows, dense grass</span></button>
         <button type="button" data-q="low" aria-pressed="false"><b>Low</b><span>For older laptops</span></button>
+        <button type="button" data-q="phone" aria-pressed="false"><b>Phone</b><span>Smoothest on phones and tablets</span></button>
       </div>
     </div>
     <div class="field">
@@ -351,6 +352,7 @@ body.touchmode #netPill kbd{display:none}
       <dt><kbd>J</kbd> <kbd>U</kbd></dt><dd>with your partner: hold hands · carry them on your shoulders (they press the same key to say yes; again to let go)</dd>
       <dt><kbd>N</kbd> <kbd>G</kbd></dt><dd>with friends: mic All / Team / Off · accept a friend request (E near a player asks them)</dd>
       <dt><kbd>V</kbd> <kbd>T</kbd> <kbd>Esc</kbd></dt><dd>camera · settings · pause</dd>
+      <dt>Gamepad</dt><dd>left stick walk · right stick look · A use · B sit / back · X water · Y camera · RT sprint · LT breathe · LB watch · RB bag · Start pause · D-pad: mic, yes, hand, carry</dd>
       <dt>Drone flyover</dt><dd>fly over the whole chosen route from above</dd>
     </dl>
     <p class="fine">Prototype. Trails: OpenStreetMap route "Galu Devi – Triund", the OpenStreetMap paths from Bhagsu via Shiva Cafe and Karthani, the lanes from McLeod Ganj Main Square through Dharamkot and the "Triund Hill – SnowLine Cafe Trail" (map data © OpenStreetMap contributors, ODbL). Entry fee and check post as reported for the Dharamshala Forest Circle (₹100 per person per day at Gallu); taxi fares are estimates. Temples, cafes, camps, streams and building outlines also come from OpenStreetMap; buildings OSM has not traced come from Microsoft Global ML Building Footprints (ODbL); building heights and colours are estimates. Terrain: SRTM elevation via AWS Terrain Tiles at about 30 m detail, so the shape of the mountain is real but small steps and rocks are not. Imagery: Sentinel-2 cloudless 2016 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0. Ground textures: Poly Haven (CC0). People and animals: Quaternius (CC0) characters, animations and animal pack; clothes, crowd and behaviour are generated in the game. Clouds and sounds are generated in the game; their placement and behaviour follow trekkers' trip reports (October–November morning). Values from the tuning panel (<kbd>T</kbd>) will move into the UE5 DT_Stamina table.</p>
@@ -756,7 +758,7 @@ function followSun(x,y,z){const tx=2*QP.shadowRange/QP.shadowSize;_fp.set(x,y,z)
   const pu=Math.round(_fp.dot(SU)/tx)*tx,pv=Math.round(_fp.dot(SV)/tx)*tx,pw=_fp.dot(SUND);
   sun.target.position.copy(SU).multiplyScalar(pu).addScaledVector(SV,pv).addScaledVector(SUND,pw);
   sun.position.copy(sun.target.position).addScaledVector(SUND,450);sun.target.updateMatrixWorld();}
-const POST=QS.has('nopost')||!window.TriundPost?null:window.TriundPost.create({THREE,renderer});
+const POST=QS.has('nopost')||!window.TriundPost?null:window.TriundPost.create({THREE,renderer});if(POST)POST.minScale=QP.minScale||0.85;
 function resize(){const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
   if(POST){const b=renderer.getDrawingBufferSize(new THREE.Vector2());POST.setSize(b.x,b.y);}}
 window.addEventListener('resize',resize);resize();
@@ -1378,7 +1380,10 @@ function audioTick(dt){
 /* ================= input ================= */
 const keys={};let state='menu',dragLook=false,dragging=false,holdBreathTouch=false,touchSprint=false;
 const joy={x:0,y:0};
-const isTouch=matchMedia('(pointer: coarse)').matches&&!matchMedia('(pointer: fine)').matches;
+// a phone or tablet stays a touch screen when a Bluetooth joystick or mouse is paired to it (the browser may then call
+// its main pointer "fine"); an iPad says it is a Mac but has touch points
+const isTouch=(matchMedia('(pointer: coarse)').matches&&!matchMedia('(pointer: fine)').matches)||
+  (navigator.maxTouchPoints>0&&matchMedia('(any-pointer: coarse)').matches&&(/Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1)));
 const locked=()=>document.pointerLockElement===canvas;
 function lock(){if(isTouch)return;try{const r=canvas.requestPointerLock&&canvas.requestPointerLock();if(r&&r.catch)r.catch(()=>lockFailed());}catch(e){lockFailed();}}
 function lockFailed(){if(!dragLook){dragLook=true;say('Mouse lock unavailable. Drag on the screen to look around.',5);}}
@@ -1433,16 +1438,45 @@ if(isTouch){
   canvas.addEventListener('touchstart',e=>{const t=e.changedTouches[0];lid=t.identifier;lx=t.clientX;ly=t.clientY;},{passive:true});
   window.addEventListener('touchend',e=>{for(const t of e.changedTouches){if(t.identifier===jid){jid=null;joy.x=0;joy.y=0;knob.style.transform='';}if(t.identifier===lid)lid=null;}});
   const hold=(id,on,off)=>{const b=$(id);b.addEventListener('touchstart',e=>{e.preventDefault();on(b);},{passive:false});b.addEventListener('touchend',e=>{e.preventDefault();off&&off(b);},{passive:false});};
+  // a button that must count as a tap for the browser (the microphone, sound): acts when the finger lifts, because
+  // browsers only let touchend (not touchstart) ask for the microphone or start audio
+  const tap=(id,fn)=>{const b=$(id);b.addEventListener('touchstart',e=>{e.preventDefault();b.classList.add('on');},{passive:false});
+    b.addEventListener('touchend',e=>{e.preventDefault();b.classList.remove('on');fn(b);},{passive:false});b.addEventListener('touchcancel',()=>b.classList.remove('on'));};
   hold('tbSprint',b=>{touchSprint=!touchSprint;b.classList.toggle('on',touchSprint);});
   hold('tbBreath',b=>{holdBreathTouch=true;b.classList.add('on');},b=>{holdBreathTouch=false;b.classList.remove('on');});
   hold('tbWatch',()=>{if($('watch').classList.contains('up'))cyclePage();else toggleWatch();});
   hold('tbView',()=>{if(state==='play'){P.firstPerson=!P.firstPerson;toast(P.firstPerson?'Your own eyes':'Behind you: see yourself and your partner');}});hold('tbUse',()=>interact());hold('tbWater',()=>drink());hold('tbMenu',()=>pause());
   // talking and the couple moves on a touch screen (the keys are Enter, J, U, N and G on a keyboard)
   hold('tbTalk',()=>{if(!(TALK&&TALK.open()))toast('Walk up to a hiker or a stall keeper to talk');});
-  hold('tbHand',()=>{if(NET)NET.hands();});hold('tbCarry',()=>{if(NET)NET.carry();});hold('tbMic',()=>{if(NET)NET.cycleMic();});
+  hold('tbHand',()=>{if(NET)NET.hands();});hold('tbCarry',()=>{if(NET)NET.carry();});tap('tbMic',()=>{if(NET)NET.cycleMic();});
   hold('tbYes',()=>{if(NET)NET.acceptAny();});
   setInterval(()=>{const on=!!(NET&&NET.active);$('tbHand').hidden=$('tbCarry').hidden=$('tbMic').hidden=!on;$('tbYes').hidden=!(NET&&NET.pending);
     $('tbYes').classList.toggle('on',!!(NET&&NET.pending));},400);
+}
+
+/* ================= game controllers ================= */
+// A Bluetooth or USB gamepad on a phone, tablet or laptop (Gamepad API, standard layout: Xbox, PlayStation and
+// most "mobile joysticks" in gamepad mode). The sticks walk and look; the buttons press the keys a keyboard
+// would, so every panel, the taxi ride and the chat react exactly as they do to the keys.
+const PAD={x:0,y:0,on:false,prev:[],said:false,rest:[]};
+const PAD_KEYS={0:'KeyE',2:'KeyR',3:'KeyV',4:'KeyQ',5:'KeyI',6:'Space',7:'ShiftLeft',8:'Enter',10:'KeyH',11:'KeyL',12:'KeyN',14:'KeyJ',15:'KeyU'};
+function padKey(code,down){document.dispatchEvent(new KeyboardEvent(down?'keydown':'keyup',{code,key:code==='Enter'?'Enter':code==='Escape'?'Escape':code==='Space'?' ':code.replace(/^Key/,'').toLowerCase(),bubbles:true,cancelable:true}));}
+window.addEventListener('gamepadconnected',()=>{PAD.said=false;});
+function padTick(dt){
+  const list=navigator.getGamepads?navigator.getGamepads():[];let gp=null;for(const g of list||[])if(g&&g.connected){gp=g;break;}
+  if(!gp){if(PAD.on){PAD.on=false;PAD.x=PAD.y=0;}return;}
+  // a pad that is not in the standard layout may report a trigger as an axis resting at -1: that is its zero
+  if(!PAD.on){PAD.on=true;PAD.rest=(gp.axes||[]).map(v=>gp.mapping!=='standard'&&Math.abs(v)>0.5?v:0);if(!PAD.said){PAD.said=true;toast('Controller connected: left stick walk · right stick look · A use · B sit / back · RT sprint · Start pause');}}
+  const dz=v=>{v=clamp(v,-1,1);return Math.abs(v)<0.15?0:(v-Math.sign(v)*0.15)/0.85;},ax=(gp.axes||[]).map((v,i)=>v-(PAD.rest[i]||0));
+  PAD.x=dz(ax[0]||0);PAD.y=-dz(ax[1]||0);
+  if(state==='play'){const lx=dz(ax[2]||0),ly=dz(ax[3]||0);P.yaw-=lx*Math.abs(lx)*2.6*dt;P.pitch=clamp(P.pitch-ly*Math.abs(ly)*1.8*dt,-1.3,1.2);}
+  (gp.buttons||[]).forEach((b,i)=>{
+    const on=!!(b&&(b.pressed||b.value>0.5)),was=!!PAD.prev[i];PAD.prev[i]=on;if(on===was)return;
+    if(i===9){if(on){if(state==='paused')enterPlay();else if(state==='play')pause();else{padKey('Escape',true);padKey('Escape',false);}}return;}   // Start: pause / back to the trail
+    if(i===13){if(on&&NET&&NET.pending)NET.acceptAny();return;}                                                                                    // D-pad down: say yes
+    const code=i===1?(state==='play'?'KeyC':'Escape'):PAD_KEYS[i];                                                                                  // B: sit, or close a panel
+    if(code)padKey(code,on);
+  });
 }
 
 /* ================= UI helpers ================= */
@@ -1592,7 +1626,7 @@ function update(dt){
   if(window.__triund&&window.__triund.autopilot){const p=pointAtS(Math.min(ACT.total,P.s+5));P.yaw=Math.atan2(-(p.x-P.x),-(p.z-P.z));iz=1;}
   if(keys.KeyW||keys.ArrowUp)iz+=1;if(keys.KeyS||keys.ArrowDown)iz-=1;if(keys.KeyD)ix+=1;if(keys.KeyA)ix-=1;
   if(keys.ArrowLeft)P.yaw+=1.8*dt;if(keys.ArrowRight)P.yaw-=1.8*dt;
-  ix+=joy.x;iz+=joy.y;
+  ix+=joy.x+PAD.x;iz+=joy.y+PAD.y;
   // after you are turned round (sitting down in your tent) the keys you were holding do nothing until you let go
   if(P.moveLock){if(Math.abs(ix)+Math.abs(iz)<0.05)P.moveLock=false;else{ix=0;iz=0;}}
   if(NET&&NET.carried){ix=0;iz=0;}   // riding on your partner's shoulders: they do the walking
@@ -1909,10 +1943,10 @@ function hudTick(dt){
 
 /* ================= graphics quality ================= */
 function syncGfx(){document.querySelectorAll('#gfxSeg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.q===QL.get())));
-  $('pauseGfxBtn').textContent='Graphics: '+(QL.get()==='high'?'High':'Low');}
-QL.onChange(p=>{QP=p;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,p.pixelRatio));resize();applyShadowQuality();if(FLORA)FLORA.setQuality(p);syncGfx();});
+  $('pauseGfxBtn').textContent='Graphics: '+({high:'High',low:'Low',phone:'Phone'}[QL.get()]||'High');}
+QL.onChange(p=>{QP=p;if(POST&&!QS.get('scale'))POST.minScale=p.minScale||0.85;renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,p.pixelRatio));resize();applyShadowQuality();if(FLORA)FLORA.setQuality(p);syncGfx();});
 $('gfxSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)QL.set(b.dataset.q);});
-$('pauseGfxBtn').addEventListener('click',()=>QL.set(QL.get()==='high'?'low':'high'));
+$('pauseGfxBtn').addEventListener('click',()=>QL.set({high:'low',low:'phone',phone:'high'}[QL.get()]||'high'));
 // resolution: Auto (dynamic, 85-100 %) or Full (always 100 %), remembered per viewer
 let FULLRES=false;try{FULLRES=localStorage.getItem('triund-fullres')==='1';}catch(e){}
 function setFullRes(v){FULLRES=!!v;try{localStorage.setItem('triund-fullres',FULLRES?'1':'0');}catch(e){}
@@ -1927,7 +1961,7 @@ const AUTO={t:0,ft:[],done:false};
 function autoQuality(raw){if(AUTO.done||state!=='play')return;if(POST&&!FULLRES&&POST.scale>POST.minScale+0.01){AUTO.t=0;AUTO.ft.length=0;return;}   // dynamic resolution still has room
   AUTO.t+=raw;AUTO.ft.push(raw);
   if(AUTO.t<10)return;AUTO.done=true;const m=AUTO.ft.sort((a,b)=>a-b)[AUTO.ft.length>>1];
-  if(m>0.04&&QL.get()==='high'){QL.set('low');toast('Graphics set to Low for smoother walking');}}
+  if(m>0.04&&QL.get()!=='phone'){const to=QL.get()==='high'?'low':'phone';QL.set(to);toast('Graphics set to '+(to==='low'?'Low':'Phone')+' for smoother walking');if(to==='low'){AUTO.done=false;AUTO.t=0;AUTO.ft.length=0;}}}
 
 /* ================= drone flyover (route check) ================= */
 // Flies a camera along the chosen route with the trail drawn on the ground and the OSM landmarks labelled.
@@ -2050,7 +2084,7 @@ if(POST&&QS.get('scale')){POST.minScale=0.3;POST.setScale(+QS.get('scale'));}
 function frame(now){
   const raw=(now-last)/1000,dt=Math.min(0.05,raw);last=now;fps+=(1/Math.max(dt,0.001)-fps)*0.05;
   PERF.ft[PERF.fi]=raw*1000;PERF.fi=(PERF.fi+1)%PERF.ft.length;let t0=performance.now();
-  dynRes(raw);
+  dynRes(raw);padTick(dt);
   if(state==='play'){update(dt);autoQuality(raw);}else if(state==='ride'&&TRIP){TRIP.rideTick(dt,camera);autoQuality(raw);}else if(state==='menu')menuCam(dt);else if(state==='drone')droneTick(dt);else if(state==='night'&&CAMP)CAMP.nightTick(dt,camera);
   if(state==='drone'||state==='qa')followSun(DR.look.x,DR.look.y,DR.look.z);
   else{const fx=state==='menu'?camera.position:P;followSun(fx.x,state==='menu'?H(fx.x,fx.z):P.y,fx.z);}
