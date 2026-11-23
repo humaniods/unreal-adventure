@@ -157,7 +157,7 @@ window.TriundTrip = {
         const stand = (key, Ln, d0, down, n) => {
           for (let i = 0; i < n; i++) {
             const car = V.makeCar({ taxi: true, color: [0xf2f2ee, 0xeae7de, 0xf4f4f2][i % 3], shirt: [0x3a4a6a, 0x6a3a2a, 0x2a5a4a][i % 3] });
-            const d = down ? d0 + i * 6 : d0 - i * 6, F = V.follower(car, Ln, { from: d, reverse: down, off: 2.5 });
+            const d = down ? d0 + i * 6.5 : d0 - i * 6.5, F = V.follower(car, Ln, { from: d, reverse: down, off: PARK_OFF });
             const park = { x: car.g.position.x, z: car.g.position.z, yaw: F.yaw, d };
             const t = { key, car, Ln, down, park, i, F };
             CARS.push(t); if (i === 0) TAXIS.push(t);
@@ -170,17 +170,17 @@ window.TriundTrip = {
         // two private cars going up and down the road all day, stopping for people on it
         for (let i = 0; i < 2; i++) {
           const car = V.makeCar({ color: [0x9a1f24, 0x3c4a5a][i], shirt: 0x444444 });
-          const F = V.follower(car, LINES.mcleod, { from: i ? LINES.mcleod.total - 60 : 60, reverse: !!i, vmax: 8, off: 1.1 });
-          TRAFFIC.push({ car, F, wait: 0 });
+          TRAFFIC.push({ car, F: trafficF(car, LINES.mcleod, i ? LINES.mcleod.total - 60 : 60, !!i), wait: 0 });
         }
       }
       const taxiBoard = (tr, s, key) => board(tr, s, tr.pointAtS(s), 3.0, [{ t: 'TAXI STAND', size: 58, w: 700 }, { t: key === 'gallu' ? 'to McLeod Ganj ₹' + TAXI.gallu : 'to Gallu Devi ₹' + TAXI[key], size: 38 }], 1.9, 0.9);
       taxiBoard(MT, Math.max(24, tmc.s + 10), 'mcleod'); taxiBoard(MT, tdk.s + 8, 'dharamkot'); taxiBoard(GT, 20, 'gallu');
       for (const t of TAXIS) {
-        const tr = t.key === 'gallu' ? GT : MT, p = { x: t.park.x, z: t.park.z };
-        // the driver waits outside his car, by the kerb
-        let best = 0, bd = 1e9; for (let s = 0; s < Math.min(tr.total, t.key === 'gallu' ? 200 : tr.total); s += 3) { const q = tr.pointAtS(s), d = Math.hypot(q.x - p.x, q.z - p.z); if (d < bd) { bd = d; best = s; } }
-        if (bd < 40) makeNPC(tr, best + 3, flatSide(tr, best + 3, 3), 0x3a4a6a, t.key === 'gallu' ? 'Taxi to McLeod? Five hundred, the road is bad.' : 'Taxi to Gallu Devi temple? Saves you the walk up the lanes.', { keeper: true });
+        // the driver waits outside his car on the kerb side, by his front door, facing the people walking past; when
+        // you take the taxi he walks round the bonnet and gets in at the driver's door (right-hand drive)
+        const home = carPt(t.car, DRV_PATH[0][0], DRV_PATH[0][1]); home.yaw = t.car.g.rotation.y + Math.PI / 2;
+        const i = makeNPC(t.key === 'gallu' ? GT : MT, 0, 1, 0x3a4a6a, t.key === 'gallu' ? 'Taxi to McLeod? Five hundred, the road is bad.' : 'Taxi to Gallu Devi temple? Saves you the walk up the lanes.', { keeper: true, at: home });
+        if (i != null) { t.drv = { i, home }; if (t.car.driver) t.car.driver.visible = false; }
       }
 
       // --- on past the top: Snowline Cafe, the Laka Got / Lahesh Cave signpost, boards on the way
@@ -234,6 +234,69 @@ window.TriundTrip = {
           startRide(t);
         }, true]]);
     }
+    /* ---------- cars on the road: lanes, the car in front, the waiting driver ---------- */
+    const PARK_OFF = 1.25;  // a parked taxi: at the kerb, its wheels on the road (further out it stood tilted on the verge)
+    // a point beside a car, in its own frame (lx: metres to its left, the kerb side; lz: metres forward)
+    function carPt(car, lx, lz) { const g = car.g, c = Math.cos(g.rotation.y), s = Math.sin(g.rotation.y); return { x: g.position.x + lx * c + lz * s, z: g.position.z - lx * s + lz * c }; }
+    function carLocal(car, x, z) { const g = car.g, c = Math.cos(g.rotation.y), s = Math.sin(g.rotation.y), dx = x - g.position.x, dz = z - g.position.z; return { lx: dx * c - dz * s, lz: dx * s + dz * c }; }
+    const carV = o => RIDE && RIDE.car === o.car && RIDE.F ? RIDE.F.v : o.F ? o.F.v : 0;
+    // the nearest car in front, in this car's lane (|lx| < half): bumper-to-bumper gap, its speed and which it is
+    function carAhead(car, look, half, skip) {
+      let best = { gap: Infinity, v: 0, o: null };
+      for (const o of CARS.concat(TRAFFIC)) {
+        if (o.car === car || o.car === skip) continue;
+        const q = carLocal(car, o.car.g.position.x, o.car.g.position.z);
+        if (q.lz > 0.5 && q.lz < look && Math.abs(q.lx) < half && q.lz - 4.6 < best.gap) best = { gap: q.lz - 4.6, v: carV(o), o };
+      }
+      return best;
+    }
+    // people on the road in front of a car (you, hikers, shopkeepers, the waiting drivers): distance from the front
+    // bumper to the nearest one in its path; hikers who are in the way step to the side of the road
+    function personAhead(car, look, half) {
+      let gap = Infinity; const C = ctx.crowd && ctx.crowd();
+      const test = (x, z, a) => {
+        const q = carLocal(car, x, z);
+        // a hiker walking into the side or the back of the car steps round it instead of through it
+        if (a && a.tr && Math.abs(q.lx) < 1.5 && Math.abs(q.lz) < 2.9 && (a.state === 'walk' || a.state === 'rest')) makeWay(car, a, q);
+        if (q.lz < 1.2 || q.lz > look || Math.abs(q.lx) > half) return;
+        gap = Math.min(gap, q.lz - 2.3 - 0.4);
+        if (a && a.tr && (a.state === 'walk' || a.state === 'rest') && q.lz < 16) makeWay(car, a, q);
+      };
+      if (P && !(RIDE && RIDE.phase === 'drive')) test(P.x, P.z, null);
+      if (C) {
+        for (const a of C.agents) if (a.state !== 'sit' && a.state !== 'fire') test(a.x, a.z, a);
+        for (const k of C.keepers) test(k.x, k.z, null);
+        for (const k of C.talkers || []) test(k.x, k.z, null);
+      }
+      return gap;
+    }
+    function makeWay(car, a, q) {   // the hiker moves sideways until he is clear of the car (1.7 m from its middle)
+      const yaw = car.g.rotation.y, lx = Math.cos(yaw), lz = -Math.sin(yaw), nx = -(a.tdz || 0), nz = a.tdx || 0, k = lx * nx + lz * nz;
+      if (Math.abs(k) < 0.35) return;   // walking across the road: he is past in a moment anyway
+      a.dodgeLat = Math.max(-3, Math.min(3, a.lat + ((q.lx >= 0 ? 1.7 : -1.7) - q.lx) / k)); a.dodgeT = 2.5;
+    }
+    // how fast you may go with that car in front: stop 2 m behind it, otherwise close up gently to its speed
+    const followV = a => a.gap === Infinity ? Infinity : a.gap < 2 ? 0 : Math.min(Math.sqrt(2 * 2.5 * (a.gap - 2)), a.v + (a.gap - 2) * 0.6);
+    // the two private cars shuttle between just above the McLeod taxi stand and just below the one at Gallu
+    function trafficF(car, Ln, from, reverse) { const F = ctx.veh.follower(car, Ln, { from, reverse, vmax: 8, off: 1.1 }); F.end = reverse ? 40 : Ln.total - 60; return F; }
+    // the waiting taxi driver: a crowd character (or the plain figure before the crowd has loaded); x null: in his car
+    const DRV_PATH = [[1.45, 2.0], [1.15, 3.1], [-1.15, 3.1], [-1.35, 0.5]];   // round the bonnet to the driver's door
+    function driverAt(t, x, z, yaw, anim) {
+      const N = t.drv && ctx.npc && ctx.npc(t.drv.i); if (!N || !N.n) return;
+      const gone = x == null; N.n.x = gone ? 1e7 : x; N.n.z = gone ? 1e7 : z;
+      if (N.a) { if (gone) { N.a.x = N.a.z = 1e7; N.a.y = -1e4; } else { N.a.x = x; N.a.z = z; N.a.y = ctx.meshH(x, z); N.a.yaw = yaw; N.a.anim = anim || 'Idle'; N.a.animSpeed = 1; } }
+      else if (N.n.g) { N.n.g.visible = !gone; if (!gone) { N.n.g.position.set(x, ctx.meshH(x, z), z); N.n.g.rotation.y = yaw + Math.PI; } }
+    }
+    function driverWalk(t, d) {   // d metres along the path: where he is, or true once he is at his door
+      let k = d;
+      for (let i = 1; i < DRV_PATH.length; i++) {
+        const a = carPt(t.car, DRV_PATH[i - 1][0], DRV_PATH[i - 1][1]), b = carPt(t.car, DRV_PATH[i][0], DRV_PATH[i][1]), L = Math.hypot(b.x - a.x, b.z - a.z);
+        if (k <= L) { const u = k / L; driverAt(t, a.x + (b.x - a.x) * u, a.z + (b.z - a.z) * u, Math.atan2(b.x - a.x, b.z - a.z), 'Walk'); return false; }
+        k -= L;
+      }
+      return true;
+    }
+
     // the ride: board (door opens, you walk to it and get in, door shuts), drive (chase camera or the view from the
     // back seat), alight (door opens, you step out). The game clock runs the real ride time.
     let RIDE = null;
@@ -247,7 +310,7 @@ window.TriundTrip = {
     function startRide(t) {
       const car = t.car, mins = t.key === 'gallu' ? 20 : t.key === 'mcleod' ? 25 : 15;
       if (t.cid != null && ctx.collide) ctx.collide.disable(t.cid);
-      RIDE = { t, car, phase: 'board', time: 0, cam: 'chase', from: { x: P.x, z: P.z }, F: null, gtRate: mins * 60 / Math.max(60, t.Ln.total / 7.5), camPos: null, wasFP: P.firstPerson };
+      RIDE = { t, car, phase: 'board', time: 0, drvIn: t.drv ? null : 0, cam: 'chase', from: { x: P.x, z: P.z }, F: null, gtRate: mins * 60 / Math.max(60, t.Ln.total / 7.5), camPos: null, wasFP: P.firstPerson };
       ctx.setState('ride'); if (document.pointerLockElement) document.exitPointerLock();
       hudEl.hidden = false; hudEl.textContent = 'Getting in…';
       for (const id of ['prompt', 'cross']) { const e = document.getElementById(id); if (e) e.style.visibility = 'hidden'; }
@@ -302,21 +365,50 @@ window.TriundTrip = {
         else { if (pc) pc.ch.root.visible = false; car.rider.visible = true; }
         camT = { x: g.position.x + side.x * 6.5 - fwd.x * 4, y: g.position.y + 2.6, z: g.position.z + side.z * 6.5 - fwd.z * 4 };
         look = { x: dp.x, y: g.position.y + 1.0, z: dp.z };
-        if (T > 2.6) {
+        if (R0.drvIn == null && driverWalk(R0.t, T * 1.7)) { R0.drvIn = T; driverAt(R0.t, null); if (car.driver) car.driver.visible = true; }
+        if (T > 2.6 && R0.drvIn != null && T > R0.drvIn + 0.5) {
           R0.phase = 'drive'; R0.time = 0; const t = R0.t;
-          R0.F = ctx.veh.follower(car, t.Ln, { from: t.park.d, reverse: t.down, vmax: 12, off: 2.5, offT: 1.0, offEnd: 2.4 });
+          R0.F = ctx.veh.follower(car, t.Ln, { from: t.park.d, reverse: t.down, vmax: 12, off: PARK_OFF, offT: 1.0, offEnd: 2.4, offRate: 0.35 });
           R0.gt0 = P.gt || 0; R0.gtEnd = R0.gt0 + (t.key === 'gallu' ? 20 : t.key === 'mcleod' ? 25 : 15) * 60;
         }
       } else if (R0.phase === 'drive') {
-        const F = R0.F; F.step(Math.min(dt, 0.05) * 1.6);   // a little faster than life, so the ride takes about two minutes
+        const F = R0.F, sdt = Math.min(dt, 0.05) * 1.6, left0 = Math.abs(F.end - F.d);   // a little faster than life, so the ride takes about two minutes
+        if (!R0.pass) {
+          const a = carAhead(car, 26, 1.7);
+          if (a.o && a.gap < 16 && a.v < F.vmax - 2 && left0 > 140) {
+            const d0 = F.Ln.dir(F.d, 3), d1 = F.Ln.dir(F.d + F.dirSign * 45, 3), straight = d0.dx * d1.dx + d0.dz * d1.dz > 0.93;
+            const oncoming = CARS.concat(TRAFFIC).some(o => { if (o.car === car) return false; const q = carLocal(car, o.car.g.position.x, o.car.g.position.z); return q.lz > -2 && q.lz < 80 && q.lx < -0.6 && q.lx > -3.6; });
+            if (straight && !oncoming) { R0.pass = a.o.car; F.offT = -1.25; }
+          }
+        } else {
+          const q = carLocal(car, R0.pass.g.position.x, R0.pass.g.position.z);
+          if (q.lz < -7 || left0 < 110) { R0.pass = null; F.offT = 1.0; }   // past it (or the end is near): back into the left lane
+        }
+        const ah = carAhead(car, 26, 1.7, R0.pass || null), allowC = followV(ah), allowP = followV({ gap: personAhead(car, 14, 1.3), v: 0 }), vm = F.vmax;
+        R0.stuck = F.v < 0.1 && allowC < 0.5 ? (R0.stuck || 0) + dt : 0;
+        R0.waitP = F.v < 0.1 && allowP < 0.5 ? (R0.waitP || 0) + dt : 0; if (R0.waitP > 1.5 && !R0.honked) { R0.honked = true; honk(); } if (!R0.waitP) R0.honked = false;
+        // (stuck behind a car for 5 s, it goes on; for people it always waits: they step aside)
+        F.vmax = Math.min(vm, allowP, R0.stuck < 5 ? allowC : Infinity);
+        F.step(sdt); F.vmax = vm;
         P.gt = Math.min(R0.gtEnd, (P.gt || 0) + dt * 1.6 * R0.gtRate);
         P.x = g.position.x; P.z = g.position.z; P.y = g.position.y;
         if (ENG) { ENG.o.frequency.setTargetAtTime(34 + F.v * 5.5, ENG.AC.currentTime, 0.2); ENG.o2.frequency.setTargetAtTime(17 + F.v * 2.75, ENG.AC.currentTime, 0.2); ENG.g.gain.setTargetAtTime(0.045 + 0.02 * Math.min(1, F.v / 10), ENG.AC.currentTime, 0.2); }
         const left = Math.abs(F.end - F.d);
         hudEl.textContent = `${R0.t.down ? 'Taxi to McLeod Ganj' : 'Taxi to Gallu Devi'} · ${left > 950 ? (left / 1000).toFixed(1) + ' km' : Math.round(left / 10) * 10 + ' m'} to go · ${Math.round(F.v * 3.6)} km/h · V: view · E: skip`;
         if (R0.cam === 'seat') {
-          const p = car.rider.getWorldPosition(new THREE.Vector3()); camera.position.set(p.x, p.y + 0.62, p.z);
-          const q = new THREE.Vector3(fwd.x * 10, -0.6, fwd.z * 10).add(camera.position); camera.lookAt(q);
+          // on the back seat behind the front passenger: the front seats, the driver's shoulder, the dashboard and the
+          // road through the windscreen; the head sways a little with the road
+          const sv = R0.sv || (R0.sv = { e: new THREE.Vector3(), l: new THREE.Vector3() });
+          if (car.seatView) car.seatView(sv.e, sv.l);
+          else { car.rider.getWorldPosition(sv.e); sv.e.y += 0.7; sv.l.set(fwd.x * 10, -0.6, fwd.z * 10).add(sv.e); }
+          const sw = Math.sin(R0.time * 7.3) * 0.006 * Math.min(1, F.v / 6), sw2 = Math.sin(R0.time * 3.1) * 0.01 * Math.min(1, F.v / 6);
+          camera.position.set(sv.e.x + side.x * sw2, sv.e.y + sw, sv.e.z + side.z * sw2); camera.lookAt(sv.l);
+          // the cabin is within arm's reach: a near clip plane of 0.4 m would cut it away (put back when you leave this view)
+          if (!R0.near0) {
+            R0.near0 = camera.near; R0.fov0 = camera.fov; camera.near = 0.06; camera.fov = Math.min(camera.fov, 58); camera.updateProjectionMatrix();   // and a little narrower, as your eyes see a cabin
+            const back = () => { if (RIDE === R0 && R0.cam === 'seat' && R0.phase === 'drive') requestAnimationFrame(back); else { camera.near = R0.near0; camera.fov = R0.fov0; camera.updateProjectionMatrix(); R0.near0 = 0; } };
+            requestAnimationFrame(back);
+          }
           R0.camPos = null; return;
         }
         camT = { x: g.position.x - fwd.x * 9 + side.x * 1.2, y: g.position.y + 3.8, z: g.position.z - fwd.z * 9 + side.z * 1.2 };
@@ -342,20 +434,22 @@ window.TriundTrip = {
     function parkAll() {
       for (const t of CARS) {
         if (RIDE && RIDE.car === t.car) continue;
-        const F = ctx.veh.follower(t.car, t.Ln, { from: t.park.d, reverse: t.down, off: 2.5 }); t.F = F; t.car.setDoor(0); t.car.rider.visible = false;
+        const F = ctx.veh.follower(t.car, t.Ln, { from: t.park.d, reverse: t.down, off: PARK_OFF }); t.F = F; t.car.setDoor(0); t.car.rider.visible = false;
+        if (t.drv) { if (t.car.driver) t.car.driver.visible = false; driverAt(t, t.drv.home.x, t.drv.home.z, t.drv.home.yaw, 'Idle'); }
         if (ctx.collide) { if (t.cid2 != null) ctx.collide.disable(t.cid2); t.cid2 = null; if (t.cid != null) ctx.collide.enable(t.cid); }
       }
     }
     function traffic(dt) {
       for (const c of TRAFFIC) {
         const F = c.F, g = c.car.g;
-        // stop for anyone standing on the road ahead (you, or a parked taxi's driver), then go on
-        const ah = { x: g.position.x + Math.sin(g.rotation.y) * 5, z: g.position.z + Math.cos(g.rotation.y) * 5 };
-        const block = P && Math.hypot(P.x - ah.x, P.z - ah.z) < 3.0 || CARS.concat(TRAFFIC).some(t => t.car !== c.car && Math.hypot(t.car.g.position.x - ah.x, t.car.g.position.z - ah.z) < 1.8 && !(RIDE && RIDE.car === t.car && RIDE.phase === 'drive'));
-        if (block) { F.v = Math.max(0, F.v - 6 * dt); c.wait += dt; if (c.wait > 2.5 && P && Math.hypot(P.x - ah.x, P.z - ah.z) < 3.0 && !c.honked) { c.honked = true; honk(); } }
+        // stop for anyone on the road ahead (you, hikers, shopkeepers, a waiting driver), then go on
+        const allowP = followV({ gap: personAhead(c.car, 14, 1.3), v: 0 }), person = allowP < 0.5;
+        const allow = Math.min(allowP, followV(carAhead(c.car, 22, 1.7)));
+        if (allow < 0.5 && F.v < 0.5) { c.wait += dt; if (c.wait > 2.5 && person && !c.honked) { c.honked = true; honk(); } }
         else { c.wait = 0; c.honked = false; }
-        if (!block || F.v > 0) { const vm = F.vmax; if (block) F.vmax = 0; F.step(dt); F.vmax = vm; }
-        if (F.done) { c.F = ctx.veh.follower(c.car, F.Ln, { from: F.end, reverse: F.dirSign > 0, vmax: 8, off: 1.1 }); }
+        { const vm = F.vmax; if (c.wait < 8 || person) F.vmax = Math.min(vm, allow); F.step(dt); F.vmax = vm; }
+        // at the end of its run it turns round, but only out of your sight (a car does not spin on the spot)
+        if (F.done && (!P || Math.hypot(P.x - g.position.x, P.z - g.position.z) > 70)) c.F = trafficF(c.car, F.Ln, F.d, F.dirSign > 0);
         // you cannot walk through a car
         if (P) {
           const c2 = Math.cos(g.rotation.y), s2 = Math.sin(g.rotation.y), dx = P.x - g.position.x, dz = P.z - g.position.z;
@@ -398,6 +492,8 @@ window.TriundTrip = {
     function update(dt, q) {
       if (!P || !S) return;
       if (TRAFFIC.length) traffic(dt);
+      // the drivers waiting by their taxis stand quietly (the crowd starts every talker off talking with his hands)
+      for (const t of TAXIS) if (t.drv && !(RIDE && RIDE.t === t)) { const N = ctx.npc && ctx.npc(t.drv.i); if (N && N.a && N.a.anim === 'Idle_Talking') N.a.anim = 'Idle'; }
       const R = ctx.route();
       S.walked += Math.max(0, P.v) * dt;
       // the check post: nobody walks past it without signing the register (it applies on the way up the Galu path)
@@ -466,7 +562,7 @@ window.TriundTrip = {
       return rows;
     }
     return {
-      opts, reset, build, update, rideTick, get riding() { return !!RIDE; }, get cars() { return CARS; }, get traffic() { return TRAFFIC; }, skipRide, prompt, interact, pay, bagRows, speedK, startHour, legEnd, go, playerName, setName,
+      opts, reset, build, update, rideTick, get riding() { return !!RIDE; }, get ride() { return RIDE; }, get cars() { return CARS; }, get traffic() { return TRAFFIC; }, skipRide, prompt, interact, pay, bagRows, speedK, startHour, legEnd, go, playerName, setName,
       dip: () => S ? S.dip : 0, get state() { return S; }, get checkpost() { return CP; }, get taxis() { return TAXIS; },
       qaRegister() { if (S) S.reg = { t: ctx.hour(), plastic: plasticIn() }; }, closePanel
     };

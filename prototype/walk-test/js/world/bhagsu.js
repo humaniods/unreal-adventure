@@ -336,11 +336,11 @@ window.TriundBhagsu = {
       for (let k = 0; k < 3; k++) { const a = face + Math.PI + (k - 1) * 0.9, r = 2.1 + k * 0.3, rx = bx + Math.sin(a) * r, rz = bz + Math.cos(a) * r, rk = new THREE.Mesh(new THREE.DodecahedronGeometry(0.45 + k * 0.12, 0), slab.material); rk.position.set(rx, H(rx, rz) + 0.15, rz); rk.rotation.set(k, k * 2, 0); rk.castShadow = true; g.add(rk); }
       const top = gy + 0.2 + 0.55 * 0.75;
       const plinth = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.22, 0.45), mat(0x1c1c1c, 0.6)); plinth.position.set(bx, top + 0.11, bz); plinth.rotation.y = face; g.add(plinth);
-      const idol = hanumanIdol(0.85); idol.position.set(bx, top + 0.22, bz); idol.rotation.y = face; g.add(idol);
-      // a small saffron flag tied above him
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.5, 6), mat(0x6b5236)); pole.position.set(bx - fx * 0.3 + fz * 0.3, top + 0.95, bz - fz * 0.3 - fx * 0.3); g.add(pole);
-      const fgeo = new THREE.BufferGeometry(); fgeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, -0.45, 0, 0.42, -0.15, 0], 3)); fgeo.computeVertexNormals();
-      const yflag = new THREE.Mesh(fgeo, new THREE.MeshLambertMaterial({ color: lin(0xf08a1a), side: THREE.DoubleSide })); yflag.position.set(pole.position.x, top + 1.68, pole.position.z); yflag.rotation.y = face + Math.PI / 2; g.add(yflag);
+      const idol = hanumanIdol(1.1); idol.position.set(bx, top + 0.22, bz); idol.rotation.y = face; g.add(idol);
+      // his saffron jhanda on a bamboo beside him, tall enough to be seen from across the meadow
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 3.2, 6), mat(0x8a6a3c)); pole.position.set(bx - fx * 0.35 + fz * 0.45, top + 1.6, bz - fz * 0.35 - fx * 0.45); g.add(pole);
+      const fgeo = new THREE.BufferGeometry(); fgeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, -0.7, 0, 0.95, -0.25, 0], 3)); fgeo.computeVertexNormals();
+      const yflag = new THREE.Mesh(fgeo, new THREE.MeshLambertMaterial({ color: lin(0xf07a10), side: THREE.DoubleSide })); yflag.position.set(pole.position.x, top + 3.15, pole.position.z); yflag.rotation.y = face + Math.PI / 2; g.add(yflag);
       // the wire-mesh bin on its post, beside the slab on the path side
       const bxn = bx + fx * 1.9 + fz * 1.6, bzn = bz + fz * 1.9 - fx * 1.6, by = H(bxn, bzn);
       const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.26, 0.75, 12, 5, true), new THREE.MeshBasicMaterial({ color: lin(0x262626), wireframe: true }));

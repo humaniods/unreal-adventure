@@ -604,6 +604,8 @@ float shawlMask(vec3 p, vec4 c) {
         if (a.t < 0 && !a.camper && !isNight(hourNow(P))) { a.state = 'walk'; a.dir = -1; a.s = a.tr.total - 6; a.vWalk = 0.85 + R() * 0.45; a.idleAnim = null; const i = topSpots.findIndex(p => p.a === a); if (i >= 0) topSpots.splice(i, 1); }
       }
       if (a.state === 'walk' || a.state === 'rest') {
+        // a car wants to pass (trip.js): step to the side of the road for a moment
+        if (a.dodgeT > 0) { a.dodgeT -= dt; a.lat += (a.dodgeLat - a.lat) * Math.min(1, dt * 4); }
         a.s = Math.max(0, Math.min(a.tr.total, a.s));
         const p = trailAt(a.tr, a.s, a.lat); a.x = p.x; a.z = p.z; a.tdx = p.dx; a.tdz = p.dz;
         if (a.state === 'walk') a.yaw = yawOf(p.dx * a.dir, p.dz * a.dir);
@@ -854,7 +856,8 @@ float shawlMask(vec3 p, vec4 c) {
         if (!r) return; r.active = false; r.x = r.z = FAR; r.y = -1e4; r.lamp = false;
         if (r.ch) { const ch = r.ch; ch.agent = null; r.ch = null; ch.root.visible = false; if (ch.torch) { ch.torch.g.visible = false; ch.torch.spot.visible = false; } }
       },
-      agents, keepers, seatSpots, pushOut, counts: { bots: agents.length, keepers: keepers.length, pool: POOL },
+      agents, keepers, seatSpots, pushOut, talkers: fixed.filter(k => k.kind === 'talker'),   // in the order of the game's NPC list (taxi drivers, the check post guard…)
+      counts: { bots: agents.length, keepers: keepers.length, pool: POOL },
       // the shopkeeper of this stop turns to the player and hands the order over (Interact clip)
       serve(stop) { const i = stops.indexOf(stop); if (i >= 0 && !keepers[i].task) keepers[i].serveT = 2.2; },
       // cook an order for cookSec seconds, then carry `mesh` to target() and call onGive('hand' | 'counter').

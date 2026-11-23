@@ -350,7 +350,7 @@ body.touchmode #netPill kbd{display:none}
       <dt><kbd>Enter</kbd></dt><dd>talk to a hiker or a stall keeper: type in Hindi, English or Hinglish, Enter to send</dd>
       <dt><kbd>J</kbd> <kbd>U</kbd></dt><dd>with your partner: hold hands · carry them on your shoulders (they press the same key to say yes; again to let go)</dd>
       <dt><kbd>N</kbd> <kbd>G</kbd></dt><dd>with friends: mic All / Team / Off · accept a friend request (E near a player asks them)</dd>
-      <dt><kbd>V</kbd> <kbd>T</kbd> <kbd>Esc</kbd></dt><dd>camera · tuning panel · pause</dd>
+      <dt><kbd>V</kbd> <kbd>T</kbd> <kbd>Esc</kbd></dt><dd>camera · settings · pause</dd>
       <dt>Drone flyover</dt><dd>fly over the whole chosen route from above</dd>
     </dl>
     <p class="fine">Prototype. Trails: OpenStreetMap route "Galu Devi – Triund", the OpenStreetMap paths from Bhagsu via Shiva Cafe and Karthani, the lanes from McLeod Ganj Main Square through Dharamkot and the "Triund Hill – SnowLine Cafe Trail" (map data © OpenStreetMap contributors, ODbL). Entry fee and check post as reported for the Dharamshala Forest Circle (₹100 per person per day at Gallu); taxi fares are estimates. Temples, cafes, camps, streams and building outlines also come from OpenStreetMap; buildings OSM has not traced come from Microsoft Global ML Building Footprints (ODbL); building heights and colours are estimates. Terrain: SRTM elevation via AWS Terrain Tiles at about 30 m detail, so the shape of the mountain is real but small steps and rocks are not. Imagery: Sentinel-2 cloudless 2016 by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016), CC BY 4.0. Ground textures: Poly Haven (CC0). People and animals: Quaternius (CC0) characters, animations and animal pack; clothes, crowd and behaviour are generated in the game. Clouds and sounds are generated in the game; their placement and behaviour follow trekkers' trip reports (October–November morning). Values from the tuning panel (<kbd>T</kbd>) will move into the UE5 DT_Stamina table.</p>
@@ -364,7 +364,7 @@ body.touchmode #netPill kbd{display:none}
     <h2>Catch your breath</h2>
     <div class="row">
       <button type="button" class="btn primary" id="resumeBtn">Back to the trail</button>
-      <button type="button" class="btn ghost" id="pauseTuneBtn">Tuning</button>
+      <button type="button" class="btn ghost" id="pauseTuneBtn">Settings</button>
       <button type="button" class="btn ghost" id="restartBtn">Restart</button>
       <button type="button" class="btn ghost" id="pauseGfxBtn">Graphics: High</button>
       <button type="button" class="btn ghost" id="pauseResBtn">Resolution: Auto</button>
@@ -405,11 +405,11 @@ body.touchmode #netPill kbd{display:none}
 
 <!-- tuning -->
 <aside id="tune" hidden aria-label="Tuning panel">
-  <h3>Tuning</h3>
-  <p class="fine">This is the point of the feel test: adjust these values until the climb feels right. They are saved in this browser.</p>
+  <h3>Settings</h3>
+  <p class="fine">Make the climb easier or harder. Saved in this browser.</p>
   <div id="tuneRows" style="display:grid;gap:12px"></div>
-  <label class="check"><input type="checkbox" id="tAssist"> Breathing assist</label>
-  <label class="check"><input type="checkbox" id="tBob"> Head bob (turn off for reduced motion)</label>
+  <label class="check"><input type="checkbox" id="tAssist"> Help me with breathing</label>
+  <label class="check"><input type="checkbox" id="tBob"> Camera moves with my steps (turn off if it makes you dizzy)</label>
   <div class="row">
     <button type="button" class="btn primary" id="tuneClose">Resume</button>
     <button type="button" class="btn ghost" id="tuneCopy">Copy JSON</button>
@@ -439,6 +439,7 @@ body.touchmode #netPill kbd{display:none}
 <script src="js/world/flora.js"></script>
 <script src="js/world/steps.js"></script>
 <script src="js/world/places.js"></script>
+<script src="js/world/goods.js"></script>
 <script src="js/world/town.js"></script>
 <script src="js/world/bhagsu.js"></script>
 <script src="js/core/atmos.js"></script>
@@ -483,11 +484,12 @@ const DEFAULTS={tuneV:3,speedScale:1.35,sprintMult:1.6,packKg:12,bodyKg:70,vo2ma
   hrRise:22,hrFall:60,breathHR:166,breathPeriod:4,maxGrade:1.3,assist:false,headBob:!reduced};
 const HR_REST=64,HR_MAX=190;
 const TUNE=[
-  ['packKg','Bag weight (kg)',4,20,1],
-  ['speedScale','Walk speed scale (× Tobler)',1,3,0.05],
+  // the first four are for everyone (plain words); the rest only with ?dev=1 in the address
+  ['packKg','Bag weight',4,20,1,v=>v+' kg'],
+  ['speedScale','Walking speed',1,3,0.05,v=>v<1.2?'Slow':v<1.55?'Normal':v<2?'Fast':'Very fast'],
+  ['bodyKg','Your weight',45,110,1,v=>v+' kg'],
+  ['vo2max','How fit you are',28,60,1,v=>v<34?'Not fit':v<42?'Average':v<50?'Fit':'Very fit (athlete)'],
   ['sprintMult','Sprint multiplier',1.2,2.2,0.05],
-  ['bodyKg','Body weight (kg)',45,110,1],
-  ['vo2max','Fitness: VO2max (ml/kg/min)',28,60,1],
   ['aerobicHR','Stamina drain starts above (bpm)',130,165,1],
   ['drainK','Stamina drain k',0.001,0.015,0.0005],
   ['regenK','Stamina regen k',0.01,0.12,0.005],
@@ -922,6 +924,7 @@ function meshH(x,z){
 })();
 
 /* ---- trees, bushes, grass, flowers, trail stones (flora.js); built once the imagery is in ---- */
+let GOODS=null;try{GOODS=window.TriundGoods?window.TriundGoods.create(THREE):null;}catch(e){console.error('goods failed',e);}
 let BHG=null,STREETS=null,FLORA=null,PLACES=null,ATMOS=null,FAUNA=null,CROWD=null,PCH=null,STEPS=null,CAMP=null,SIGNS=null,NIGHT=null,PROPS=null;
 function buildFlora(){
   if(window.TriundSteps&&!QS.has('nosteps')){try{STEPS=window.TriundSteps.build({THREE,scene,H,trails:[GT,ST,MT,SN],rng,tex:PLACES&&PLACES.tex,sunAt});}catch(e){console.error('steps failed',e);}}
@@ -939,8 +942,8 @@ function buildPlaces(){
   catch(e){console.error('places failed',e);window.__placesErr=String(e&&e.stack||e);PLACES=null;return;}
   for(const st of PLACES.stops)STOPS.push(st);
   // McLeod Ganj and Dharamkot: shop fronts with their real names, balconies, prayer flags, poles and wires, scooters
-  if(window.TriundTown&&TD.roads)try{STREETS=window.TriundTown.build({THREE,scene,H,data:TD.places,streets:TD.roads.streets,collide:COLLIDE,rng,
-    avoid:PLACES.boardSpots.concat(PLACES.stops.map(st=>({x:st.x,z:st.z}))),skipIds:new Set(PLACES.stops.map(st=>String(st.key).slice(4)))});window.__town=STREETS.counts;}catch(e){console.error('town failed',e);}
+  if(window.TriundTown&&TD.roads)try{STREETS=window.TriundTown.build({THREE,scene,H,data:TD.places,streets:TD.roads.streets,collide:COLLIDE,rng,goods:GOODS,
+    avoid:PLACES.boardSpots.concat(PLACES.stops.map(st=>({x:st.x,z:st.z}))),skipIds:new Set(PLACES.stops.map(st=>String(st.key).slice(4)))});window.__town=STREETS.counts;window.__streets=STREETS;}catch(e){console.error('town failed',e);}
   STOPS.sort((a,b)=>a.s-b.s);
 }
 
@@ -964,14 +967,14 @@ function prayerFlags(x1,z1,x2,z2,h){
 }
 const npcs=[];
 function makeNPC(tr,s,side,shirt,lines,o){
-  const p=pointAtS(s,tr),dr=dirAtS(s,8,tr);const x=p.x-dr.dz*2.6*side,z=p.z+dr.dx*2.6*side,y=H(x,z);const g=new THREE.Group();
+  const p=pointAtS(s,tr),dr=dirAtS(s,8,tr),at=o&&o.at;const x=at?at.x:p.x-dr.dz*2.6*side,z=at?at.z:p.z+dr.dx*2.6*side,y=H(x,z);const g=new THREE.Group();
   const legs=new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.85,8),lam(0x2b2e3a));legs.position.y=0.43;
   const body=new THREE.Mesh(new THREE.CylinderGeometry(0.24,0.21,0.7,8),lam(shirt));body.position.y=1.18;
   const head=new THREE.Mesh(new THREE.SphereGeometry(0.15,10,8),lam(0x8a5a3c));head.position.y=1.68;
   const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.16,0.12,10),lam(0xb8432f));cap.position.y=1.8;
   const stick=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,1.3,5),lam(0x6b5236));stick.position.set(0.32,0.65,0);stick.rotation.z=-0.12;
-  g.add(legs,body,head,cap,stick);g.position.set(x,y,z);g.rotation.y=Math.atan2(-dr.dx,-dr.dz);scene.add(g);
-  npcs.push({x,z,lines,said:false,g,yaw:Math.atan2(dr.dx,dr.dz),keeper:!!(o&&o.keeper)});
+  const yaw=at&&at.yaw!=null?at.yaw:Math.atan2(dr.dx,dr.dz);g.add(legs,body,head,cap,stick);g.position.set(x,y,z);g.rotation.y=yaw+Math.PI;scene.add(g);
+  npcs.push({x,z,lines,said:false,g,yaw,keeper:!!(o&&o.keeper)});return npcs.length-1;
 }
 const avatar=new THREE.Group();let pack;const limbs={};
 (function(){
@@ -1159,14 +1162,14 @@ function trailSide(x,z){const n=nearestTrail(x,z);if(n.d>3.5)return null;const L
 const TREK=window.TriundTrek&&window.TriundEconomy?window.TriundTrek.create({THREE,scene,H,hands:HANDS,trailSide:(x,z)=>trailSide(x,z),walkTo:(spot,done)=>{P.autoTo={x:spot.x,z:spot.z,done};},ECON:window.TriundEconomy,stops:STOPS,
   get crowd(){return CROWD;},get places(){return PLACES;},get collide(){return COLLIDE;},gearState:()=>GEARS,useGear:g=>useGear(g),get trip(){return TRIP;},pay:(n,w,st)=>TRIP?TRIP.pay(n,w,st):(window.TriundEconomy.wallet.spend(n,w)?{ok:true}:{ok:false,msg:'Not enough coins.',topUp:true}),getState:()=>state,setState:s=>{state=s;},
   say:(t,d)=>say(t,d),toast:t=>toast(t),buzz:n=>buzz(n),lock:()=>lock(),drink:()=>drink(),onTopUp:()=>openTopUp(),
-  fireNear:(x,z)=>NIGHT?NIGHT.fires.find(f=>Math.hypot(f.x-x,f.z-z)<3.5):null}):null;
+  fireNear:(x,z)=>NIGHT?NIGHT.fires.find(f=>Math.hypot(f.x-x,f.z-z)<3.5):null,townShop:(x,z)=>STREETS&&STREETS.shopNear?STREETS.shopNear(x,z,2.2):null,goods:()=>GOODS}):null;
 function openTopUp(){if(TREK)TREK.openTopUp();}
 // the trip around the climb: packing, McLeod Ganj and taxis, the Gallu forest check post
 // line, shoes, and the legs after the top (Snowline, down either path): trip.js
 // cars on the real road from McLeod Ganj to Gallu Devi: vehicles.js (made in buildProps, used by trip.js)
 let VEH=null;
 let TRIP=null;try{TRIP=window.TriundTrip?window.TriundTrip.create({THREE,scene,H,ECON:window.TriundEconomy,TRAILS,MK,get trek(){return TREK;},get collide(){return COLLIDE;},get wx(){return WX;},
-  roads:TD.roads,get veh(){return VEH;},get pch(){return PCH;},meshH:(x,z)=>meshH(x,z),audio:()=>{initAudio();return {AC,master};},
+  roads:TD.roads,get veh(){return VEH;},crowd:()=>CROWD,get pch(){return PCH;},npc:i=>({n:npcs[i],a:CROWD&&CROWD.talkers?CROWD.talkers[i]:null}),meshH:(x,z)=>meshH(x,z),audio:()=>{initAudio();return {AC,master};},
   route:()=>ACT,startRoute:id=>startRoute(id),teleport:(s,keep)=>teleportS(s,keep),hour:()=>DAY0+(P.gt||0)/3600,say:(t,d)=>say(t,d),toast:t=>toast(t),buzz:n=>buzz(n),
   getState:()=>state,setState:s=>{state=s;},resume:()=>{show('end',false);show('cross',P.firstPerson);lock();},restart:()=>{resetPlayer();enterPlay();},stayNight:()=>$('stayBtn').click()}):null;}catch(e){console.error('trip failed',e);}
 
@@ -1533,11 +1536,13 @@ syncPackSeg();
 function buildTune(){
   const box=$('tuneRows');box.innerHTML='';
   const fmt=(v,st)=>st<0.001?v.toFixed(4):st<0.01?v.toFixed(4):st<1?v.toFixed(2):String(Math.round(v));
-  TUNE.forEach(([k,label,min,max,step])=>{
+  const dev=QS.has('dev');$('tuneCopy').hidden=!dev;
+  TUNE.forEach(([k,label,min,max,step,word],i)=>{
+    if(i>=4&&!dev)return;
     const id='t-'+k,row=document.createElement('div');row.className='trow';
     row.innerHTML='<label for="'+id+'">'+label+'</label><output id="'+id+'-o"></output><input type="range" id="'+id+'" min="'+min+'" max="'+max+'" step="'+step+'">';
-    box.appendChild(row);const inp=row.querySelector('input'),out=row.querySelector('output');inp.value=T[k];out.textContent=fmt(+T[k],step);
-    inp.addEventListener('input',()=>{T[k]=parseFloat(inp.value);out.textContent=fmt(T[k],step);saveTune();if(k==='packKg')syncPackSeg();});
+    box.appendChild(row);const inp=row.querySelector('input'),out=row.querySelector('output');inp.value=T[k];const show=v=>word?word(v):fmt(v,step);out.textContent=show(+T[k]);
+    inp.addEventListener('input',()=>{T[k]=parseFloat(inp.value);out.textContent=show(T[k]);saveTune();if(k==='packKg')syncPackSeg();});
   });
   $('tAssist').checked=!!T.assist;$('tBob').checked=!!T.headBob;
 }
