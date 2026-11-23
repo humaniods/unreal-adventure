@@ -97,6 +97,7 @@ window.TriundNet = {
       $('roomOut').hidden = !!party; $('roomIn').hidden = !party;
       // in a room the big start button is replaced by Ready / Start together
       startBtn.style.display = mode === 'solo' ? '' : 'none';
+      lockPlan(party && party.host !== pid ? party : null);
       if (party) {
         $('roomCode').textContent = party.code;
         const host = party.host === pid;
@@ -108,6 +109,21 @@ window.TriundNet = {
         else { go.textContent = ready ? 'Ready ✓ (tap to undo)' : 'I am ready'; go.disabled = false; }
         if (!host) msg(`${party.mode === 'couple' ? 'Couple' : 'Bakchods'} room · start: ${ROUTE_NAME[party.route] || party.route}, ${hourTxt(party.hour)} (the host chooses)`);
         else if (!party.started) msg('You are the host: the start point and time above are for everyone. Send the code or the link.');
+      }
+    }
+    // in a friend's room the start point and time are theirs: show only what the host chose, nothing to pick
+    function lockPlan(p) {
+      for (const [seg, key, val, label, text] of [['fromSeg', 'from', p && p.route, 'fromLabel', 'Start from'], ['timeSeg', 'h', p && p.hour, 'timeLabel', 'Leave at']]) {
+        const el = $(seg); if (!el) continue;
+        if (p && !el.classList.contains('hostpick')) el.querySelectorAll('button').forEach(b => { b.dataset.was = b.getAttribute('aria-pressed'); });
+        if (!p && !el.classList.contains('hostpick')) continue;
+        el.classList.toggle('hostpick', !!p);
+        el.querySelectorAll('button').forEach(b => {
+          const pick = !!p && String(b.dataset[key]) === String(val);
+          b.hidden = !!p && !pick; b.disabled = !!p;
+          b.setAttribute('aria-pressed', p ? String(pick) : (b.dataset.was || 'false'));
+        });
+        $(label).textContent = p ? text + ' · chosen by the host' : text;
       }
     }
     const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -195,7 +211,10 @@ window.TriundNet = {
           { const q = queue; queue = []; q.forEach(send); }
           if (joinCode && !P2P) { const c = joinCode; joinCode = null; if (ctx.getName()) send({ t: 'party.join', code: c }); else { $('roomCodeIn').value = c; msg('Write your name, then press Join.'); } }
           break;
-        case 'party': party = m; if (party.host === pid) ready = true; else ready = !!(party.members.find(x => x.pid === pid) || {}).ready; mode = party.mode; syncMode(); break;
+        case 'party': party = m; if (party.host === pid) ready = true; else ready = !!(party.members.find(x => x.pid === pid) || {}).ready; mode = party.mode;
+          // the host picked the start and time before opening the room: tell the room, so friends see the right plan
+          if (party.host === pid && !party.started && (party.route !== ctx.getStart() || +party.hour !== +ctx.getHour())) send({ t: 'party.plan', route: ctx.getStart(), hour: ctx.getHour() });
+          syncMode(); break;
         case 'party.gone': party = null; ready = false; msg('You left the room.'); syncMode(); break;
         case 'error': msg(m.msg, true); if (started) ctx.toast(m.msg); break;
         case 'start': pendingStart = m; if (!started) begin(m); break;
@@ -294,7 +313,7 @@ window.TriundNet = {
           if (c && P) { P.x = c.a.x + Math.cos(c.a.yaw) * 0.9; P.z = c.a.z - Math.sin(c.a.yaw) * 0.9; P.y = ctx.ground(P.x, P.z); }
         }
       }
-      for (const rr of remotes.values()) rr.tagDirty = true;
+      for (const rr of remotes.values()) { rr.tagDirty = true; rr.hs = undefined; rr.ledW = 0; }
     }
     function teammateNear(P, d0) { let best = null, bd = d0 || 2.5; for (const [id, r] of remotes) if (r.team) { const d = Math.hypot(r.a.x - P.x, r.a.z - P.z); if (d < bd) { bd = d; best = { pid: id, r }; } } return best; }
     function linkKey(kind) {
@@ -347,6 +366,8 @@ window.TriundNet = {
 
     /* ---------- what you send: where you are and what you are doing, 10 times a second ---------- */
     let sendT = 0;
+    // 8: I am being led by the hand right now, 16: on my partner's left (their screen then walks me at their side)
+    const ledBits = P => link && link.kind === 'hand' && (P.pullV || 0) > 0.15 ? 8 | (link.side > 0 ? 16 : 0) : 0;
     function renderPill() {
       if (pill.hidden) return;
       const near = Array.from(remotes.values()).filter(r => r.a && Math.hypot(r.a.x - ctx.me().x, r.a.z - ctx.me().z) < 60).length;
@@ -363,7 +384,7 @@ window.TriundNet = {
       update(dt, P, pose) {
         if (!started) return;
         sendT -= dt;
-        if (sendT <= 0 && wsOpen && pose) { sendT = 0.1; send({ t: 'pose', p: [+pose.x.toFixed(2), +pose.y.toFixed(2), +pose.z.toFixed(2), +pose.yaw.toFixed(3), pose.anim, +(pose.speed || 1).toFixed(2), pose.flags | 0] }); }
+        if (sendT <= 0 && wsOpen && pose) { sendT = 0.1; send({ t: 'pose', p: [+pose.x.toFixed(2), +pose.y.toFixed(2), +pose.z.toFixed(2), +pose.yaw.toFixed(3), pose.anim, +(pose.speed || 1).toFixed(2), (pose.flags | 0) | ledBits(P)] }); }
         const now = performance.now() / 1000 - DELAY;
         for (const [id, r] of remotes) if (now + DELAY - r.last > 6) dropRemote(id);   // no word from them for 6 s: gone
         if (P2P && ws && ws.kind === 'join' && wsOpen && lastMsg && performance.now() - lastMsg > 9000) { ws.error = 'silent'; ws.close(); ws.onclose && ws.onclose(); }
@@ -375,6 +396,25 @@ window.TriundNet = {
           a.anim = r.anim || 'Idle'; a.animSpeed = r.speed || 1; a.lamp = !!(r.flags & 1);
           if (r.tagDirty) makeTag(r);
           r.tag.position.set(a.x, a.y + 2.15, a.z); r.tag.visible = Math.hypot(a.x - P.x, a.z - P.z) < 45;
+        }
+        // hand in hand, on my screen: a partner who is being led (or still standing while I set off) walks at my side
+        // straight away, instead of trailing a network round trip (~0.3-0.6 s) behind with a stretched arm
+        if (link && link.kind === 'hand') {
+          const r = remotes.get(link.with), me = bodyOf(pid);
+          if (r && me) {
+            const lx = Math.cos(me.yaw), lz = -Math.sin(me.yaw);
+            if (r.flags & 8) r.hs = r.flags & 16 ? 1 : -1;
+            else if (r.hs === undefined) r.hs = lx * (r.a.x - me.x) + lz * (r.a.z - me.z) >= 0 ? 1 : -1;
+            const own = !(r.flags & 8) && /Walk|Jog/.test(r.anim || '');      // walking on their own: show them as they are
+            const want = !own && ((r.flags & 8) || P.v > 0.3) ? 1 : 0;
+            r.ledW = (r.ledW || 0) + (want - (r.ledW || 0)) * Math.min(1, dt * 8);
+            if (r.ledW > 0.01) {
+              const w = r.ledW, tx = me.x + lx * r.hs * 0.75, tz = me.z + lz * r.hs * 0.75;
+              r.a.x += (tx - r.a.x) * w; r.a.z += (tz - r.a.z) * w; r.a.y += (ctx.ground(r.a.x, r.a.z) - r.a.y) * w; r.a.yaw = angLerp(r.a.yaw, me.yaw, w);
+              if (want) { r.a.anim = P.v > 0.12 ? 'Walk' : 'Idle'; r.a.animSpeed = P.v > 0.12 ? Math.min(1.6, P.v) : 1; }
+              if (r.tag) r.tag.position.set(r.a.x, r.a.y + 2.15, r.a.z);
+            }
+          }
         }
         // anyone being carried sits on their carrier's shoulders (placed here from the carrier, so the two never drift apart)
         for (const pr of pairs()) {
@@ -399,7 +439,7 @@ window.TriundNet = {
               const tx = r.a.x + lx * link.side * 0.75, tz = r.a.z + lz * link.side * 0.75, ex = tx - P.x, ez = tz - P.z, e = Math.hypot(ex, ez);
               P.pullV = 0;
               // whoever walks leads; only the one standing still (or barely moving) is drawn along
-              if (e > 0.2 && P.v < 0.3) { const k = Math.min(e - 0.2, (e - 0.2) * dt * (d > 1.2 ? 6 : 2.5)); P.x += ex / e * k; P.z += ez / e * k; P.y = ctx.ground(P.x, P.z); P.pullV = k / Math.max(dt, 1e-3); P.pullYaw = r.a.yaw; }
+              if (e > 0.1 && P.v < 0.3) { const k = Math.min(e - 0.1, (e - 0.1) * dt * 10, 3.5 * dt); P.x += ex / e * k; P.z += ez / e * k; P.y = ctx.ground(P.x, P.z); P.pullV = k / Math.max(dt, 1e-3); P.pullYaw = r.a.yaw; }
             }
           }
         }

@@ -57,6 +57,8 @@ h2{font-size:clamp(34px,6vw,52px)}
 #sexSeg.need button{border-color:#ff8a7a}
 .seg button[aria-pressed="true"]{background:var(--mist);color:var(--ink);border-color:var(--mist)}
 .seg button[aria-pressed="true"] span{color:#41504a}
+.seg.hostpick{grid-template-columns:minmax(0,1fr)}
+.seg.hostpick button{cursor:default;opacity:1}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.45;color:var(--mist)}
 .check input{margin-top:3px;accent-color:var(--marigold);width:16px;height:16px;flex:none}
 .row{display:flex;gap:10px;flex-wrap:wrap}
@@ -261,6 +263,7 @@ body.touchmode #netPill kbd{display:none}
     <button type="button" id="tbWatch">Watch</button>
     <button type="button" id="tbUse">Use</button>
     <button type="button" id="tbWater">Water</button>
+    <button type="button" id="tbView">View</button>
     <button type="button" id="tbMenu">Pause</button>
     <button type="button" id="tbTalk">Talk</button>
     <button type="button" id="tbHand" hidden>Hand</button>
@@ -1430,7 +1433,7 @@ if(isTouch){
   hold('tbSprint',b=>{touchSprint=!touchSprint;b.classList.toggle('on',touchSprint);});
   hold('tbBreath',b=>{holdBreathTouch=true;b.classList.add('on');},b=>{holdBreathTouch=false;b.classList.remove('on');});
   hold('tbWatch',()=>{if($('watch').classList.contains('up'))cyclePage();else toggleWatch();});
-  hold('tbUse',()=>interact());hold('tbWater',()=>drink());hold('tbMenu',()=>pause());
+  hold('tbView',()=>{if(state==='play'){P.firstPerson=!P.firstPerson;toast(P.firstPerson?'Your own eyes':'Behind you: see yourself and your partner');}});hold('tbUse',()=>interact());hold('tbWater',()=>drink());hold('tbMenu',()=>pause());
   // talking and the couple moves on a touch screen (the keys are Enter, J, U, N and G on a keyboard)
   hold('tbTalk',()=>{if(!(TALK&&TALK.open()))toast('Walk up to a hiker or a stall keeper to talk');});
   hold('tbHand',()=>{if(NET)NET.hands();});hold('tbCarry',()=>{if(NET)NET.carry();});hold('tbMic',()=>{if(NET)NET.cycleMic();});
