@@ -652,7 +652,7 @@ float shawlMask(vec3 p, vec4 c) {
 
     /* ---------- pool of full characters for the nearest people ---------- */
     window.__crowdStage = 'agents';
-    const POOL = quality && quality.grassDensity < 0.7 ? 10 : 18;
+    const POOL = quality && quality.grassDensity < 0.4 ? 7 : quality && quality.grassDensity < 0.7 ? 10 : 18;
     const pool = []; for (let i = 0; i < POOL; i++) { window.__crowdStage = 'char' + i; try { pool.push(makeChar(i % 3 === 2 ? 'f' : 'm')); } catch (e) { window.__crowdStage = 'charErr ' + (e && e.stack || e); throw e; } }
     window.__crowdStage = 'pool';
     const everyone = agents.concat(fixed, remotes);

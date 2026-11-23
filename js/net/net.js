@@ -130,6 +130,9 @@ window.TriundNet = {
 
     $('playSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (party && b.dataset.mode !== party.mode) { msg('Leave the room first.', true); return; } mode = b.dataset.mode; syncMode(); if (mode !== 'solo') connect(); });
     $('sizeSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; size = +b.dataset.size; syncMode(); });
+    // phones and tablets only allow the microphone after a tap: ask on the taps that lead into a room
+    const primeMic = () => { if (window.TriundP2P && window.TriundP2P.mic) window.TriundP2P.mic().catch(() => {}); };
+    for (const id of ['roomCreate', 'roomJoin', 'roomGo']) $(id).addEventListener('click', primeMic);
     $('roomCreate').addEventListener('click', () => { if (!needName()) return; createRoom(); });
     $('roomJoin').addEventListener('click', () => { if (!needName()) return; const c = $('roomCodeIn').value.trim().toUpperCase(); if (c.length !== 6) { msg('The code has 6 letters.', true); return; } joinRoom(c); });
     $('roomCodeIn').addEventListener('keydown', e => { if (e.key === 'Enter') $('roomJoin').click(); });
@@ -255,7 +258,11 @@ window.TriundNet = {
 
     /* ---------- other players ---------- */
     const remotes = new Map();   // pid -> { a (crowd slot), buf: [[t,x,y,z,yaw]], anim, speed, flags, tag, name, team }
-    const DELAY = 0.12;          // render 120 ms in the past so there are always two snapshots to blend
+    // Each friend is drawn a little in the past so there are always two poses to blend. A pose carries the time its
+    // sender took it (ts), so the poses keep their real spacing however unevenly the network delivers them; the delay
+    // is one send interval plus how late this friend's poses have lately been arriving (more on mobile data or a TURN
+    // relay, less on home Wi-Fi). Without ts (the trek server) the arrival time stands in for it.
+    const SEND = 1 / 15;   // poses 15 times a second
     function setRoster(list) {
       roster = new Map(list.map(p => [p.pid, p]));
       for (const [id, r] of remotes) if (!roster.has(id)) dropRemote(id);
@@ -268,19 +275,36 @@ window.TriundNet = {
     function snap(list) {
       const now = performance.now() / 1000, seen = new Set();
       for (const s of list) {
-        const [id, x, y, z, yaw, anim, speed, flags] = s; seen.add(id);
+        const [id, x, y, z, yaw, anim, speed, flags, ts] = s; seen.add(id);
         let r = remotes.get(id);
         if (!r) {
           const info = roster.get(id) || { name: 'Hiker', sex: 'm', team: team.has(id) };
           const a = ctx.crowd() ? ctx.crowd().addRemote(info.sex, seedOf(id)) : null; if (!a) continue;
-          r = { a, buf: [], name: info.name, sex: info.sex, link: info.link, team: info.team || team.has(id), mic: info.mic, friend: info.friend, tag: null, tagDirty: true, talk: false, last: now };
+          r = { a, buf: [], name: info.name, sex: info.sex, link: info.link, team: info.team || team.has(id), mic: info.mic, friend: info.friend, tag: null, tagDirty: true, talk: false, last: now,
+            off: null, late: 0, gap: 0.1, dev: 0.02, delay: 0.15, dl: 0.15, ts: -1 };
           remotes.set(id, r);
         }
-        r.buf.push([now, x, y, z, yaw]); if (r.buf.length > 8) r.buf.shift();
+        let t = now;
+        if (Number.isFinite(ts)) {
+          if (ts < r.ts - 5000) { r.ts = -1; r.off = null; r.buf.length = 0; }   // their game was reloaded: a new clock
+          if (ts <= r.ts) continue;   // an older pose overtaken by a newer one on the way: already past it
+          r.ts = ts; const d = now - ts / 1000;
+          // the sender's clock against ours: the quickest a pose has come through; let it creep up 1 ms a pose in
+          // case the route got slower for good
+          r.off = r.off === null || d < r.off ? d : r.off + 0.001;
+          const late = d - r.off; r.late = late > r.late ? late : r.late + (late - r.late) * 0.05;
+          t = ts / 1000 + r.off; r.delay = Math.min(0.5, Math.max(0.1, SEND + r.late + 0.03));
+        } else {
+          const gap = Math.min(1, now - r.last); r.gap += (gap - r.gap) * 0.1; r.dev += (Math.abs(gap - r.gap) - r.dev) * 0.1;
+          r.delay = Math.min(0.45, Math.max(0.12, r.gap + 2.5 * r.dev));
+        }
+        const b = r.buf; let k = b.length; while (k > 0 && b[k - 1][0] > t) k--;
+        b.splice(k, 0, [t, x, y, z, yaw]); if (b.length > 12) b.shift();
         r.anim = anim; r.speed = speed; r.flags = flags; r.last = now;
       }
-      // out of range (the server stops sending them): gone after 2 s
-      for (const [id, r] of remotes) if (!seen.has(id) && now - r.last > 2) dropRemote(id);
+      // out of range (the trek server stops sending them): gone after 2 s. A room sends each pose as it comes, so
+      // there it is only silence (a friend's game in the background) that counts, after 6 s in update()
+      if (!P2P) for (const [id, r] of remotes) if (!seen.has(id) && now - r.last > 2) dropRemote(id);
     }
     const angLerp = (a, b, t) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * t; };
     function makeTag(r) {
@@ -372,7 +396,8 @@ window.TriundNet = {
       if (pill.hidden) return;
       const near = Array.from(remotes.values()).filter(r => r.a && Math.hypot(r.a.x - ctx.me().x, r.a.z - ctx.me().z) < 60).length;
       const teamOn = Array.from(roster.values()).filter(p => p.team).length;
-      const label = { all: 'Mic: All', team: 'Mic: Team', off: 'Mic: Off' }[micMode];
+      const noMic = micMode !== 'off' && VOICE && VOICE.retry && window.TriundP2P && !window.TriundP2P.micReady;
+      const label = noMic ? (touch() ? 'Mic: tap Mic to allow' : 'Mic: press N to allow') : { all: 'Mic: All', team: 'Mic: Team', off: 'Mic: Off' }[micMode];
       const loading = !ctx.crowd() ? ' · loading people…' : '';
       pill.innerHTML = `<span class="talk${myTalk ? ' on' : ''}"></span><span class="m-${micMode}">${label}</span><kbd>N</kbd><span>· team ${teamOn + 1} · ${near} near · ${roster.size + 1} on the mountain${loading}</span>`;
     }
@@ -384,15 +409,26 @@ window.TriundNet = {
       update(dt, P, pose) {
         if (!started) return;
         sendT -= dt;
-        if (sendT <= 0 && wsOpen && pose) { sendT = 0.1; send({ t: 'pose', p: [+pose.x.toFixed(2), +pose.y.toFixed(2), +pose.z.toFixed(2), +pose.yaw.toFixed(3), pose.anim, +(pose.speed || 1).toFixed(2), (pose.flags | 0) | ledBits(P)] }); }
-        const now = performance.now() / 1000 - DELAY;
-        for (const [id, r] of remotes) if (now + DELAY - r.last > 6) dropRemote(id);   // no word from them for 6 s: gone
+        // sendT carries over (+=) so the poses keep an even 15 a second at any frame rate
+        if (sendT <= 0 && wsOpen && pose) { sendT = Math.max(0, sendT + SEND); send({ t: 'pose', p: [+pose.x.toFixed(2), +pose.y.toFixed(2), +pose.z.toFixed(2), +pose.yaw.toFixed(3), pose.anim, +(pose.speed || 1).toFixed(2), (pose.flags | 0) | ledBits(P)], ts: Math.round(performance.now()) }); }
+        const clock = performance.now() / 1000;
+        for (const [id, r] of remotes) if (clock - r.last > 6) dropRemote(id);   // no word from them for 6 s: gone
         if (P2P && ws && ws.kind === 'join' && wsOpen && lastMsg && performance.now() - lastMsg > 9000) { ws.error = 'silent'; ws.close(); ws.onclose && ws.onclose(); }
         for (const [id, r] of remotes) {
           const b = r.buf; if (!b.length) continue;
-          let i = b.length - 1; while (i > 0 && b[i - 1][0] > now) i--;
-          const A = b[Math.max(0, i - 1)], B = b[i], t = B[0] > A[0] ? Math.min(1, Math.max(0, (now - A[0]) / (B[0] - A[0]))) : 1;
-          const a = r.a; a.x = A[1] + (B[1] - A[1]) * t; a.y = A[2] + (B[2] - A[2]) * t; a.z = A[3] + (B[3] - A[3]) * t; a.yaw = angLerp(A[4], B[4], t);
+          r.dl += (r.delay - r.dl) * Math.min(1, dt * 1.5);   // ease into a new delay so their time never jumps
+          const now = clock - r.dl, L = b[b.length - 1];
+          let A, B, t;
+          if (now >= L[0]) {
+            // the next pose is late: keep them going the way they were for up to 0.25 s instead of freezing, then wait
+            const P0 = b.length > 1 ? b[b.length - 2] : L, span = L[0] - P0[0];
+            A = P0; B = L; t = span > 0.001 ? 1 + Math.min(0.25, now - L[0]) / span : 1;
+            if (span > 0.4 || Math.hypot(L[1] - P0[1], L[3] - P0[3]) / Math.max(span, 0.001) > 12) t = 1;   // a teleport or a long gap: no guessing
+          } else {
+            let i = b.length - 1; while (i > 0 && b[i - 1][0] > now) i--;
+            A = b[Math.max(0, i - 1)]; B = b[i]; t = B[0] > A[0] ? Math.min(1, Math.max(0, (now - A[0]) / (B[0] - A[0]))) : 1;
+          }
+          const a = r.a; a.x = A[1] + (B[1] - A[1]) * t; a.y = A[2] + (B[2] - A[2]) * t; a.z = A[3] + (B[3] - A[3]) * t; a.yaw = angLerp(A[4], B[4], Math.min(1, t));
           a.anim = r.anim || 'Idle'; a.animSpeed = r.speed || 1; a.lamp = !!(r.flags & 1);
           if (r.tagDirty) makeTag(r);
           r.tag.position.set(a.x, a.y + 2.15, a.z); r.tag.visible = Math.hypot(a.x - P.x, a.z - P.z) < 45;
@@ -464,7 +500,7 @@ window.TriundNet = {
       acceptAny() { if (linkAsk) linkKey(linkAsk.kind); else this.acceptFriend(); },
       linkState() { return { link, ask: linkAsk }; },
       // QA: what this player sees and hears
-      debug() { return { mode: micMode, link, remotes: Array.from(remotes, ([id, r]) => ({ id, name: r.name, sex: r.sex, body: r.a.look.sex, team: r.team, x: r.a.x, y: r.a.y, z: r.a.z, yaw: r.a.yaw, anim: r.a.anim, ch: !!r.a.ch, link: r.link })), voice: VOICE && VOICE.debug ? VOICE.debug() : null }; },
+      debug() { return { mode: micMode, link, remotes: Array.from(remotes, ([id, r]) => ({ id, name: r.name, sex: r.sex, body: r.a.look.sex, team: r.team, x: r.a.x, y: r.a.y, z: r.a.z, yaw: r.a.yaw, anim: r.a.anim, ch: !!r.a.ch, link: r.link, delay: +r.dl.toFixed(3), stamped: r.ts > 0 })), voice: VOICE && VOICE.debug ? VOICE.debug() : null }; },
       // the nearest real player (for E: ask to be friends)
       nearest(P, r0) { let best = null, bd = r0 || 3.5; for (const [id, r] of remotes) { const d = Math.hypot(r.a.x - P.x, r.a.z - P.z); if (d < bd) { bd = d; best = { pid: id, r }; } } return best; },
       prompt(P) {
@@ -487,6 +523,8 @@ window.TriundNet = {
       },
       cycleMic() {
         if (!started) return;
+        // the microphone is not working yet (blocked, or never asked on a tablet): this tap asks for it instead
+        if (VOICE && VOICE.retry && window.TriundP2P && !window.TriundP2P.micReady && micMode !== 'off') { VOICE.retry(); return; }
         micMode = micMode === 'all' ? 'team' : micMode === 'team' ? 'off' : 'all'; store.set('triund-mic', micMode);
         send({ t: 'mic', mode: micMode }); if (VOICE) VOICE.setMode(micMode);
         ctx.toast({ all: 'Mic: All. Everyone near you hears you; your team hears you anywhere', team: 'Mic: Team. Only your party', off: 'Mic and speaker off' }[micMode]);
